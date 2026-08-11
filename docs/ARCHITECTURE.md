@@ -6,7 +6,7 @@ This document describes the code structure, layers, and architectural patterns u
 
 ## Overview
 
-KjcBusinessHub is a web application built with **ASP.NET Core** (backend) and **Blazor** or **React** (frontend). It follows a **Clean Architecture** / **Layered Architecture** approach to keep domain logic independent from infrastructure concerns.
+KjcBusinessHub is a desktop application built with **ASP.NET Core** (backend) and **Avalonia UI** (frontend). It follows a **Clean Architecture** / **Layered Architecture** approach to keep domain logic independent from infrastructure concerns.
 
 ---
 
@@ -15,12 +15,10 @@ KjcBusinessHub is a web application built with **ASP.NET Core** (backend) and **
 ```
 KjcBusinessHub/
 ├── src/
-│   ├── KjcBusinessHub.Domain/          # Entities, value objects, business rules, interfaces
-│   ├── KjcBusinessHub.Application/     # Use cases, commands, queries (CQRS), DTOs
+│   ├── KjcBusinessHub.Application/     # Entities, value objects, business rules, interfaces, use cases, commands, queries (CQRS), DTOs
 │   ├── KjcBusinessHub.Infrastructure/  # EF Core, file storage, external integrations
-│   └── KjcBusinessHub.Web/             # Blazor/MVC UI, controllers, pages, components
+│   └── KjcBusinessHub.UI/              # Avalonia UI views, view models, components
 ├── tests/
-│   ├── KjcBusinessHub.Domain.Tests/
 │   ├── KjcBusinessHub.Application.Tests/
 │   └── KjcBusinessHub.Integration.Tests/
 └── docs/
@@ -30,15 +28,12 @@ KjcBusinessHub/
 
 ## Layers
 
-### Domain Layer (`KjcBusinessHub.Domain`)
-- Contains all **entities**, **value objects**, **enumerations**, and **domain interfaces**.
-- Has **zero dependencies** on other projects or NuGet packages except core .NET libraries.
-- All business rules live here (see `DOMAIN.md`).
-
 ### Application Layer (`KjcBusinessHub.Application`)
+- Contains all **entities**, **value objects**, **enumerations**, and **domain interfaces**.
 - Orchestrates use cases using **commands and queries** (CQRS via MediatR).
-- References Domain only.
 - Contains **DTOs**, **validators** (FluentValidation), and **service interfaces**.
+- Has **zero dependencies** on Infrastructure.
+- All business rules live here (see `DOMAIN.md`).
 
 **Example — Import Transactions Command:**
 ```csharp
@@ -51,13 +46,13 @@ public class ImportTransactionsHandler : IRequestHandler<ImportTransactionsComma
 ```
 
 ### Infrastructure Layer (`KjcBusinessHub.Infrastructure`)
-- Implements interfaces defined in Domain/Application.
+- Implements interfaces defined in Application.
 - Contains **EF Core DbContext**, **repository implementations**, file storage, and third-party integrations.
-- References Application and Domain.
+- References Application.
 
-### Web Layer (`KjcBusinessHub.Web`)
-- Hosts the UI (Blazor components or MVC views) and API controllers.
-- References Application only — never Domain or Infrastructure directly.
+### UI Layer (`KjcBusinessHub.UI`)
+- Hosts the Avalonia UI views, view models, and components.
+- References Application only — never Infrastructure directly.
 
 ---
 
@@ -76,11 +71,11 @@ public class ImportTransactionsHandler : IRequestHandler<ImportTransactionsComma
 ## Dependency Flow
 
 ```
-Web → Application → Domain
-Infrastructure → Application → Domain
+UI → Application
+Infrastructure → Application
 ```
 
-Infrastructure is registered at startup via dependency injection. No layer should reference Infrastructure directly except the Web layer's DI setup.
+Infrastructure is registered at startup via dependency injection. No layer should reference Infrastructure directly except the UI layer's DI setup.
 
 ---
 
