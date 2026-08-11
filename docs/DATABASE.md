@@ -16,6 +16,8 @@ This document describes the database schema, migrations strategy, and EF Core se
 
 - Prefer DATETIMEOFFSET
 
+- Data may never be DELETED, use Statuses when deleting entities
+
 ## Schema Overview
 
 ### Transactions
@@ -36,14 +38,14 @@ This document describes the database schema, migrations strategy, and EF Core se
 
 ### SourceDocuments
 
-| Column           | Type           | Constraints                |
-|------------------|----------------|----------------------------|
-| Id               | UNIQUEIDENTIFIER | PK, NOT NULL             |
-| FileCreationDate | DATETIMEOFFSET | NOT NULL                   |
-| Amount           | DECIMAL(18,2)  | NOT NULL                   |
-| FileSubPath      | NVARCHAR(1000) | NULL                       |
-| CreatedAt        | DATETIMEOFFSET | NOT NULL                   |
-| UpdatedAt        | DATETIMEOFFSET | NOT NULL                   |
+| Column               | Type           | Constraints                |
+|----------------------|----------------|----------------------------|
+| Id                   | UNIQUEIDENTIFIER | PK, NOT NULL             |
+| DocumentCreationDate | DATETIMEOFFSET | NOT NULL                   |
+| Amount               | DECIMAL(18,2)  | NOT NULL                   |
+| FileSubPath          | NVARCHAR(1000) | NULL                       |
+| CreatedAt            | DATETIMEOFFSET | NOT NULL                   |
+| UpdatedAt            | DATETIMEOFFSET | NOT NULL                   |
 
 ---
 
