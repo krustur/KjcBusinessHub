@@ -15,7 +15,7 @@ KjcBusinessHub is a desktop application built with **ASP.NET Core** (backend) an
 ```
 KjcBusinessHub/
 ├── src/
-│   ├── KjcBusinessHub.Application/     # Entities, value objects, business rules, interfaces, use cases, commands, queries (CQRS), DTOs
+│   ├── KjcBusinessHub.Application/     # Entities, value objects, business rules, services, queries, DTOs
 │   ├── KjcBusinessHub.Infrastructure/  # EF Core, file storage, external integrations
 │   └── KjcBusinessHub.UI/              # Avalonia UI views, view models, components
 ├── tests/
@@ -30,18 +30,19 @@ KjcBusinessHub/
 
 ### Application Layer (`KjcBusinessHub.Application`)
 - Contains all **entities**, **value objects**, **enumerations**, and **domain interfaces**.
-- Orchestrates use cases using **commands and queries** (CQRS via MediatR).
+- Exposes **services** and **queries** as simple method calls.
 - Contains **DTOs**, **validators** (FluentValidation), and **service interfaces**.
 - Has **zero dependencies** on Infrastructure.
 - All business rules live here (see `DOMAIN.md`).
 
-**Example — Import Transactions Command:**
+**Example — Import Transactions Service:**
 ```csharp
-public record ImportTransactionsCommand(Stream FileStream, string FileName) : IRequest<ImportResult>;
-
-public class ImportTransactionsHandler : IRequestHandler<ImportTransactionsCommand, ImportResult>
+public class TransactionService(ITransactionRepository repository)
 {
-    // Parses file, deduplicates, persists via ITransactionRepository
+    public async Task<ImportResult> ImportAsync(Stream fileStream, string fileName)
+    {
+        // Parses file, deduplicates, persists via ITransactionRepository
+    }
 }
 ```
 
@@ -51,8 +52,8 @@ public class ImportTransactionsHandler : IRequestHandler<ImportTransactionsComma
 - References Application.
 
 ### UI Layer (`KjcBusinessHub.UI`)
-- Hosts the Avalonia UI views, view models, and components.
-- References Application only — never Infrastructure directly.
+- Hosts the Avalonia UI views and view models.
+- Calls the Application layer directly — never references Infrastructure.
 
 ---
 
@@ -60,9 +61,9 @@ public class ImportTransactionsHandler : IRequestHandler<ImportTransactionsComma
 
 | Pattern           | Where Used                                  |
 |-------------------|---------------------------------------------|
-| CQRS (MediatR)    | Application layer — commands and queries    |
+| Service pattern   | Application layer — simple service classes  |
 | Repository        | Infrastructure — data access abstraction    |
-| Clean Architecture| Layer dependency rules (domain at center)   |
+| Clean Architecture| Layer dependency rules (app layer at center)|
 | FluentValidation  | Application — input validation              |
 | Result pattern    | Return `Result<T>` instead of throwing exceptions |
 
