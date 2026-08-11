@@ -1,88 +1,106 @@
 # Use Cases
 
-This document describes user stories and use cases for the KjcBusinessHub application. Use cases are organized by feature area and follow the format: _As a [user], I want to [goal] so that [reason]._
+This document describes use cases for the KjcBusinessHub application. 
 
----
+## Application start (00)
 
-## Bank Reconciliation
+### UC-0001 App First time start
 
-### UC-001: Import Bank Transactions
-**As a** freelancer,  
-**I want to** import my bank transactions from a CSV or OFX file,  
-**so that** I can reconcile them against my source documents without manual data entry.
+**Pre-Conditions:**
 
-**Acceptance Criteria:**
-- User can upload a CSV or OFX file exported from their bank.
-- The system parses and stores each transaction (date, amount, description, reference).
-- Duplicate transactions are detected and flagged.
-
----
-
-### UC-002: Match Transaction to Source Document
-**As a** freelancer,  
-**I want to** link a bank transaction to a receipt or invoice,  
-**so that** I can prove every transaction is valid and covered by a source document.
+- The application is started without a configured SourceDocumentFolder
 
 **Acceptance Criteria:**
-- User can search for an existing source document by amount, date, or description.
-- A transaction can be linked to one or more source documents.
-- Matched transactions are marked as reconciled.
 
----
+- The user enters the App in the Settings screen. 
+- The user are not able to navigate to the Main view
+- The user are expected to configure a SourceDocumentFolder
+- When a SourceDocumentFolder has been configured:
+    1. The user should be able to navigate to the Main view
+    1. UC-0101 should be activated
+    1. UC-0102 should be activated
+    1. UC-0103 should be activated
+    1. UC-0104 should be activated
 
-### UC-003: View Unreconciled Transactions
-**As a** freelancer,  
-**I want to** see a list of transactions that have not yet been matched to a source document,  
-**so that** I know which transactions still need attention.
+### UC-0002 App Subsequent starts
 
-**Acceptance Criteria:**
-- Dashboard shows count and list of unreconciled transactions.
-- User can filter by date range and amount.
+**Pre-Conditions:**
 
----
-
-## Expense Tracking
-
-### UC-010: Register Travel Expense
-**As a** freelancer,  
-**I want to** register a mileage allowance expense,  
-**so that** I can claim it as a business expense and attach it to the correct bank transaction.
+- The application is started with a configured SourceDocumentFolder
 
 **Acceptance Criteria:**
-- User can enter trip details (date, from, to, kilometers, rate per km).
-- The system calculates the allowance amount.
-- The expense can be linked to a bank transaction.
 
----
+- The user enters the App in the Main view. 
+- UC-0101 should be activated
+- UC-0102 should be activated
+- UC-0103 should be activated
+- UC-0104 should be activated
 
-### UC-011: Register Wellness Allowance
-**As a** freelancer,  
-**I want to** register a wellness allowance expense with a receipt,  
-**so that** I can track wellness spending within the annual limit.
+## File watcher (01)
 
-**Acceptance Criteria:**
-- User can upload a receipt image and enter the amount.
-- The system warns if the annual wellness allowance limit is approached or exceeded.
+### UC-0101 Transaction file import
 
----
+**Pre-Conditions:**
 
-## Skills & Professional Development
-
-### UC-020: Add Skill or Course
-**As a** freelancer,  
-**I want to** record a completed course or acquired skill,  
-**so that** I can track my professional development and use the data to generate my CV.
+- The application must have a configured SourceDocumentFolder
 
 **Acceptance Criteria:**
-- User can enter skill name, category, completion date, and optional certificate.
-- Skills are listed under a professional profile section.
 
----
+- The application reads the file `Consulting-Transactions.txt` located in the SourceDocumentFolder and parses it's content and adds new Transactions to the Application, see [Transactions-Import.md](Transactions-Import.md)
+
+### UC-0102 Source document file import
+
+**Pre-Conditions:**
+
+- The application scans the SourceDocumentFolder for Source Documents and adds new SourceDocuments to the Application, see [SourceDocument-import.md](SourceDocument-import.md)
+
+### UC-0103 Transaction file watcher
+
+**Acceptance Criteria:**
+
+- The app should keep track of files and add deletes and renames of these while the session is active.
+
+### UC-0104 Source document file watcher
+
+**Acceptance Criteria:**
+
+## Main view
+
+
+
+
+
+
 
 ## Future / Planned
 
-> _Placeholder: Additional use cases will be added here as new features are planned._
 
-- UC-030: Generate reconciliation report (PDF/Excel export)
-- UC-031: Multi-currency transaction support
-- UC-040: Generate CV from skills and experience data
+### View transactions 
+The user should see a view of all transactions to the left and all source documents to the right. When a transaction has been mapped to a source document these should be shown side by side and with a visible link. Unmapped transactions should be listed on top in the left pane. Unmapped documents should be listed top of the right pane. 
+
+Transactions should show: dates, account no, texts, amounts
+
+Documents should show: dates and names. 
+
+Default order: Transaction date, then document date, then transaction dates for all mapped documents.
+
+Options: 
+- See all, see month
+- For see month, include neighboring months as a toggle option
+- For see month, these navigations should be easily accessible: this month, next month and previous month
+
+### Link source document to transaction
+### Unlink source document from transaction
+
+unsorted
+=======
+- back-up-db-to-human-readable txt file daily.
+- db schema
+- db migrations
+- deleted transactions
+- deleted documents
+- "frequently ignored"
+- easy to differntiate incoming/outgoing transactions
+- also filter for it
+- monthly todo-list with reminder
+- hints/links to where invoices are normally collected from
