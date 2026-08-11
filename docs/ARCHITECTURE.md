@@ -64,7 +64,6 @@ public class TransactionService(ITransactionRepository repository)
 | Service pattern   | Application layer — simple service classes  |
 | Repository        | Infrastructure — data access abstraction    |
 | Clean Architecture| Layer dependency rules (app layer at center)|
-| FluentValidation  | Application — input validation              |
 | Result pattern    | Return `Result<T>` instead of throwing exceptions |
 
 ---
