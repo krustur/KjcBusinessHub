@@ -15,7 +15,7 @@ This document establishes UI/UX standards and component guidelines for KjcBusine
 ## Forms
 
 ### Dropdowns / Select Fields
-- **All dropdowns must include a search/filter field** when they contain more than 5 options.
+- **All dropdowns must include a search/filter field** when they are expected to contain more than 5 options.
 - Use a component that supports type-to-filter (e.g., a combobox or searchable select).
 - Placeholder text should describe what to search for, e.g., _"Search expense category..."_.
 
