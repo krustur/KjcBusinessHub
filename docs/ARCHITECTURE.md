@@ -61,7 +61,7 @@ public class TransactionService(ITransactionRepository repository)
 
 | Pattern           | Where Used                                  |
 |-------------------|---------------------------------------------|
-| Service pattern   | Application layer — simple service classes  |
+| Service pattern   | Application layer — simple service classes - each service has it's own parameter- and result-dtos - don't leak domain objects! |
 | Repository        | Infrastructure — data access abstraction    |
 | Clean Architecture| Layer dependency rules (app layer at center)|
 | Result pattern    | Return `Result<T>` instead of throwing exceptions |
