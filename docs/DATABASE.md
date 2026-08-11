@@ -6,40 +6,44 @@ This document describes the database schema, migrations strategy, and EF Core se
 
 ## Technology
 
-- **Database:** SQLite (development) / SQL Server or PostgreSQL (production)
+- **Database:** SQLite (development)
 - **ORM:** Entity Framework Core
 - **Migrations:** EF Core code-first migrations
 
 ---
 
+## Principles
+
+- Prefer DATETIMEOFFSET
+
 ## Schema Overview
 
 ### Transactions
 
-| Column        | Type          | Constraints                |
-|---------------|---------------|----------------------------|
-| Id            | UNIQUEIDENTIFIER | PK, NOT NULL            |
-| Date          | DATE          | NOT NULL                   |
-| Amount        | DECIMAL(18,2) | NOT NULL                   |
-| Description   | NVARCHAR(500) | NOT NULL                   |
-| Reference     | NVARCHAR(100) | NULL                       |
-| Status        | INT           | NOT NULL, default 0        |
-| CreatedAt     | DATETIME2     | NOT NULL                   |
-| UpdatedAt     | DATETIME2     | NOT NULL                   |
+| Column          | Type           | Constraints                |
+|-----------------|----------------|----------------------------|
+| Id              | UNIQUEIDENTIFIER | PK, NOT NULL             |
+| AccountingDate  | DATETIMEOFFSET | NOT NULL                   |
+| TransactionDate | DATETIMEOFFSET | NOT NULL                   |
+| Amount          | DECIMAL(18,2)  | NOT NULL                   |
+| Balance         | DECIMAL(18,2)  | NOT NULL                   |
+| Description     | NVARCHAR(500)  | NOT NULL                   |
+| Status          | INT            | NOT NULL, default 0        |
+| CreatedAt       | DATETIME2      | NOT NULL                   |
+| UpdatedAt       | DATETIME2      | NOT NULL                   |
 
 ---
 
 ### SourceDocuments
 
-| Column        | Type          | Constraints                |
-|---------------|---------------|----------------------------|
-| Id            | UNIQUEIDENTIFIER | PK, NOT NULL            |
-| Date          | DATE          | NOT NULL                   |
-| Amount        | DECIMAL(18,2) | NOT NULL                   |
-| DocumentType  | INT           | NOT NULL                   |
-| Description   | NVARCHAR(500) | NOT NULL                   |
-| FilePath      | NVARCHAR(1000)| NULL                       |
-| CreatedAt     | DATETIME2     | NOT NULL                   |
+| Column           | Type           | Constraints                |
+|------------------|----------------|----------------------------|
+| Id               | UNIQUEIDENTIFIER | PK, NOT NULL             |
+| FileCreationDate | DATETIMEOFFSET | NOT NULL                   |
+| Amount           | DECIMAL(18,2)  | NOT NULL                   |
+| FileSubPath      | NVARCHAR(1000) | NULL                       |
+| CreatedAt        | DATETIMEOFFSET | NOT NULL                   |
+| UpdatedAt        | DATETIMEOFFSET | NOT NULL                   |
 
 ---
 
@@ -52,20 +56,6 @@ This document describes the database schema, migrations strategy, and EF Core se
 
 ---
 
-### MileageExpenses
-
-| Column           | Type             | Constraints     |
-|------------------|------------------|-----------------|
-| Id               | UNIQUEIDENTIFIER | PK, NOT NULL    |
-| Date             | DATE             | NOT NULL        |
-| FromLocation     | NVARCHAR(200)    | NOT NULL        |
-| ToLocation       | NVARCHAR(200)    | NOT NULL        |
-| Kilometers       | DECIMAL(10,2)    | NOT NULL        |
-| RatePerKm        | DECIMAL(10,4)    | NOT NULL        |
-| TransactionId    | UNIQUEIDENTIFIER | NULL, FK        |
-
----
-
 ## EF Core Setup
 
 ### DbContext Example
@@ -75,7 +65,6 @@ public class AppDbContext : DbContext
 {
     public DbSet<Transaction> Transactions => Set<Transaction>();
     public DbSet<SourceDocument> SourceDocuments => Set<SourceDocument>();
-    public DbSet<MileageExpense> MileageExpenses => Set<MileageExpense>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -131,11 +120,3 @@ dotnet ef database update <PreviousMigrationName> --project src/KjcBusinessHub.I
 > _Placeholder: Describe data seeding strategy (e.g., dev seed data, reference data for expense categories)._
 
 ---
-
-## Future / Planned
-
-> _Placeholder: Update as the schema evolves._
-
-- `Skills` table for professional development tracking
-- `Clients` table for invoice management
-- Audit log table for tracking changes to transactions and documents
