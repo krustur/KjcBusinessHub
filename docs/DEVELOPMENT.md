@@ -9,9 +9,7 @@ This document provides setup, build, and run instructions for KjcBusinessHub.
 | Tool             | Minimum Version | Notes                              |
 |------------------|-----------------|------------------------------------|
 | .NET SDK         | 8.0             | https://dotnet.microsoft.com       |
-| Node.js          | 20.x            | Only if a JS frontend is used      |
 | Git              | 2.x             |                                    |
-| Docker (optional)| 24.x            | For running a local SQL Server     |
 
 ---
 
@@ -83,20 +81,6 @@ dotnet test tests/KjcBusinessHub.Application.Tests
 
 ---
 
-## Creating a New Migration
-
-After making changes to domain entities or EF Core configuration:
-
-```bash
-dotnet ef migrations add <DescriptiveMigrationName> \
-  --project src/KjcBusinessHub.Infrastructure \
-  --startup-project src/KjcBusinessHub.Web
-```
-
-Review the generated migration file before applying it.
-
----
-
 ## Project Scripts
 
 > _Placeholder: Add any build scripts or Makefile targets here._
@@ -133,10 +117,3 @@ dotnet format
 
 ---
 
-## Future / Planned
-
-> _Placeholder: Update as tooling is added._
-
-- Docker Compose setup for local SQL Server
-- CI/CD pipeline documentation (GitHub Actions)
-- Environment-specific deployment instructions
