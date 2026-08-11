@@ -84,6 +84,4 @@ Infrastructure is registered at startup via dependency injection. No layer shoul
 
 > _Placeholder: Update when tech stack decisions are finalized._
 
-- Authentication/authorization approach (e.g., ASP.NET Identity, OIDC)
-- Background job processing (e.g., Hangfire for scheduled imports)
 - Event-driven patterns for cross-feature communication
