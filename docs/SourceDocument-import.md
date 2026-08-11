@@ -1,3 +1,4 @@
+# Source Document import
 
 File watcher:  Keep track even between sessions, use file jag to make this possible. Log all changes to a log file and to an internal window that can be toggled open/close from the app. A file in the root called Consulting-Transactions.txt Containing all transactions done on an account. Changed to this should be automatically imported to the app and stored in db. In the folders are also styvfader sub folders for each month container files (images/pdfs) of the source documents. The sub folders are named yyyymm (202606 for June 2026). The source documents are named yyyymmdd - document, parse this as document date and document name. (20231213 - Lon.pdf should be parsed to document date 2023-12-13 with the name ”Lon”)
 Format of rows in Consulting-Transactions.txt
