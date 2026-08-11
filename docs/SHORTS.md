@@ -3,4 +3,4 @@
 Shorts used for communication.
 
 - T = Transaction
-- S = Source Document
+- SD = Source Document
