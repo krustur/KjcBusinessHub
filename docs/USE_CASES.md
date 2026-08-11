@@ -64,9 +64,11 @@ This document describes use cases for the KjcBusinessHub application.
 
 **Acceptance Criteria:**
 
-## Main view
+## Main view (02)
 
+### UC-0201 View transactions 
 
+The user should see a view of all Unlinked Transactions top left and all Unlinked source documents top right. When a transaction has been mapped to a source document these should be shown below side by side and with a visible link.
 
 
 
@@ -75,8 +77,9 @@ This document describes use cases for the KjcBusinessHub application.
 ## Future / Planned
 
 
+
+
 ### View transactions 
-The user should see a view of all transactions to the left and all source documents to the right. When a transaction has been mapped to a source document these should be shown side by side and with a visible link. Unmapped transactions should be listed on top in the left pane. Unmapped documents should be listed top of the right pane. 
 
 Transactions should show: dates, account no, texts, amounts
 
