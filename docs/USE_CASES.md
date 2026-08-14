@@ -111,8 +111,8 @@ Options: 
 ### Link source document to transaction
 ### Unlink source document from transaction
 
-unsorted
-=======
+### Backlog / Unsorted
+
 - back-up-db-to-human-readable txt file daily.
 - db schema
 - db migrations
