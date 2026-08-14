@@ -54,6 +54,8 @@ This document describes use cases for the KjcBusinessHub application.
 
 - The application must have a configured SourceDocumentFolder
 
+**Acceptance Criteria:**
+
 - The application scans the SourceDocumentFolder for Source Documents according to: [SourceDocument-import.md](SourceDocument-import.md)
 
 ### UC-0103 Transaction file watcher
