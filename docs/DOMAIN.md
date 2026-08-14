@@ -28,17 +28,17 @@ Represents a single entry on a bank statement.
 ### SourceDocument
 Represents a receipt, invoice, or other document that justifies a transaction.
 
-| Property             | Type     | Description                                   |
-|----------------------|----------|-----------------------------------------------|
-| Id                   | Guid     | Unique identifier                             |
-| FileSubPath          | string   | Sub path to the document                      |
-| FileHash             | string   | SHA256 hash of the file content               |
-| FileNameDate         | DateOnly | Date in the file name                         |
-| Description          | string   | Description of the document                   |
-| Amount               | decimal? | Amount stated on the document                 |
-| Status               | enum     | `New`, `Active`, `RemovedFromDisk`, `Removed` |
-| FileCreatedDate      | Date     | Creation date from the File metadata          |
-| FileModifiedDate     | Date     | Modified date from the File metadata          |
+| Property             | Type           | Description                                   |
+|----------------------|----------------|-----------------------------------------------|
+| Id                   | Guid           | Unique identifier                             |
+| FileSubPath          | string         | Sub path to the document                      |
+| FileHash             | string         | SHA256 hash of the file content               |
+| FileNameDate         | DateOnly       | Date in the file name                         |
+| Description          | string         | Description of the document                   |
+| Amount               | decimal?       | Amount stated on the document                 |
+| Status               | enum           | `New`, `Active`, `RemovedFromDisk`, `Removed` |
+| FileCreatedDate      | DateTimeOffset | Creation date from the File metadata          |
+| FileModifiedDate     | DateTimeOffset | Modified date from the File metadata          |
 
 
 **Validation Rules:**
