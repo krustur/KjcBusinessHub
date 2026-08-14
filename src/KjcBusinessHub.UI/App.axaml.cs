@@ -8,6 +8,8 @@ using KjcBusinessHub.Infrastructure;
 using KjcBusinessHub.UI.ViewModels;
 using KjcBusinessHub.UI.Views;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Serilog;
 using AvalApp = Avalonia.Application;
 
 namespace KjcBusinessHub.UI;
@@ -23,17 +25,33 @@ public partial class App : AvalApp
 
     public override void OnFrameworkInitializationCompleted()
     {
+        var appDataDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "KjcBusinessHub");
+        Directory.CreateDirectory(appDataDir);
+
+        // Rolling file: one file per day, keep 7 days
+        var logPath = Path.Combine(appDataDir, "logs", "kjcbusinesshub-.log");
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.File(
+                path: logPath,
+                rollingInterval: RollingInterval.Day,
+                retainedFileCountLimit: 7,
+                outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext} {Message:lj}{NewLine}{Exception}")
+            .CreateLogger();
+
         var services = new ServiceCollection();
 
         // Use a fixed SQLite path in local app data
-        var dbPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "KjcBusinessHub",
-            "kjcbusinesshub.db");
-        Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
+        var dbPath = Path.Combine(appDataDir, "kjcbusinesshub.db");
 
         services.AddInfrastructure($"Data Source={dbPath}");
-        services.AddLogging();
+        services.AddLogging(logging =>
+        {
+            logging.ClearProviders();
+            logging.AddSerilog(dispose: true);
+        });
 
         // Register view models
         services.AddTransient<SettingsViewModel>();
@@ -56,6 +74,7 @@ public partial class App : AvalApp
             {
                 _serviceProvider.GetService<FileWatcherService>()?.Stop();
                 (_serviceProvider as IDisposable)?.Dispose();
+                Log.CloseAndFlush();
             };
         }
 
