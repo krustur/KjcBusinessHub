@@ -9,16 +9,16 @@ This document defines the core domain entities, value objects, and validation ru
 ### Transaction
 Represents a single entry on a bank statement.
 
-| Property        | Type        | Description                                   |
-|-----------------|-------------|-----------------------------------------------|
-| Id              | Guid        | Unique identifier                             |
-| AccountingDate  | DateOnly    | The date a transaction is recorded            |
-| TransactionDate | DateOnly    | Date the transaction occurred                 |
-| Amount          | decimal     | Positive = credit, Negative = debit           |
-| Balance         | decimal     | Balance after this Transaction occured        |
-| Description     | string      | Bank-provided transaction description         |
-| Status          | enum        | `Unlinked`, `Linked`, `OsRemoved`, `Removed`  |
-| SourceDocuments | List\<SourceDocument\> | Linked source documents            |
+| Property        | Type        | Description                             |
+|-----------------|-------------|-----------------------------------------|
+| Id              | Guid        | Unique identifier                       |
+| AccountingDate  | DateOnly    | The date a transaction is recorded      |
+| TransactionDate | DateOnly    | Date the transaction occurred           |
+| Amount          | decimal     | Positive = credit, Negative = debit     |
+| Balance         | decimal     | Balance after this Transaction occured  |
+| Description     | string      | Bank-provided transaction description   |
+| Status          | enum        | `Active`, `RemovedFromFile`, `Removed`  |
+| SourceDocuments | List\<SourceDocument\> | Linked source documents      |
 
 **Validation Rules:**
 - `Description` is required and must not exceed 500 characters.
@@ -28,12 +28,18 @@ Represents a single entry on a bank statement.
 ### SourceDocument
 Represents a receipt, invoice, or other document that justifies a transaction.
 
-| Property             | Type     | Description                                    |
-|----------------------|----------|------------------------------------------------|
-| Id                   | Guid     | Unique identifier                              |
-| DocumentCreationDate | DateOnly | Date on the document                           |
-| Amount               | decimal  | Amount stated on the document                  |
-| FileSubPath          | string?  | Sub path to the document                       |
+| Property             | Type     | Description                                   |
+|----------------------|----------|-----------------------------------------------|
+| Id                   | Guid     | Unique identifier                             |
+| FileSubPath          | string   | Sub path to the document                      |
+| FileHash             | string   | SHA256 hash of the file content               |
+| FileNameDate         | DateOnly | Date in the file name                         |
+| Description          | string   | Description of the document                   |
+| Amount               | decimal? | Amount stated on the document                 |
+| Status               | enum     | `New`, `Active`, `RemovedFromDisk`, `Removed` |
+| FileCreatedDate      | Date     | Creation date from the File metadata          |
+| FileModifiedDate     | Date     | Modified date from the File metadata          |
+
 
 **Validation Rules:**
 - `DocumentCreationDate` is required.
@@ -45,10 +51,18 @@ Represents a receipt, invoice, or other document that justifies a transaction.
 
 ### TransactionStatus
 ```
-Unlinked        // No source documents linked
-Linked          // Fully covered by source documents
-OsRemoved       // Removed outside of the app
-Removed         // Removed in the App domain
+Active              // Transaction is active
+RemovedFromFile     // Removed from the Transactions file
+Removed             // Confirmed Removed by the User
+```
+
+### SourceDocumentStatus
+```
+New                 // Newly found SourceDocument missing Amount
+Active              // SourceDocument is active and have Amount
+Changed             // SourceDocument has changed
+RemovedFromDisk     // File has been removed from the SourceDocumentsDirectory
+Removed             // Confirmed Removed by the User
 ```
 
 ---

@@ -22,30 +22,35 @@ This document describes the database schema, migrations strategy, and EF Core se
 
 ### Transactions
 
-| Column          | Type           | Constraints                |
-|-----------------|----------------|----------------------------|
-| Id              | UNIQUEIDENTIFIER | PK, NOT NULL             |
-| AccountingDate  | DATETIMEOFFSET | NOT NULL                   |
-| TransactionDate | DATETIMEOFFSET | NOT NULL                   |
-| Amount          | DECIMAL(18,2)  | NOT NULL                   |
-| Balance         | DECIMAL(18,2)  | NOT NULL                   |
-| Description     | NVARCHAR(500)  | NOT NULL                   |
-| Status          | INT            | NOT NULL, default 0        |
-| CreatedAt       | DATETIME2      | NOT NULL                   |
-| UpdatedAt       | DATETIME2      | NOT NULL                   |
+| Column          | Type             | Constraints                |
+|-----------------|------------------|----------------------------|
+| Id              | UNIQUEIDENTIFIER | PK, NOT NULL               |
+| AccountingDate  | DATE             | NOT NULL                   |
+| TransactionDate | DATE             | NOT NULL                   |
+| Amount          | DECIMAL(18,2)    | NOT NULL                   |
+| Balance         | DECIMAL(18,2)    | NOT NULL                   |
+| Description     | NVARCHAR(500)    | NOT NULL                   |
+| Status          | INT              | NOT NULL, default 0        |
+| CreatedAt       | DATETIMEOFFSET   | NOT NULL                   |
+| UpdatedAt       | DATETIMEOFFSET   | NULL                       |
 
 ---
 
 ### SourceDocuments
 
-| Column               | Type           | Constraints                |
-|----------------------|----------------|----------------------------|
-| Id                   | UNIQUEIDENTIFIER | PK, NOT NULL             |
-| DocumentCreationDate | DATETIMEOFFSET | NOT NULL                   |
-| Amount               | DECIMAL(18,2)  | NOT NULL                   |
-| FileSubPath          | NVARCHAR(1000) | NULL                       |
-| CreatedAt            | DATETIMEOFFSET | NOT NULL                   |
-| UpdatedAt            | DATETIMEOFFSET | NOT NULL                   |
+| Column               | Type             | Constraints                |
+|----------------------|------------------|----------------------------|
+| Id                   | UNIQUEIDENTIFIER | PK, NOT NULL               |
+| FileSubPath          | NVARCHAR(1000)   | NOT NULL                   |
+| FileHash             | TEXT             | NOT NULL                   |
+| FileNameDate         | DATE             | NOT NULL                   |
+| Description          | NVARCHAR(1000)   | NOT NULL                   |
+| Amount               | DECIMAL(18,2)    | NULL                       |
+| FileCreatedDate      | DATETIMEOFFSET   | NOT NULL                   |
+| FileModifiedDate     | DATETIMEOFFSET   | NOT NULL                   |
+| Status               | INT              | NOT NULL, default 0        |
+| CreatedAt            | DATETIMEOFFSET   | NOT NULL                   |
+| UpdatedAt            | DATETIMEOFFSET   | NULL                       |
 
 ---
 
@@ -55,6 +60,7 @@ This document describes the database schema, migrations strategy, and EF Core se
 |--------------------|------------------|-----------------|
 | TransactionId      | UNIQUEIDENTIFIER | PK, FK          |
 | SourceDocumentId   | UNIQUEIDENTIFIER | PK, FK          |
+| CreatedAt          | DATETIMEOFFSET   | NOT NULL        |
 
 ---
 

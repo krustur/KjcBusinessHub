@@ -46,23 +46,37 @@ This document describes use cases for the KjcBusinessHub application.
 
 **Acceptance Criteria:**
 
-- The application reads the file `Consulting-Transactions.txt` located in the SourceDocumentFolder and parses it's content and adds new Transactions to the Application, see [Transactions-Import.md](Transactions-Import.md)
+- The application reads the Consulting Transactions file located in the SourceDocumentFolder and parses it's content according to: [Transactions-Import.md](Transactions-Import.md)
 
 ### UC-0102 Source document file import
 
 **Pre-Conditions:**
 
-- The application scans the SourceDocumentFolder for Source Documents and adds new SourceDocuments to the Application, see [SourceDocument-import.md](SourceDocument-import.md)
+- The application must have a configured SourceDocumentFolder
+
+- The application scans the SourceDocumentFolder for Source Documents according to: [SourceDocument-import.md](SourceDocument-import.md)
 
 ### UC-0103 Transaction file watcher
 
+**Pre-Conditions:**
+
+- The application must have a configured SourceDocumentFolder
+- _UC-0102 Source document file import_ should be finished
+
 **Acceptance Criteria:**
 
-- The app should keep track of files and add deletes and renames of these while the session is active.
+- The app should watch for changes to the Consulting Transactions file located in the SourceDocumentFolder and when a change occurs it should parse it's content according to:[Transactions-Import.md](Transactions-Import.md)
 
 ### UC-0104 Source document file watcher
 
+**Pre-Conditions:**
+
+- The application must have a configured SourceDocumentFolder
+- _UC-0102 Source document file import_ should be finished
+
 **Acceptance Criteria:**
+
+- The app should watch for changes in the SourceDocumentFolder and when a change occur it should handle it according to: [SourceDocument-import.md](SourceDocument-import.md)
 
 ## Main view (02)
 
