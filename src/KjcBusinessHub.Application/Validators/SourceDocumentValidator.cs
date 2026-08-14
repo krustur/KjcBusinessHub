@@ -1,19 +1,22 @@
-using FluentValidation;
 using KjcBusinessHub.Application.Entities;
 
 namespace KjcBusinessHub.Application.Validators;
 
-public class SourceDocumentValidator : AbstractValidator<SourceDocument>
+public class SourceDocumentValidator
 {
-    public SourceDocumentValidator()
+    public ValidationResult Validate(SourceDocument document)
     {
-        RuleFor(d => d.FileSubPath)
-            .NotEmpty().WithMessage("FileSubPath is required.");
+        var result = new ValidationResult();
 
-        RuleFor(d => d.FileCreatedDate)
-            .NotEqual(default(DateTimeOffset)).WithMessage("FileCreatedDate is required.");
+        if (string.IsNullOrWhiteSpace(document.FileSubPath))
+            result.AddError(nameof(document.FileSubPath), "FileSubPath is required.");
 
-        RuleFor(d => d.Id)
-            .NotEqual(Guid.Empty).WithMessage("Id must not be empty.");
+        if (document.FileCreatedDate == default)
+            result.AddError(nameof(document.FileCreatedDate), "FileCreatedDate is required.");
+
+        if (document.Id == Guid.Empty)
+            result.AddError(nameof(document.Id), "Id must not be empty.");
+
+        return result;
     }
 }

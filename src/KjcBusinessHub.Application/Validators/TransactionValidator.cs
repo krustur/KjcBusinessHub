@@ -1,17 +1,21 @@
-using FluentValidation;
 using KjcBusinessHub.Application.Entities;
 
 namespace KjcBusinessHub.Application.Validators;
 
-public class TransactionValidator : AbstractValidator<Transaction>
+public class TransactionValidator
 {
-    public TransactionValidator()
+    public ValidationResult Validate(Transaction transaction)
     {
-        RuleFor(t => t.Description)
-            .NotEmpty().WithMessage("Description is required.")
-            .MaximumLength(500).WithMessage("Description must not exceed 500 characters.");
+        var result = new ValidationResult();
 
-        RuleFor(t => t.Id)
-            .NotEqual(Guid.Empty).WithMessage("Id must not be empty.");
+        if (string.IsNullOrWhiteSpace(transaction.Description))
+            result.AddError(nameof(transaction.Description), "Description is required.");
+        else if (transaction.Description.Length > 500)
+            result.AddError(nameof(transaction.Description), "Description must not exceed 500 characters.");
+
+        if (transaction.Id == Guid.Empty)
+            result.AddError(nameof(transaction.Id), "Id must not be empty.");
+
+        return result;
     }
 }
