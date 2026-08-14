@@ -63,7 +63,7 @@ This document describes use cases for the KjcBusinessHub application.
 **Pre-Conditions:**
 
 - The application must have a configured SourceDocumentFolder
-- _UC-0102 Source document file import_ should be finished
+- _UC-0101 Transaction file import_ should be finished
 
 **Acceptance Criteria:**
 
