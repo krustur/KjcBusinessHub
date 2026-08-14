@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/KjcBusinessHub.Application/KjcBusinessHub.Application.csproj" />
+    <Project Path="src/KjcBusinessHub.Infrastructure/KjcBusinessHub.Infrastructure.csproj" />
+    <Project Path="src/KjcBusinessHub.UI/KjcBusinessHub.UI.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/KjcBusinessHub.Application.Tests/KjcBusinessHub.Application.Tests.csproj" />
+    <Project Path="tests/KjcBusinessHub.Integration.Tests/KjcBusinessHub.Integration.Tests.csproj" />
+  </Folder>
+</Solution>
