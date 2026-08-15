@@ -1,0 +1,32 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "KjcBusinessHub.UI",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/KjcBusinessHub.UI/bin/Debug/net10.0/KjcBusinessHub.UI.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/KjcBusinessHub.UI",
+            "stopAtEntry": false,
+            "console": "internalConsole",
+            "env": {
+                "DOTNET_ENVIRONMENT": "Development"
+            }
+        },
+        {
+            "name": "Run Tests",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-tests",
+            "program": "${workspaceFolder}/.vscode/testrunner.exe",
+            "args": [
+                "${workspaceFolder}/tests/KjcBusinessHub.Application.Tests/bin/Debug/net10.0/KjcBusinessHub.Application.Tests.dll"
+            ],
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        }
+    ]
+}
