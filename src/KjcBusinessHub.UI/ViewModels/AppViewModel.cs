@@ -31,6 +31,14 @@ public partial class AppViewModel : ViewModelBase
     [ObservableProperty]
     public partial string? StatusMessage { get; set; }
 
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(LinkDocumentCommand))]
+    public partial Transaction? SelectedUnlinkedTransaction { get; set; }
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(LinkDocumentCommand))]
+    public partial SourceDocument? SelectedUnlinkedSourceDocument { get; set; }
+
     // --- Filter state ---
 
     [ObservableProperty]
@@ -142,6 +150,50 @@ public partial class AppViewModel : ViewModelBase
 
     partial void OnIncludeNeighbouringMonthsChanged(bool value) =>
         _ = RefreshAsync();
+
+    // --- Linking commands ---
+
+    private bool CanLinkDocument() =>
+        SelectedUnlinkedTransaction is not null && SelectedUnlinkedSourceDocument is not null;
+
+    [RelayCommand(CanExecute = nameof(CanLinkDocument))]
+    private async Task LinkDocumentAsync()
+    {
+        if (SelectedUnlinkedTransaction is null || SelectedUnlinkedSourceDocument is null)
+            return;
+
+        try
+        {
+            await _transactionRepository.LinkDocumentAsync(
+                SelectedUnlinkedTransaction.Id,
+                SelectedUnlinkedSourceDocument.Id);
+            await _transactionRepository.SaveChangesAsync();
+            SelectedUnlinkedTransaction = null;
+            SelectedUnlinkedSourceDocument = null;
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error linking document: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task UnlinkDocumentAsync(LinkedPair pair)
+    {
+        try
+        {
+            await _transactionRepository.UnlinkDocumentAsync(
+                pair.Transaction.Id,
+                pair.SourceDocument.Id);
+            await _transactionRepository.SaveChangesAsync();
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error unlinking document: {ex.Message}";
+        }
+    }
 
     [RelayCommand]
     private async Task RefreshAsync()

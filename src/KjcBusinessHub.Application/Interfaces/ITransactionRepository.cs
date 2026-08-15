@@ -11,5 +11,7 @@ public interface ITransactionRepository
     Task UpdateAsync(Transaction transaction, CancellationToken cancellationToken = default);
     Task<bool> ExactMatchExistsAsync(DateOnly accountingDate, DateOnly transactionDate, string description, decimal amount, decimal balance, CancellationToken cancellationToken = default);
     Task<Transaction?> FindExactMatchAsync(DateOnly accountingDate, DateOnly transactionDate, string description, decimal amount, decimal balance, CancellationToken cancellationToken = default);
+    Task LinkDocumentAsync(Guid transactionId, Guid sourceDocumentId, CancellationToken cancellationToken = default);
+    Task UnlinkDocumentAsync(Guid transactionId, Guid sourceDocumentId, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

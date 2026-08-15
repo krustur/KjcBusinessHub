@@ -48,8 +48,8 @@ This document tracks the development progress of KjcBusinessHub.
 
 ## Phase 4 — Linking
 
-- [ ] Link a source document to a transaction (drag-and-drop or button)
-- [ ] Unlink a source document from a transaction
+- [x] Link a source document to a transaction (drag-and-drop or button)
+- [x] Unlink a source document from a transaction
 
 ---
 
