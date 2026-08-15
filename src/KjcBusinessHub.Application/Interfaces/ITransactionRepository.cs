@@ -1,0 +1,15 @@
+using KjcBusinessHub.Application.Entities;
+using KjcBusinessHub.Application.Enums;
+
+namespace KjcBusinessHub.Application.Interfaces;
+
+public interface ITransactionRepository
+{
+    Task<IReadOnlyList<Transaction>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<Transaction?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task AddAsync(Transaction transaction, CancellationToken cancellationToken = default);
+    Task UpdateAsync(Transaction transaction, CancellationToken cancellationToken = default);
+    Task<bool> ExactMatchExistsAsync(DateOnly accountingDate, DateOnly transactionDate, string description, decimal amount, decimal balance, CancellationToken cancellationToken = default);
+    Task<Transaction?> FindExactMatchAsync(DateOnly accountingDate, DateOnly transactionDate, string description, decimal amount, decimal balance, CancellationToken cancellationToken = default);
+    Task SaveChangesAsync(CancellationToken cancellationToken = default);
+}

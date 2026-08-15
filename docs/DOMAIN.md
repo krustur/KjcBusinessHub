@@ -63,6 +63,7 @@ Active              // SourceDocument is active and have Amount
 Changed             // SourceDocument has changed
 RemovedFromDisk     // File has been removed from the SourceDocumentsDirectory
 Removed             // Confirmed Removed by the User
+Revived             // Previously removed SourceDocument matched by file hash and restored
 ```
 
 ---

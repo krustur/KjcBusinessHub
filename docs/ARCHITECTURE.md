@@ -31,7 +31,7 @@ KjcBusinessHub/
 ### Application Layer (`KjcBusinessHub.Application`)
 - Contains all **entities**, **value objects**, **enumerations**, and **domain interfaces**.
 - Exposes **services** and **queries** as simple method calls.
-- Contains **DTOs**, **validators** (FluentValidation), and **service interfaces**.
+- Contains **DTOs**, **validators** (pure C#), and **service interfaces**.
 - Has **zero dependencies** on Infrastructure.
 - All business rules live here (see `DOMAIN.md`).
 
@@ -65,6 +65,29 @@ public class TransactionService(ITransactionRepository repository)
 | Repository        | Infrastructure — data access abstraction    |
 | Clean Architecture| Layer dependency rules (app layer at center)|
 | Result pattern    | Return `Result<T>` instead of throwing exceptions |
+
+## Coding Style
+
+- **Always use curly braces** for conditional and loop bodies, even for single-line statements:
+  ```csharp
+  // ✅ Correct
+  if (condition) { return; }
+
+  // ❌ Wrong
+  if (condition) return;
+  ```
+
+---
+
+## Package References
+
+Keep external packages to a minimum. Every new dependency must be justified and approved.
+
+The following packages are **absolute no-go's** — do not add them under any circumstances:
+
+- **FluentValidation** — use pure C# validators instead
+- **AutoMapper** — use explicit manual mapping instead
+- **MediatR** — use direct service calls instead
 
 ---
 

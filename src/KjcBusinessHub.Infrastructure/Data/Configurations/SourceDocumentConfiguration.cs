@@ -1,0 +1,39 @@
+using KjcBusinessHub.Application.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace KjcBusinessHub.Infrastructure.Data.Configurations;
+
+public class SourceDocumentConfiguration : IEntityTypeConfiguration<SourceDocument>
+{
+    public void Configure(EntityTypeBuilder<SourceDocument> builder)
+    {
+        builder.HasKey(d => d.Id);
+
+        builder.Property(d => d.FileSubPath)
+            .HasMaxLength(1000)
+            .IsRequired();
+
+        builder.Property(d => d.FileHash)
+            .IsRequired();
+
+        builder.Property(d => d.Description)
+            .HasMaxLength(1000)
+            .IsRequired();
+
+        builder.Property(d => d.Amount)
+            .HasColumnType("decimal(18,2)");
+
+        builder.Property(d => d.Status)
+            .IsRequired();
+
+        builder.Property(d => d.FileCreatedDate)
+            .IsRequired();
+
+        builder.Property(d => d.FileModifiedDate)
+            .IsRequired();
+
+        builder.Property(d => d.CreatedAt)
+            .IsRequired();
+    }
+}
