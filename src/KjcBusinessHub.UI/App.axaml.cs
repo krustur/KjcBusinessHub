@@ -33,7 +33,9 @@ public partial class App : AvalApp
         // Rolling file: one file per day, keep 7 days
         var logPath = Path.Combine(appDataDir, "logs", "kjcbusinesshub-.log");
         Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Debug()
+            // .MinimumLevel.Debug()
+            .MinimumLevel.Information()
+            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", Serilog.Events.LogEventLevel.Warning)
             .WriteTo.File(
                 path: logPath,
                 rollingInterval: RollingInterval.Day,
