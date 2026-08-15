@@ -90,12 +90,76 @@ The user should see a view of all Unlinked Transactions top left and all Unlinke
 
 
 
+## Source Document Actions (03)
+
+### UC-0301 Open Document
+
+**Pre-Conditions:**
+
+- The application must have a configured SourceDocumentFolder
+- At least one SourceDocument must exist
+
+**Acceptance Criteria:**
+
+- The user should be able to trigger "Open Document" for any SourceDocument
+- The document should be opened using the default application associated with its file type
+
+### UC-0302 Show in Explorer
+
+**Pre-Conditions:**
+
+- The application must have a configured SourceDocumentFolder
+- At least one SourceDocument must exist
+
+**Acceptance Criteria:**
+
+- The user should be able to trigger "Show in Explorer" for any SourceDocument
+- The file explorer should open and highlight the selected document in its containing folder
+
+### UC-0303 Set Amount
+
+**Pre-Conditions:**
+
+- The application must have a configured SourceDocumentFolder
+- At least one SourceDocument must exist
+
+**Acceptance Criteria:**
+
+- The user should be able to trigger "Set Amount" for any SourceDocument
+- The user should be able to enter an amount value for the document
+- When an amount is set, the SourceDocument should change its state to `Active`
+
+### UC-0304 Link Source Document to Transaction
+
+**Pre-Conditions:**
+
+- The application must have a configured SourceDocumentFolder
+- At least one SourceDocument with state `Active` must exist
+- At least one Transaction must exist
+
+**Acceptance Criteria:**
+
+- The user should be able to link an `Active` SourceDocument to a Transaction
+- Only SourceDocuments with state `Active` should be allowed to be linked to a Transaction
+- SourceDocuments that are not `Active` should not be selectable or available for linking
+
+### UC-0305 Unlink Source Document from Transaction
+
+**Pre-Conditions:**
+
+- At least one SourceDocument must be linked to a Transaction
+
+**Acceptance Criteria:**
+
+- The user should be able to unlink a SourceDocument from a Transaction
+- After unlinking, the SourceDocument and Transaction should no longer be associated
+
 ## Future / Planned
 
 
 
 
-### View transactions 
+### View transactions 
 
 Transactions should show: dates, account no, texts, amounts
 
@@ -107,9 +171,6 @@ Options: 
 - See all, see month
 - For see month, include neighboring months as a toggle option
 - For see month, these navigations should be easily accessible: this month, next month and previous month
-
-### Link source document to transaction
-### Unlink source document from transaction
 
 ### Backlog / Unsorted
 
