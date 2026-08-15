@@ -7,4 +7,5 @@ public enum SourceDocumentStatus
     Changed = 2,
     RemovedFromDisk = 3,
     Removed = 4,
+    Revived = 5,
 }

@@ -15,7 +15,7 @@ public class TransactionRepository(AppDbContext db) : ITransactionRepository
     public async Task<Transaction?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => await db.Transactions
             .Include(t => t.SourceDocuments)
-            .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(t => t.Id == id, cancellationToken);
 
     public async Task<bool> ExactMatchExistsAsync(
         DateOnly accountingDate, DateOnly transactionDate, string description,
@@ -31,7 +31,7 @@ public class TransactionRepository(AppDbContext db) : ITransactionRepository
     public async Task<Transaction?> FindExactMatchAsync(
         DateOnly accountingDate, DateOnly transactionDate, string description,
         decimal amount, decimal balance, CancellationToken cancellationToken = default)
-        => await db.Transactions.FirstOrDefaultAsync(
+        => await db.Transactions.SingleOrDefaultAsync(
             t => t.AccountingDate == accountingDate &&
                  t.TransactionDate == transactionDate &&
                  t.Description == description &&

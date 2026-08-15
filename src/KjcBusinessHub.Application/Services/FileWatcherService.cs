@@ -36,7 +36,7 @@ public sealed class FileWatcherService : IDisposable
     {
         if (!_settings.IsConfigured || _settings.SourceDocumentFolder is null)
         {
-            _logger.LogWarning("FileWatcherService cannot start: SourceDocumentFolder is not configured.");
+            _logger.LogError("FileWatcherService cannot start: SourceDocumentFolder is not configured.");
             return;
         }
 
@@ -87,7 +87,10 @@ public sealed class FileWatcherService : IDisposable
         _ = Task.Run(async () =>
         {
             if (!await _transactionLock.WaitAsync(TimeSpan.FromSeconds(5)))
+            {
+                _logger.LogError("Timed out waiting for transaction import lock; skipping re-import triggered by '{FullPath}'.", e.FullPath);
                 return;
+            }
             try
             {
                 _logger.LogInformation("Transactions file changed, re-importing.");
@@ -108,15 +111,20 @@ public sealed class FileWatcherService : IDisposable
     {
         // Ignore changes to the Transactions file itself
         if (string.Equals(Path.GetFileName(e.FullPath), TransactionImportService.TransactionsFileName, StringComparison.OrdinalIgnoreCase))
+        {
             return;
+        }
 
         _ = Task.Run(async () =>
         {
             if (!await _sourceDocumentLock.WaitAsync(TimeSpan.FromSeconds(5)))
+            {
+                _logger.LogError("Timed out waiting for source document import lock; skipping re-import triggered by '{FullPath}'.", e.FullPath);
                 return;
+            }
             try
             {
-                _logger.LogInformation("SourceDocuments folder changed, re-importing.");
+                _logger.LogDebug("SourceDocuments folder changed, re-importing.");
                 await _sourceDocumentImportService.ImportAsync(_settings.SourceDocumentFolder!);
             }
             catch (Exception ex)
@@ -132,7 +140,7 @@ public sealed class FileWatcherService : IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed) { return; }
         _disposed = true;
         Stop();
         _transactionLock.Dispose();

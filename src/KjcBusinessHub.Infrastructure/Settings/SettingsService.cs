@@ -1,5 +1,6 @@
 using System.Text.Json;
 using KjcBusinessHub.Application.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace KjcBusinessHub.Infrastructure.Settings;
 
@@ -10,10 +11,12 @@ public class SettingsService : ISettingsService
         "KjcBusinessHub",
         "settings.json");
 
+    private readonly ILogger<SettingsService> _logger;
     private AppSettings _settings;
 
-    public SettingsService()
+    public SettingsService(ILogger<SettingsService> logger)
     {
+        _logger = logger;
         _settings = Load();
     }
 
@@ -38,19 +41,22 @@ public class SettingsService : ISettingsService
         File.WriteAllText(SettingsFilePath, json);
     }
 
-    private static AppSettings Load()
+    private AppSettings Load()
     {
         if (!File.Exists(SettingsFilePath))
+        {
             return new AppSettings();
+        }
 
         try
         {
             var json = File.ReadAllText(SettingsFilePath);
             return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
         }
-        catch
+        catch (Exception ex)
         {
-            return new AppSettings();
+            _logger.LogError(ex, "Failed to read settings from '{SettingsFilePath}'. Fix or delete the file and restart the application.", SettingsFilePath);
+            throw;
         }
     }
 

@@ -66,6 +66,17 @@ public class TransactionService(ITransactionRepository repository)
 | Clean Architecture| Layer dependency rules (app layer at center)|
 | Result pattern    | Return `Result<T>` instead of throwing exceptions |
 
+## Coding Style
+
+- **Always use curly braces** for conditional and loop bodies, even for single-line statements:
+  ```csharp
+  // ✅ Correct
+  if (condition) { return; }
+
+  // ❌ Wrong
+  if (condition) return;
+  ```
+
 ---
 
 ## Package References

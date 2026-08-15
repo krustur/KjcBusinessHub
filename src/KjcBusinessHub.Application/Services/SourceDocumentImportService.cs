@@ -21,7 +21,7 @@ public partial class SourceDocumentImportService(
     {
         if (!Directory.Exists(sourceDocumentFolder))
         {
-            logger.LogWarning("SourceDocumentFolder not found: {Folder}.", sourceDocumentFolder);
+            logger.LogError("SourceDocumentFolder not found: {Folder}.", sourceDocumentFolder);
             return;
         }
 
@@ -65,7 +65,9 @@ public partial class SourceDocumentImportService(
         foreach (var doc in allDocs)
         {
             if (doc.Status is SourceDocumentStatus.RemovedFromDisk or SourceDocumentStatus.Removed)
+            {
                 continue;
+            }
 
             if (!scannedPaths.Contains(doc.FileSubPath))
             {
@@ -128,18 +130,21 @@ public partial class SourceDocumentImportService(
         }
         else
         {
-            // Check if it can be 'revived' by hash
+            // Check if it can be 'revived' by hash — use the first removed match
             var byHash = await repository.FindByFileHashAsync(hash, cancellationToken);
-            if (byHash is { Status: SourceDocumentStatus.RemovedFromDisk or SourceDocumentStatus.Removed })
+            var toRevive = byHash.FirstOrDefault(d =>
+                d.Status is SourceDocumentStatus.RemovedFromDisk or SourceDocumentStatus.Removed);
+
+            if (toRevive is not null)
             {
-                byHash.FileSubPath = fileSubPath;
-                byHash.FileNameDate = fileNameDate;
-                byHash.Description = description;
-                byHash.FileCreatedDate = fileCreatedDate;
-                byHash.FileModifiedDate = fileModifiedDate;
-                byHash.Status = SourceDocumentStatus.New;
-                byHash.UpdatedAt = DateTimeOffset.UtcNow;
-                await repository.UpdateAsync(byHash, cancellationToken);
+                toRevive.FileSubPath = fileSubPath;
+                toRevive.FileNameDate = fileNameDate;
+                toRevive.Description = description;
+                toRevive.FileCreatedDate = fileCreatedDate;
+                toRevive.FileModifiedDate = fileModifiedDate;
+                toRevive.Status = SourceDocumentStatus.Revived;
+                toRevive.UpdatedAt = DateTimeOffset.UtcNow;
+                await repository.UpdateAsync(toRevive, cancellationToken);
                 logger.LogInformation("SourceDocument revived by hash: {FileSubPath}.", fileSubPath);
                 return;
             }

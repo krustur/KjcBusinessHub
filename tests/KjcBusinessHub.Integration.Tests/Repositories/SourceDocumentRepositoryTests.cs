@@ -89,7 +89,8 @@ public class SourceDocumentRepositoryTests : IDisposable
         await _repository.SaveChangesAsync();
 
         var found = await _repository.FindByFileHashAsync("deadbeef");
-        Assert.NotNull(found);
+        Assert.Single(found);
+        Assert.Equal(doc.Id, found[0].Id);
     }
 
     public void Dispose() => _db.Dispose();

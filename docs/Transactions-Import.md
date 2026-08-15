@@ -44,12 +44,13 @@ This file is generally named the Transcations file in documentation.
 
 - Parse the rest of the line until the end of the line or the beginning of a comment. Parse in the following order:
 
-  1. Skip: A line can begin with a pair of square bracets with either a space, a dash or a X in it. Examples: "[ ]", "[X]" or "[-]". Skip this part. Skip following whitespaces.
-  1. AccountingDate: Parse date from "yyyy-mm-dd". Example: "2026-07-31". Skip following whitespaces.
-  1. TransactionDate: Parse date from "yyyy-mm-dd". Example: "2026-06-08". Skip following whitespaces.
-  1. Description: Parse as string up til, but not including, a tab-character. Skip following whitespaces. Trim trailing whitespaces from the parsed string.
-  1. Amount: Parse decimal with optional negative sign, space as thousands separator, comma as decimal separator, 2 decimals. Examples: "-499,00", "99 897,12"
-  1. Balance: Parse decimal with optional negative sign, space as thousands separator, comma as decimal separator, 2 decimals. Examples: "-226,00", "45 050,18"
+  1. Skip: A line can begin with a pair of square brackets with zero or a single character of any kind inside. Examples: "[]", "[ ]", "[X]", "[-]", "[1]". Skip this part. Skip following whitespaces.
+  1. All remaining fields are separated by one or more tab characters (`\t`). The expected field order is:
+     - AccountingDate: `yyyy-mm-dd`. Example: "2026-07-31".
+     - TransactionDate: `yyyy-mm-dd`. Example: "2026-06-08".
+     - Description: string. Trim trailing whitespaces.
+     - Amount: decimal with optional negative sign, space as thousands separator, comma as decimal separator, 2 decimals. Examples: "-499,00", "99 897,12".
+     - Balance: decimal with optional negative sign, space as thousands separator, comma as decimal separator, 2 decimals. Examples: "-226,00", "45 050,18".
 
 ## Matching
 

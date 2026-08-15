@@ -12,7 +12,11 @@ public partial class TransactionImportService(
 {
     public const string TransactionsFileName = "Consulting-Transactions.txt";
 
-    [GeneratedRegex(@"^\s*\[[\ \-X]\]\s*", RegexOptions.Compiled)]
+    /// <summary>
+    /// Matches an optional checkbox prefix containing zero or one character of any kind.
+    /// Examples: "[ ]", "[X]", "[-]", "[1]", "[]"
+    /// </summary>
+    [GeneratedRegex(@"^\s*\[.?\]\s*", RegexOptions.Compiled)]
     private static partial Regex CheckboxPrefix();
 
     [GeneratedRegex(@"#.*$", RegexOptions.Compiled)]
@@ -61,12 +65,12 @@ public partial class TransactionImportService(
                 continue;
             }
 
-            // Skip checkbox prefix
+            // Strip optional checkbox prefix
             line = CheckboxPrefix().Replace(line, "");
 
             // Try to parse
             var parsed = TryParseLine(line, lineNumber);
-            if (parsed is null) continue;
+            if (parsed is null) { continue; }
 
             parsedTransactions.Add(parsed);
         }
@@ -143,80 +147,42 @@ public partial class TransactionImportService(
 
     private ParsedLine? TryParseLine(string line, int lineNumber)
     {
+        // All fields are tab-separated: AccountingDate\tTransactionDate\tDescription\tAmount\tBalance
+        var parts = line.Split('\t');
+        if (parts.Length < 5)
+        {
+            logger.LogError("Line {LineNumber}: expected 5 tab-separated fields, got {Count} in '{Line}'.", lineNumber, parts.Length, line);
+            return null;
+        }
+
+        if (!DateOnly.TryParseExact(parts[0].Trim(), "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out var accountingDate))
+        {
+            logger.LogError("Line {LineNumber}: cannot parse AccountingDate '{Value}'.", lineNumber, parts[0].Trim());
+            return null;
+        }
+
+        if (!DateOnly.TryParseExact(parts[1].Trim(), "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out var transactionDate))
+        {
+            logger.LogError("Line {LineNumber}: cannot parse TransactionDate '{Value}'.", lineNumber, parts[1].Trim());
+            return null;
+        }
+
+        var description = parts[2].Trim();
+        if (string.IsNullOrWhiteSpace(description))
+        {
+            logger.LogError("Line {LineNumber}: Description is empty.", lineNumber);
+            return null;
+        }
+
         try
         {
-            var remaining = line.AsSpan();
-
-            // AccountingDate: yyyy-mm-dd
-            if (remaining.Length < 10 || remaining[4] != '-' || remaining[7] != '-')
-            {
-                logger.LogError("Line {LineNumber}: cannot parse AccountingDate from '{Line}'.", lineNumber, line);
-                return null;
-            }
-            var accountingDate = DateOnly.ParseExact(remaining[..10].ToString(), "yyyy-MM-dd");
-            remaining = remaining[10..].TrimStart();
-
-            // TransactionDate: yyyy-mm-dd
-            if (remaining.Length < 10 || remaining[4] != '-' || remaining[7] != '-')
-            {
-                logger.LogError("Line {LineNumber}: cannot parse TransactionDate from '{Line}'.", lineNumber, line);
-                return null;
-            }
-            var transactionDate = DateOnly.ParseExact(remaining[..10].ToString(), "yyyy-MM-dd");
-            remaining = remaining[10..].TrimStart();
-
-            // Description: up to (but not including) a tab character
-            var tabIndex = remaining.IndexOf('\t');
-            if (tabIndex < 0)
-            {
-                logger.LogError("Line {LineNumber}: missing tab separator after Description in '{Line}'.", lineNumber, line);
-                return null;
-            }
-            var description = remaining[..tabIndex].ToString().TrimEnd();
-            remaining = remaining[(tabIndex + 1)..].TrimStart();
-
-            // Amount and Balance: two space-separated Swedish decimals
-            // Amount ends at the space before Balance; Balance goes to the end
-            // Since amount may contain spaces (thousands sep), we need to split from the right:
-            // The last two tokens separated by a single space (no second space after comma) are Balance.
-            // Strategy: split on tab, but here we already trimmed tab. Use rightmost token by tab if present,
-            // else split: the last "word group" is balance. Amount may have a space inside (e.g. "99 897,12").
-            // Tokens separated by whitespace from the right: last token = balance, second-to-last may be part of amount.
-            var parts = remaining.ToString().Split('\t', 2);
-            string amountStr;
-            string balanceStr;
-            if (parts.Length == 2)
-            {
-                amountStr = parts[0].Trim();
-                balanceStr = parts[1].Trim();
-            }
-            else
-            {
-                // No second tab: split on whitespace carefully.
-                // Pattern: amount ends at last comma+2digits, balance is after the next whitespace block.
-                // Simpler: find the last occurrence of a comma, 2 digits, then a space.
-                var str = remaining.ToString().Trim();
-                // Find boundary: look for pattern "d,dd " or "dd,dd " – the Amount ends at the comma+2 digits
-                // then whitespace separates Balance.
-                var amountBalanceRegex = new Regex(@"^([\d\- ,]+,\d{2})\s+([\-\d ,]+,\d{2})$");
-                var m = amountBalanceRegex.Match(str);
-                if (!m.Success)
-                {
-                    logger.LogError("Line {LineNumber}: cannot parse Amount/Balance from '{Remaining}'.", lineNumber, str);
-                    return null;
-                }
-                amountStr = m.Groups[1].Value;
-                balanceStr = m.Groups[2].Value;
-            }
-
-            var amount = ParseSwedishDecimal(amountStr);
-            var balance = ParseSwedishDecimal(balanceStr);
-
+            var amount = ParseSwedishDecimal(parts[3]);
+            var balance = ParseSwedishDecimal(parts[4]);
             return new ParsedLine(lineNumber, accountingDate, transactionDate, description, amount, balance);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Line {LineNumber}: failed to parse '{Line}'.", lineNumber, line);
+            logger.LogError(ex, "Line {LineNumber}: failed to parse Amount/Balance from '{Line}'.", lineNumber, line);
             return null;
         }
     }
