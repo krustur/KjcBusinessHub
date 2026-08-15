@@ -48,6 +48,33 @@ public class TransactionRepository(AppDbContext db) : ITransactionRepository
         return Task.CompletedTask;
     }
 
+    public async Task LinkDocumentAsync(Guid transactionId, Guid sourceDocumentId, CancellationToken cancellationToken = default)
+    {
+        var transaction = await db.Transactions
+            .Include(t => t.SourceDocuments)
+            .SingleOrDefaultAsync(t => t.Id == transactionId, cancellationToken)
+            ?? throw new InvalidOperationException($"Transaction {transactionId} not found.");
+
+        var doc = await db.SourceDocuments
+            .SingleOrDefaultAsync(d => d.Id == sourceDocumentId, cancellationToken)
+            ?? throw new InvalidOperationException($"SourceDocument {sourceDocumentId} not found.");
+
+        if (!transaction.SourceDocuments.Any(d => d.Id == sourceDocumentId))
+            transaction.SourceDocuments.Add(doc);
+    }
+
+    public async Task UnlinkDocumentAsync(Guid transactionId, Guid sourceDocumentId, CancellationToken cancellationToken = default)
+    {
+        var transaction = await db.Transactions
+            .Include(t => t.SourceDocuments)
+            .SingleOrDefaultAsync(t => t.Id == transactionId, cancellationToken)
+            ?? throw new InvalidOperationException($"Transaction {transactionId} not found.");
+
+        var doc = transaction.SourceDocuments.FirstOrDefault(d => d.Id == sourceDocumentId)
+            ?? throw new InvalidOperationException($"SourceDocument {sourceDocumentId} is not linked to Transaction {transactionId}.");
+        transaction.SourceDocuments.Remove(doc);
+    }
+
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
         => await db.SaveChangesAsync(cancellationToken);
 }
