@@ -37,12 +37,12 @@ This document tracks the development progress of KjcBusinessHub.
 
 - [x] UC-0201 Show unlinked transactions (top-left) and unlinked source documents (top-right)
 - [x] UC-0201 Show linked transaction–document pairs below, side-by-side
-- [ ] Display transaction details: accounting date, transaction date, account no, description, amount
-- [ ] Display source document details: file name date, description, amount
-- [ ] Default sort order: transaction date → document date → mapped-document dates
-- [ ] Filter: "See all" vs "See month" toggle
-  - [ ] "See month": include neighbouring months toggle
-  - [ ] "See month": quick-navigation buttons (this month, previous month, next month)
+- [x] Display transaction details: accounting date, transaction date, account no, description, amount
+- [x] Display source document details: file name date, description, amount
+- [x] Default sort order: transaction date → document date → mapped-document dates
+- [x] Filter: "See all" vs "See month" toggle
+  - [x] "See month": include neighbouring months toggle
+  - [x] "See month": quick-navigation buttons (this month, previous month, next month)
 
 ---
 

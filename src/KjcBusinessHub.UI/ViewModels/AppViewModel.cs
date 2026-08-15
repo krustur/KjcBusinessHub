@@ -31,6 +31,30 @@ public partial class AppViewModel : ViewModelBase
     [ObservableProperty]
     public partial string? StatusMessage { get; set; }
 
+    // --- Filter state ---
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSeeMonthMode))]
+    [NotifyPropertyChangedFor(nameof(IsSeeAllMode))]
+    public partial FilterMode FilterMode { get; set; } = FilterMode.SeeAll;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedMonthLabel))]
+    public partial int SelectedYear { get; set; } = DateOnly.FromDateTime(DateTime.Today).Year;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedMonthLabel))]
+    public partial int SelectedMonth { get; set; } = DateOnly.FromDateTime(DateTime.Today).Month;
+
+    [ObservableProperty]
+    public partial bool IncludeNeighbouringMonths { get; set; } = false;
+
+    public bool IsSeeAllMode => FilterMode == FilterMode.SeeAll;
+    public bool IsSeeMonthMode => FilterMode == FilterMode.SeeMonth;
+
+    public string SelectedMonthLabel =>
+        new DateOnly(SelectedYear, SelectedMonth, 1).ToString("MMMM yyyy");
+
     public AppViewModel(
         ITransactionRepository transactionRepository,
         ISourceDocumentRepository sourceDocumentRepository,
@@ -70,6 +94,55 @@ public partial class AppViewModel : ViewModelBase
         }
     }
 
+    // --- Filter commands ---
+
+    [RelayCommand]
+    private async Task SetSeeAllAsync()
+    {
+        FilterMode = FilterMode.SeeAll;
+        await RefreshAsync();
+    }
+
+    [RelayCommand]
+    private async Task SetSeeMonthAsync()
+    {
+        FilterMode = FilterMode.SeeMonth;
+        await RefreshAsync();
+    }
+
+    [RelayCommand]
+    private async Task GoToThisMonthAsync()
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        SelectedYear = today.Year;
+        SelectedMonth = today.Month;
+        FilterMode = FilterMode.SeeMonth;
+        await RefreshAsync();
+    }
+
+    [RelayCommand]
+    private async Task GoToPreviousMonthAsync()
+    {
+        var current = new DateOnly(SelectedYear, SelectedMonth, 1).AddMonths(-1);
+        SelectedYear = current.Year;
+        SelectedMonth = current.Month;
+        FilterMode = FilterMode.SeeMonth;
+        await RefreshAsync();
+    }
+
+    [RelayCommand]
+    private async Task GoToNextMonthAsync()
+    {
+        var current = new DateOnly(SelectedYear, SelectedMonth, 1).AddMonths(1);
+        SelectedYear = current.Year;
+        SelectedMonth = current.Month;
+        FilterMode = FilterMode.SeeMonth;
+        await RefreshAsync();
+    }
+
+    partial void OnIncludeNeighbouringMonthsChanged(bool value) =>
+        _ = RefreshAsync();
+
     [RelayCommand]
     private async Task RefreshAsync()
     {
@@ -82,30 +155,87 @@ public partial class AppViewModel : ViewModelBase
 
         var linkedDocIds = new HashSet<Guid>();
 
-        foreach (var tx in allTransactions.Where(t => t.Status == TransactionStatus.Active))
+        // Linked pairs are intentionally not subject to the month filter: they represent
+        // confirmed matches and should remain visible for context even when browsing a
+        // specific month.
+        var activeTransactions = allTransactions
+            .Where(t => t.Status == TransactionStatus.Active)
+            .OrderBy(t => t.TransactionDate)
+            .ToList();
+
+        var linkedTransactions = activeTransactions.Where(t => t.SourceDocuments.Count > 0).ToList();
+        var unlinkedTransactions = activeTransactions.Where(t => t.SourceDocuments.Count == 0).ToList();
+
+        // Linked pairs sorted by transaction date, then document date
+        foreach (var tx in linkedTransactions)
         {
-            if (tx.SourceDocuments.Count > 0)
+            foreach (var doc in tx.SourceDocuments.OrderBy(d => d.FileNameDate))
             {
-                foreach (var doc in tx.SourceDocuments)
-                {
-                    LinkedPairs.Add(new LinkedPair(tx, doc));
-                    linkedDocIds.Add(doc.Id);
-                }
-            }
-            else
-            {
-                UnlinkedTransactions.Add(tx);
+                LinkedPairs.Add(new LinkedPair(tx, doc));
+                linkedDocIds.Add(doc.Id);
             }
         }
 
-        foreach (var doc in allDocs.Where(d =>
-            d.Status != SourceDocumentStatus.Removed &&
-            d.Status != SourceDocumentStatus.RemovedFromDisk &&
-            !linkedDocIds.Contains(d.Id)))
+        // Unlinked transactions — apply optional month filter
+        var filteredUnlinked = ApplyTransactionMonthFilter(unlinkedTransactions);
+        foreach (var tx in filteredUnlinked)
+        {
+            UnlinkedTransactions.Add(tx);
+        }
+
+        // Unlinked source documents — apply optional month filter
+        var visibleDocs = allDocs
+            .Where(d =>
+                d.Status != SourceDocumentStatus.Removed &&
+                d.Status != SourceDocumentStatus.RemovedFromDisk &&
+                !linkedDocIds.Contains(d.Id))
+            .OrderBy(d => d.FileNameDate)
+            .ToList();
+
+        var filteredDocs = ApplyDocumentMonthFilter(visibleDocs);
+        foreach (var doc in filteredDocs)
         {
             UnlinkedSourceDocuments.Add(doc);
         }
     }
+
+    private IEnumerable<Transaction> ApplyTransactionMonthFilter(IEnumerable<Transaction> transactions)
+    {
+        if (FilterMode == FilterMode.SeeAll)
+            return transactions;
+
+        return transactions.Where(t => IsInMonthRange(t.TransactionDate));
+    }
+
+    private IEnumerable<SourceDocument> ApplyDocumentMonthFilter(IEnumerable<SourceDocument> docs)
+    {
+        if (FilterMode == FilterMode.SeeAll)
+            return docs;
+
+        return docs.Where(d => IsInMonthRange(d.FileNameDate));
+    }
+
+    private bool IsInMonthRange(DateOnly date)
+    {
+        var selected = new DateOnly(SelectedYear, SelectedMonth, 1);
+
+        if (IncludeNeighbouringMonths)
+        {
+            var prev = selected.AddMonths(-1);
+            var next = selected.AddMonths(1);
+            return (date.Year == prev.Year && date.Month == prev.Month) ||
+                   (date.Year == selected.Year && date.Month == selected.Month) ||
+                   (date.Year == next.Year && date.Month == next.Month);
+        }
+
+        return date.Year == SelectedYear && date.Month == SelectedMonth;
+    }
+}
+
+public enum FilterMode
+{
+    SeeAll,
+    SeeMonth,
 }
 
 public sealed record LinkedPair(Transaction Transaction, SourceDocument SourceDocument);

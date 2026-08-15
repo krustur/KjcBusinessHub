@@ -7,10 +7,10 @@
              x:Class="KjcBusinessHub.UI.Views.AppView"
              x:DataType="vm:AppViewModel">
 
-    <Grid RowDefinitions="Auto,*">
+    <Grid RowDefinitions="Auto,Auto,*">
 
-        <!-- Toolbar -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="8">
+        <!-- Toolbar row -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="8,8,8,4">
             <Button Content="Refresh" Command="{Binding RefreshCommand}" />
             <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" Foreground="Gray" />
         </StackPanel>
@@ -20,8 +20,31 @@
                      IsVisible="{Binding IsLoading}"
                      VerticalAlignment="Bottom" />
 
+        <!-- Filter row -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="8,0,8,4">
+            <!-- See All / See Month toggle -->
+            <Button Content="See all" Command="{Binding SetSeeAllCommand}" />
+            <Button Content="See month" Command="{Binding SetSeeMonthCommand}" />
+
+            <!-- Month navigation (visible only in See Month mode) -->
+            <StackPanel Orientation="Horizontal" Spacing="4"
+                        IsVisible="{Binding IsSeeMonthMode}">
+                <Button Content="◀" Command="{Binding GoToPreviousMonthCommand}" />
+                <Button Content="This month" Command="{Binding GoToThisMonthCommand}" />
+                <TextBlock Text="{Binding SelectedMonthLabel}"
+                           VerticalAlignment="Center"
+                           FontWeight="SemiBold"
+                           MinWidth="120"
+                           TextAlignment="Center" />
+                <Button Content="▶" Command="{Binding GoToNextMonthCommand}" />
+                <CheckBox Content="Include neighbouring months"
+                          IsChecked="{Binding IncludeNeighbouringMonths}"
+                          VerticalAlignment="Center" />
+            </StackPanel>
+        </StackPanel>
+
         <!-- Main content: Unlinked top, Linked bottom -->
-        <Grid Grid.Row="1" RowDefinitions="*,*">
+        <Grid Grid.Row="2" RowDefinitions="*,*">
 
             <!-- Top row: Unlinked transactions | Unlinked source documents -->
             <Grid Grid.Row="0" ColumnDefinitions="*,*" Margin="8,8,8,4">
@@ -33,10 +56,14 @@
                         <ListBox Grid.Row="1" ItemsSource="{Binding UnlinkedTransactions}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid ColumnDefinitions="Auto,*,Auto">
-                                        <TextBlock Grid.Column="0" Text="{Binding TransactionDate}" Margin="0,0,8,0" />
-                                        <TextBlock Grid.Column="1" Text="{Binding Description}" TextTrimming="CharacterEllipsis" />
-                                        <TextBlock Grid.Column="2" Text="{Binding Amount, StringFormat='{}{0:N2}'}"
+                                    <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                                        <TextBlock Grid.Column="0" Text="{Binding AccountingDate}"
+                                                   Foreground="Gray" Margin="0,0,4,0" />
+                                        <TextBlock Grid.Column="1" Text="{Binding TransactionDate}"
+                                                   Margin="0,0,8,0" />
+                                        <TextBlock Grid.Column="2" Text="{Binding Description}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="3" Text="{Binding Amount, StringFormat='{}{0:N2}'}"
                                                    HorizontalAlignment="Right" Margin="8,0,0,0" />
                                     </Grid>
                                 </DataTemplate>
@@ -77,6 +104,7 @@
                                 <Grid ColumnDefinitions="*,Auto,*">
                                     <!-- Transaction side -->
                                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="{Binding Transaction.AccountingDate}" Foreground="Gray" />
                                         <TextBlock Text="{Binding Transaction.TransactionDate}" />
                                         <TextBlock Text="{Binding Transaction.Description}" TextTrimming="CharacterEllipsis" />
                                         <TextBlock Text="{Binding Transaction.Amount, StringFormat='{}{0:N2}'}" />
