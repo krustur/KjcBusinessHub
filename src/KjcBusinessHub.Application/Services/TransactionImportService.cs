@@ -147,7 +147,11 @@ public partial class TransactionImportService(
 
     private ParsedLine? TryParseLine(string line, int lineNumber)
     {
-        // All fields are tab-separated: AccountingDate\tTransactionDate\tDescription\tAmount\tBalance
+        // All fields are separated by one or more tabs — collapse runs of tabs first
+        while (line.Contains("\t\t"))
+        {
+            line = line.Replace("\t\t", "\t");
+        }
         var parts = line.Split('\t');
         if (parts.Length < 5)
         {
