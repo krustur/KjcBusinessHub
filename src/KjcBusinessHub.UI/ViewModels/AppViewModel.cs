@@ -215,13 +215,20 @@ public partial class AppViewModel : ViewModelBase
 
     // --- Source document actions (UC-0301 / UC-0302 / UC-0303) ---
 
+    private string GetFullPath(SourceDocument doc)
+    {
+        var normalizedSubPath = doc.FileSubPath
+            .Replace('/', Path.DirectorySeparatorChar)
+            .Replace('\\', Path.DirectorySeparatorChar);
+        return Path.Combine(_settings.SourceDocumentFolder!, normalizedSubPath);
+    }
+
     [RelayCommand]
     private void OpenDocument(SourceDocument doc)
     {
         try
         {
-            var fullPath = Path.Combine(_settings.SourceDocumentFolder!, doc.FileSubPath);
-            _fileSystemService.OpenFile(fullPath);
+            _fileSystemService.OpenFile(GetFullPath(doc));
         }
         catch (Exception ex)
         {
@@ -234,8 +241,7 @@ public partial class AppViewModel : ViewModelBase
     {
         try
         {
-            var fullPath = Path.Combine(_settings.SourceDocumentFolder!, doc.FileSubPath);
-            _fileSystemService.ShowInExplorer(fullPath);
+            _fileSystemService.ShowInExplorer(GetFullPath(doc));
         }
         catch (Exception ex)
         {

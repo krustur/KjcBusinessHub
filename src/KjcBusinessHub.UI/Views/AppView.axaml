@@ -171,6 +171,12 @@
                                         <TextBlock Text="{Binding SourceDocument.FileNameDate}" />
                                         <TextBlock Text="{Binding SourceDocument.Description}" TextTrimming="CharacterEllipsis" />
                                         <TextBlock Text="{Binding SourceDocument.Amount, StringFormat='{}{0:N2}'}" />
+                                        <Button Content="Open"
+                                                Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).OpenDocumentCommand}"
+                                                CommandParameter="{Binding SourceDocument}" />
+                                        <Button Content="Show in Explorer"
+                                                Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).ShowInExplorerCommand}"
+                                                CommandParameter="{Binding SourceDocument}" />
                                     </StackPanel>
                                     <!-- Unlink button -->
                                     <Button Grid.Column="3" Content="Unlink"
