@@ -84,7 +84,7 @@ This document describes use cases for the KjcBusinessHub application.
 
 ### UC-0201 View transactions 
 
-The user should see a view of all Unlinked Transactions top left and all Unlinked source documents top right. When a transaction has been mapped to a source document these should be shown below side by side and with a visible link.
+The user should see a view of all available Transactions top left and all available source documents top right. Linked items should remain visible in those lists, display a visible link indicator, and show the linked count when linked more than once. In both lists, unlinked items should appear before linked items. Linked pairs should be shown below, grouped by Transaction so that each Transaction is listed once with its linked source documents beneath it.
 
 
 
@@ -144,6 +144,8 @@ The user should see a view of all Unlinked Transactions top left and all Unlinke
 
 - The user should be able to link an `Active` SourceDocument to one or more Transactions
 - Linking a SourceDocument to an additional Transaction should keep existing links intact
+- Linked Transactions and linked SourceDocuments should remain visible in their available lists
+- Linked items in the available lists should display a visible link indicator, and when linked more than once the number of links should also be shown
 - Only SourceDocuments with state `Active` should be allowed to be linked to a Transaction
 - SourceDocuments that are not `Active` should not be selectable or available for linking
 

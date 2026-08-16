@@ -13,5 +13,11 @@ public class Transaction
     public TransactionStatus Status { get; set; } = TransactionStatus.Active;
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
-    public List<SourceDocument> SourceDocuments { get; set; } = [];
+    public ICollection<SourceDocument> SourceDocuments { get; private set; } = [];
+
+    public int LinkedSourceDocumentCount => SourceDocuments.Count;
+
+    public bool IsLinked => LinkedSourceDocumentCount > 0;
+
+    public bool HasMultipleLinkedSourceDocuments => LinkedSourceDocumentCount > 1;
 }

@@ -10,6 +10,7 @@ using KjcBusinessHub.Application.Entities;
 using KjcBusinessHub.Application.Enums;
 using KjcBusinessHub.Application.Interfaces;
 using KjcBusinessHub.Application.Services;
+using KjcBusinessHub.Application.Validators;
 
 namespace KjcBusinessHub.UI.ViewModels;
 
@@ -22,10 +23,13 @@ public partial class AppViewModel : ViewModelBase
     private readonly FileWatcherService _fileWatcherService;
     private readonly ISettingsService _settings;
     private readonly IFileSystemService _fileSystemService;
+    private readonly SourceDocumentValidator _sourceDocumentValidator;
 
-    public ObservableCollection<Transaction> UnlinkedTransactions { get; } = [];
-    public ObservableCollection<SourceDocument> UnlinkedSourceDocuments { get; } = [];
-    public ObservableCollection<LinkedPair> LinkedPairs { get; } = [];
+    public ObservableCollection<Transaction> AvailableTransactions { get; } = [];
+    public ObservableCollection<SourceDocument> AvailableSourceDocuments { get; } = [];
+    public ObservableCollection<LinkedTransactionGroup> LinkedTransactionGroups { get; } = [];
+    public IReadOnlyList<SourceDocumentCurrency> SupportedCurrencies { get; } =
+        Enum.GetValues<SourceDocumentCurrency>();
 
     [ObservableProperty]
     public partial bool IsLoading { get; set; }
@@ -35,11 +39,11 @@ public partial class AppViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LinkDocumentCommand))]
-    public partial Transaction? SelectedUnlinkedTransaction { get; set; }
+    public partial Transaction? SelectedAvailableTransaction { get; set; }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LinkDocumentCommand))]
-    public partial SourceDocument? SelectedUnlinkedSourceDocument { get; set; }
+    public partial SourceDocument? SelectedAvailableSourceDocument { get; set; }
 
     // --- Set Amount inline editing ---
 
@@ -50,7 +54,15 @@ public partial class AppViewModel : ViewModelBase
     [ObservableProperty]
     public partial string AmountInputText { get; set; } = string.Empty;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanSelectCurrency))]
+    public partial string CcyAmountInputText { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial SourceDocumentCurrency? SelectedCurrency { get; set; }
+
     public bool IsSettingAmount => DocumentBeingAmounted is not null;
+    public bool CanSelectCurrency => !string.IsNullOrWhiteSpace(CcyAmountInputText);
 
     // --- Filter state ---
 
@@ -83,7 +95,8 @@ public partial class AppViewModel : ViewModelBase
         SourceDocumentImportService sourceDocumentImportService,
         FileWatcherService fileWatcherService,
         ISettingsService settings,
-        IFileSystemService fileSystemService)
+        IFileSystemService fileSystemService,
+        SourceDocumentValidator sourceDocumentValidator)
     {
         _transactionRepository = transactionRepository;
         _sourceDocumentRepository = sourceDocumentRepository;
@@ -92,6 +105,7 @@ public partial class AppViewModel : ViewModelBase
         _fileWatcherService = fileWatcherService;
         _settings = settings;
         _fileSystemService = fileSystemService;
+        _sourceDocumentValidator = sourceDocumentValidator;
     }
 
     public async Task InitialiseAsync()
@@ -169,24 +183,24 @@ public partial class AppViewModel : ViewModelBase
     // --- Linking commands ---
 
     private bool CanLinkDocument() =>
-        SelectedUnlinkedTransaction is not null &&
-        SelectedUnlinkedSourceDocument is not null &&
-        SelectedUnlinkedSourceDocument.Status == SourceDocumentStatus.Active;
+        SelectedAvailableTransaction is not null &&
+        SelectedAvailableSourceDocument is not null &&
+        SelectedAvailableSourceDocument.Status == SourceDocumentStatus.Active;
 
     [RelayCommand(CanExecute = nameof(CanLinkDocument))]
     private async Task LinkDocumentAsync()
     {
-        if (SelectedUnlinkedTransaction is null || SelectedUnlinkedSourceDocument is null)
+        if (SelectedAvailableTransaction is null || SelectedAvailableSourceDocument is null)
             return;
 
         try
         {
             await _transactionRepository.LinkDocumentAsync(
-                SelectedUnlinkedTransaction.Id,
-                SelectedUnlinkedSourceDocument.Id);
+                SelectedAvailableTransaction.Id,
+                SelectedAvailableSourceDocument.Id);
             await _transactionRepository.SaveChangesAsync();
-            SelectedUnlinkedTransaction = null;
-            SelectedUnlinkedSourceDocument = null;
+            SelectedAvailableTransaction = null;
+            SelectedAvailableSourceDocument = null;
             await RefreshAsync();
         }
         catch (Exception ex)
@@ -248,6 +262,10 @@ public partial class AppViewModel : ViewModelBase
         AmountInputText = doc.Amount.HasValue
             ? doc.Amount.Value.ToString("G", CultureInfo.InvariantCulture)
             : string.Empty;
+        CcyAmountInputText = doc.CcyAmount.HasValue
+            ? doc.CcyAmount.Value.ToString("G", CultureInfo.InvariantCulture)
+            : string.Empty;
+        SelectedCurrency = doc.Ccy;
         DocumentBeingAmounted = doc;
     }
 
@@ -256,6 +274,8 @@ public partial class AppViewModel : ViewModelBase
     {
         DocumentBeingAmounted = null;
         AmountInputText = string.Empty;
+        CcyAmountInputText = string.Empty;
+        SelectedCurrency = null;
     }
 
     [RelayCommand]
@@ -264,26 +284,53 @@ public partial class AppViewModel : ViewModelBase
         if (DocumentBeingAmounted is null)
             return;
 
-        if (!decimal.TryParse(AmountInputText, NumberStyles.Any, CultureInfo.CurrentCulture, out var amount))
-        {
-            StatusMessage = "Invalid amount. Please enter a valid number.";
+        if (!TryParseOptionalAmount(AmountInputText, "amount", out var amount))
             return;
-        }
+
+        if (!TryParseOptionalAmount(CcyAmountInputText, "currency amount", out var ccyAmount))
+            return;
 
         try
         {
+            var selectedCurrency = ccyAmount.HasValue ? SelectedCurrency : null;
+            var candidate = new SourceDocument
+            {
+                Amount = amount,
+                CcyAmount = ccyAmount,
+                Ccy = selectedCurrency,
+            };
+
+            var validationResult = _sourceDocumentValidator.ValidateSetAmount(candidate);
+            if (!validationResult.IsValid)
+            {
+                StatusMessage = string.Join(" ", validationResult.Errors.Select(error => error.Message));
+                return;
+            }
+
             DocumentBeingAmounted.Amount = amount;
+            DocumentBeingAmounted.CcyAmount = ccyAmount;
+            DocumentBeingAmounted.Ccy = selectedCurrency;
             DocumentBeingAmounted.Status = SourceDocumentStatus.Active;
             DocumentBeingAmounted.UpdatedAt = DateTimeOffset.UtcNow;
             await _sourceDocumentRepository.UpdateAsync(DocumentBeingAmounted);
             await _sourceDocumentRepository.SaveChangesAsync();
             DocumentBeingAmounted = null;
             AmountInputText = string.Empty;
+            CcyAmountInputText = string.Empty;
+            SelectedCurrency = null;
             await RefreshAsync();
         }
         catch (Exception ex)
         {
             StatusMessage = $"Error saving amount: {ex.Message}";
+        }
+    }
+
+    partial void OnCcyAmountInputTextChanged(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            SelectedCurrency = null;
         }
     }
 
@@ -293,11 +340,9 @@ public partial class AppViewModel : ViewModelBase
         var allTransactions = await _transactionRepository.GetAllAsync();
         var allDocs = await _sourceDocumentRepository.GetAllAsync();
 
-        UnlinkedTransactions.Clear();
-        LinkedPairs.Clear();
-        UnlinkedSourceDocuments.Clear();
-
-        var linkedDocIds = new HashSet<Guid>();
+        AvailableTransactions.Clear();
+        LinkedTransactionGroups.Clear();
+        AvailableSourceDocuments.Clear();
 
         // Linked pairs are intentionally not subject to the month filter: they represent
         // confirmed matches and should remain visible for context even when browsing a
@@ -307,40 +352,64 @@ public partial class AppViewModel : ViewModelBase
             .OrderBy(t => t.TransactionDate)
             .ToList();
 
-        var linkedTransactions = activeTransactions.Where(t => t.SourceDocuments.Count > 0).ToList();
-        var unlinkedTransactions = activeTransactions.Where(t => t.SourceDocuments.Count == 0).ToList();
+        var linkedTransactions = activeTransactions.Where(t => t.IsLinked).ToList();
 
-        // Linked pairs sorted by transaction date, then document date
+        // Linked pairs grouped by transaction and sorted by transaction date, then document date.
         foreach (var tx in linkedTransactions)
         {
-            foreach (var doc in tx.SourceDocuments.OrderBy(d => d.FileNameDate))
-            {
-                LinkedPairs.Add(new LinkedPair(tx, doc));
-                linkedDocIds.Add(doc.Id);
-            }
+            LinkedTransactionGroups.Add(new LinkedTransactionGroup(
+                tx,
+                tx.SourceDocuments
+                    .OrderBy(d => d.FileNameDate)
+                    .Select(doc => new LinkedPair(tx, doc))
+                    .ToList()));
         }
 
-        // Unlinked transactions — apply optional month filter
-        var filteredUnlinked = ApplyTransactionMonthFilter(unlinkedTransactions);
-        foreach (var tx in filteredUnlinked)
+        // Available transactions — apply optional month filter and keep linked items below unlinked ones.
+        var filteredTransactions = ApplyTransactionMonthFilter(activeTransactions)
+            .OrderBy(t => t.IsLinked)
+            .ThenBy(t => t.TransactionDate)
+            .ThenBy(t => t.AccountingDate);
+        foreach (var tx in filteredTransactions)
         {
-            UnlinkedTransactions.Add(tx);
+            AvailableTransactions.Add(tx);
         }
 
-        // Unlinked source documents — apply optional month filter
+        // Available source documents — apply optional month filter and keep linked items below unlinked ones.
         var visibleDocs = allDocs
             .Where(d =>
                 d.Status != SourceDocumentStatus.Removed &&
-                d.Status != SourceDocumentStatus.RemovedFromDisk &&
-                !linkedDocIds.Contains(d.Id))
+                d.Status != SourceDocumentStatus.RemovedFromDisk)
             .OrderBy(d => d.FileNameDate)
             .ToList();
 
-        var filteredDocs = ApplyDocumentMonthFilter(visibleDocs);
+        var filteredDocs = ApplyDocumentMonthFilter(visibleDocs)
+            .OrderBy(d => d.IsLinked)
+            .ThenBy(d => d.FileNameDate)
+            .ThenBy(d => d.Description);
         foreach (var doc in filteredDocs)
         {
-            UnlinkedSourceDocuments.Add(doc);
+            AvailableSourceDocuments.Add(doc);
         }
+    }
+
+    private bool TryParseOptionalAmount(string input, string fieldName, out decimal? value)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            value = null;
+            return true;
+        }
+
+        if (decimal.TryParse(input, NumberStyles.Any, CultureInfo.CurrentCulture, out var parsedValue))
+        {
+            value = parsedValue;
+            return true;
+        }
+
+        StatusMessage = $"Invalid {fieldName}. Please enter a valid number.";
+        value = null;
+        return false;
     }
 
     private IEnumerable<Transaction> ApplyTransactionMonthFilter(IEnumerable<Transaction> transactions)
@@ -383,3 +452,7 @@ public enum FilterMode
 }
 
 public sealed record LinkedPair(Transaction Transaction, SourceDocument SourceDocument);
+
+public sealed record LinkedTransactionGroup(
+    Transaction Transaction,
+    IReadOnlyList<LinkedPair> LinkedDocuments);

@@ -25,4 +25,21 @@ public class SourceDocumentValidator
 
         return result;
     }
+
+    public ValidationResult ValidateSetAmount(SourceDocument document)
+    {
+        var result = new ValidationResult();
+
+        if (!document.Amount.HasValue && !document.CcyAmount.HasValue)
+        {
+            result.AddError(nameof(document.Amount), "At least one of Amount or CcyAmount must be provided.");
+        }
+
+        if (document.CcyAmount.HasValue && !document.Ccy.HasValue)
+        {
+            result.AddError(nameof(document.Ccy), "A currency must be selected when a currency amount is provided.");
+        }
+
+        return result;
+    }
 }

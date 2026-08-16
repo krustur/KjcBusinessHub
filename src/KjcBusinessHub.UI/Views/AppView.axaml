@@ -45,21 +45,21 @@
             </StackPanel>
         </StackPanel>
 
-        <!-- Main content: Unlinked top, Linked bottom -->
+        <!-- Main content: available top, linked bottom -->
         <Grid Grid.Row="2" RowDefinitions="*,*">
 
-            <!-- Top row: Unlinked transactions | Unlinked source documents -->
+            <!-- Top row: available transactions | available source documents -->
             <Grid Grid.Row="0" ColumnDefinitions="*,*" Margin="8,8,8,4">
 
-                <!-- Unlinked Transactions -->
+                <!-- Available Transactions -->
                 <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Margin="0,0,4,0" CornerRadius="4">
                     <Grid RowDefinitions="Auto,*">
-                        <TextBlock Grid.Row="0" Text="Unlinked Transactions" FontWeight="Bold" Margin="8,4" />
-                        <ListBox Grid.Row="1" ItemsSource="{Binding UnlinkedTransactions}"
-                                 SelectedItem="{Binding SelectedUnlinkedTransaction}">
+                        <TextBlock Grid.Row="0" Text="Available Transactions" FontWeight="Bold" Margin="8,4" />
+                        <ListBox Grid.Row="1" ItemsSource="{Binding AvailableTransactions}"
+                                 SelectedItem="{Binding SelectedAvailableTransaction}">
                             <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                                <DataTemplate x:DataType="entities:Transaction">
+                                    <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">
                                         <TextBlock Grid.Column="0" Text="{Binding AccountingDate}"
                                                    Foreground="Gray" Margin="0,0,4,0" />
                                         <TextBlock Grid.Column="1" Text="{Binding TransactionDate}"
@@ -68,6 +68,14 @@
                                                    TextTrimming="CharacterEllipsis" />
                                         <TextBlock Grid.Column="3" Text="{Binding Amount, StringFormat='{}{0:N2}'}"
                                                    HorizontalAlignment="Right" Margin="8,0,0,0" />
+                                        <TextBlock Grid.Column="4"
+                                                   Text="🔗"
+                                                   Margin="8,0,0,0"
+                                                   IsVisible="{Binding IsLinked}" />
+                                        <TextBlock Grid.Column="5"
+                                                   Text="{Binding LinkedSourceDocumentCount}"
+                                                   Margin="4,0,0,0"
+                                                   IsVisible="{Binding HasMultipleLinkedSourceDocuments}" />
                                     </Grid>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
@@ -75,24 +83,35 @@
                     </Grid>
                 </Border>
 
-                <!-- Unlinked Source Documents -->
+                <!-- Available Source Documents -->
                 <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1" Margin="4,0,0,0" CornerRadius="4">
                     <Grid RowDefinitions="Auto,*,Auto">
-                        <TextBlock Grid.Row="0" Text="Unlinked Source Documents" FontWeight="Bold" Margin="8,4" />
-                        <ListBox Grid.Row="1" ItemsSource="{Binding UnlinkedSourceDocuments}"
-                                 SelectedItem="{Binding SelectedUnlinkedSourceDocument}">
+                        <TextBlock Grid.Row="0" Text="Available Source Documents" FontWeight="Bold" Margin="8,4" />
+                        <ListBox Grid.Row="1" ItemsSource="{Binding AvailableSourceDocuments}"
+                                 SelectedItem="{Binding SelectedAvailableSourceDocument}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate x:DataType="entities:SourceDocument">
                                     <Grid RowDefinitions="Auto,Auto">
                                         <!-- Main info row -->
-                                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto">
+                                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto">
                                             <TextBlock Grid.Column="0" Text="{Binding FileNameDate}" Margin="0,0,8,0" />
                                             <TextBlock Grid.Column="1" Text="{Binding Description}" TextTrimming="CharacterEllipsis" />
                                             <TextBlock Grid.Column="2"
                                                        Text="{Binding Amount, StringFormat='{}{0:N2}'}"
                                                        HorizontalAlignment="Right" Margin="8,0,0,0" />
+                                            <TextBlock Grid.Column="3"
+                                                       Text="{Binding CurrencyDisplay}"
+                                                       HorizontalAlignment="Right" Margin="8,0,0,0" />
+                                            <TextBlock Grid.Column="4"
+                                                       Text="🔗"
+                                                       Margin="8,0,0,0"
+                                                       IsVisible="{Binding IsLinked}" />
+                                            <TextBlock Grid.Column="5"
+                                                       Text="{Binding LinkedTransactionCount}"
+                                                       Margin="4,0,0,0"
+                                                       IsVisible="{Binding HasMultipleLinkedTransactions}" />
                                             <!-- Status badge for non-Active documents -->
-                                            <Border Grid.Column="3"
+                                            <Border Grid.Column="6"
                                                     Background="Orange"
                                                     CornerRadius="3"
                                                     Padding="4,1"
@@ -131,14 +150,23 @@
                                 <TextBlock Text="{Binding DocumentBeingAmounted.Description,
                                                   StringFormat='Set amount for: {0}'}"
                                            FontWeight="SemiBold" />
-                                <Grid ColumnDefinitions="*,Auto,Auto">
+                                <Grid ColumnDefinitions="*,*,Auto,Auto,*">
                                     <TextBox Grid.Column="0"
                                              Text="{Binding AmountInputText}"
                                              PlaceholderText="Enter amount…" />
-                                    <Button Grid.Column="1" Content="Confirm"
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding CcyAmountInputText}"
+                                             PlaceholderText="Enter currency amount…" 
+                                             Margin="4,0,0,0" />
+                                    <ComboBox Grid.Column="2"
+                                             ItemsSource="{Binding SupportedCurrencies}"
+                                             SelectedItem="{Binding SelectedCurrency}"
+                                             IsEnabled="{Binding CanSelectCurrency}"
+                                             Margin="4,0,0,0" />
+                                    <Button Grid.Column="3" Content="Confirm"
                                             Command="{Binding ConfirmSetAmountCommand}"
                                             Margin="4,0,0,0" />
-                                    <Button Grid.Column="2" Content="Cancel"
+                                    <Button Grid.Column="4" Content="Cancel"
                                             Command="{Binding CancelSetAmountCommand}"
                                             Margin="4,0,0,0" />
                                 </Grid>
@@ -153,37 +181,42 @@
             <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" Margin="8,4,8,8" CornerRadius="4">
                 <Grid RowDefinitions="Auto,*">
                     <TextBlock Grid.Row="0" Text="Linked Pairs" FontWeight="Bold" Margin="8,4" />
-                    <ListBox Grid.Row="1" ItemsSource="{Binding LinkedPairs}">
+                    <ListBox Grid.Row="1" ItemsSource="{Binding LinkedTransactionGroups}">
                         <ListBox.ItemTemplate>
-                            <DataTemplate x:DataType="vm:LinkedPair">
-                                <Grid ColumnDefinitions="*,Auto,*,Auto">
-                                    <!-- Transaction side -->
-                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
-                                        <TextBlock Text="{Binding Transaction.AccountingDate}" Foreground="Gray" />
-                                        <TextBlock Text="{Binding Transaction.TransactionDate}" />
-                                        <TextBlock Text="{Binding Transaction.Description}" TextTrimming="CharacterEllipsis" />
-                                        <TextBlock Text="{Binding Transaction.Amount, StringFormat='{}{0:N2}'}" />
-                                    </StackPanel>
-                                    <!-- Link indicator -->
-                                    <TextBlock Grid.Column="1" Text="↔" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16,0" />
-                                    <!-- Source document side -->
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
-                                        <TextBlock Text="{Binding SourceDocument.FileNameDate}" />
-                                        <TextBlock Text="{Binding SourceDocument.Description}" TextTrimming="CharacterEllipsis" />
-                                        <TextBlock Text="{Binding SourceDocument.Amount, StringFormat='{}{0:N2}'}" />
-                                        <Button Content="Open"
-                                                Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).OpenDocumentCommand}"
-                                                CommandParameter="{Binding SourceDocument}" />
-                                        <Button Content="Show in Explorer"
-                                                Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).ShowInExplorerCommand}"
-                                                CommandParameter="{Binding SourceDocument}" />
-                                    </StackPanel>
-                                    <!-- Unlink button -->
-                                    <Button Grid.Column="3" Content="Unlink"
-                                            Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).UnlinkDocumentCommand}"
-                                            CommandParameter="{Binding}"
-                                            Margin="8,0,0,0" />
-                                </Grid>
+                            <DataTemplate x:DataType="vm:LinkedTransactionGroup">
+                                <StackPanel Spacing="6" Margin="0,0,0,8">
+                                    <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                                        <TextBlock Grid.Column="0" Text="{Binding Transaction.AccountingDate}" Foreground="Gray" Margin="0,0,4,0" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Transaction.TransactionDate}" Margin="0,0,8,0" />
+                                        <TextBlock Grid.Column="2" Text="{Binding Transaction.Description}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="3" Text="{Binding Transaction.Amount, StringFormat='{}{0:N2}'}" />
+                                    </Grid>
+                                    <ItemsControl ItemsSource="{Binding LinkedDocuments}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:LinkedPair">
+                                                <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto,Auto" Margin="24,0,0,0">
+                                                    <TextBlock Grid.Column="0" Text="↳" Foreground="Gray" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding SourceDocument.FileNameDate}" Margin="8,0,8,0" />
+                                                    <TextBlock Grid.Column="2" Text="{Binding SourceDocument.Description}" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Grid.Column="3" Text="{Binding SourceDocument.Amount, StringFormat='{}{0:N2}'}" Margin="8,0,0,0" />
+                                                    <TextBlock Grid.Column="4" Text="{Binding SourceDocument.CurrencyDisplay}" Margin="8,0,0,0" />
+                                                    <Button Grid.Column="5" Content="Open"
+                                                            Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).OpenDocumentCommand}"
+                                                            CommandParameter="{Binding SourceDocument}"
+                                                            Margin="8,0,0,0" />
+                                                    <Button Grid.Column="6" Content="Show in Explorer"
+                                                            Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).ShowInExplorerCommand}"
+                                                            CommandParameter="{Binding SourceDocument}"
+                                                            Margin="8,0,0,0" />
+                                                    <Button Grid.Column="7" Content="Unlink"
+                                                            Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).UnlinkDocumentCommand}"
+                                                            CommandParameter="{Binding}"
+                                                            Margin="8,0,0,0" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>

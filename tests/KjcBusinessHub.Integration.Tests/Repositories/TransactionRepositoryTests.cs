@@ -113,5 +113,63 @@ public class TransactionRepositoryTests : IDisposable
         Assert.Equal(TransactionStatus.RemovedFromFile, fetched.Status);
     }
 
+    [Fact]
+    public async Task LinkDocumentAsync_allows_one_document_to_be_linked_to_multiple_transactions()
+    {
+        var doc = new SourceDocument
+        {
+            Id = Guid.NewGuid(),
+            FileSubPath = "2026-07/2026-07-01 Receipt.pdf",
+            FileHash = "abc123",
+            FileNameDate = new DateOnly(2026, 7, 1),
+            Description = "Receipt",
+            Status = SourceDocumentStatus.Active,
+            FileCreatedDate = DateTimeOffset.UtcNow,
+            FileModifiedDate = DateTimeOffset.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+        var firstTx = new Transaction
+        {
+            Id = Guid.NewGuid(),
+            AccountingDate = new DateOnly(2026, 7, 31),
+            TransactionDate = new DateOnly(2026, 7, 1),
+            Amount = 40m,
+            Balance = 1000m,
+            Description = "First",
+            Status = TransactionStatus.Active,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+        var secondTx = new Transaction
+        {
+            Id = Guid.NewGuid(),
+            AccountingDate = new DateOnly(2026, 7, 31),
+            TransactionDate = new DateOnly(2026, 7, 2),
+            Amount = 60m,
+            Balance = 940m,
+            Description = "Second",
+            Status = TransactionStatus.Active,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        await _db.SourceDocuments.AddAsync(doc);
+        await _repository.AddAsync(firstTx);
+        await _repository.AddAsync(secondTx);
+        await _repository.SaveChangesAsync();
+
+        await _repository.LinkDocumentAsync(firstTx.Id, doc.Id);
+        await _repository.LinkDocumentAsync(secondTx.Id, doc.Id);
+        await _repository.SaveChangesAsync();
+
+        var all = (await _repository.GetAllAsync())
+            .Where(transaction => transaction.Id == firstTx.Id || transaction.Id == secondTx.Id)
+            .OrderBy(transaction => transaction.Description)
+            .ToList();
+
+        Assert.Collection(
+            all,
+            transaction => Assert.Single(transaction.SourceDocuments, linked => linked.Id == doc.Id),
+            transaction => Assert.Single(transaction.SourceDocuments, linked => linked.Id == doc.Id));
+    }
+
     public void Dispose() => _db.Dispose();
 }

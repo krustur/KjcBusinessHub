@@ -8,10 +8,14 @@ namespace KjcBusinessHub.Infrastructure.Repositories;
 public class SourceDocumentRepository(AppDbContext db) : ISourceDocumentRepository
 {
     public async Task<IReadOnlyList<SourceDocument>> GetAllAsync(CancellationToken cancellationToken = default)
-        => await db.SourceDocuments.ToListAsync(cancellationToken);
+        => await db.SourceDocuments
+            .Include(d => d.Transactions)
+            .ToListAsync(cancellationToken);
 
     public async Task<SourceDocument?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-        => await db.SourceDocuments.SingleOrDefaultAsync(d => d.Id == id, cancellationToken);
+        => await db.SourceDocuments
+            .Include(d => d.Transactions)
+            .SingleOrDefaultAsync(d => d.Id == id, cancellationToken);
 
     public async Task<SourceDocument?> FindByFileSubPathAsync(string fileSubPath, CancellationToken cancellationToken = default)
         => await db.SourceDocuments.SingleOrDefaultAsync(

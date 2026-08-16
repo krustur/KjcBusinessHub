@@ -1,4 +1,5 @@
 using KjcBusinessHub.Application.Entities;
+using KjcBusinessHub.Application.Enums;
 using KjcBusinessHub.Application.Validators;
 using Xunit;
 
@@ -52,4 +53,49 @@ public class SourceDocumentValidatorTests
         var result = _validator.Validate(doc);
         Assert.False(result.IsValid);
     }
+
+    [Fact]
+    public void Set_amount_validation_passes_with_amount_only()
+    {
+        var doc = ValidDocument();
+        doc.Amount = 123.45m;
+
+        var result = _validator.ValidateSetAmount(doc);
+
+        Assert.True(result.IsValid);
+    }
+
+    [Fact]
+    public void Set_amount_validation_passes_with_currency_amount_only()
+    {
+        var doc = ValidDocument();
+        doc.Ccy = SourceDocumentCurrency.USD;
+        doc.CcyAmount = 25m;
+
+        var result = _validator.ValidateSetAmount(doc);
+
+        Assert.True(result.IsValid);
+    }
+
+    [Fact]
+    public void Set_amount_validation_fails_when_all_amounts_missing()
+    {
+        var result = _validator.ValidateSetAmount(ValidDocument());
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, error => error.PropertyName == nameof(SourceDocument.Amount));
+    }
+
+    [Fact]
+    public void Set_amount_validation_fails_when_currency_amount_has_no_currency()
+    {
+        var doc = ValidDocument();
+        doc.CcyAmount = 25m;
+
+        var result = _validator.ValidateSetAmount(doc);
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, error => error.PropertyName == nameof(SourceDocument.Ccy));
+    }
+
 }

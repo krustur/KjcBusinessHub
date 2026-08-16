@@ -28,8 +28,12 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         builder.Property(t => t.CreatedAt)
             .IsRequired();
 
+        builder.Ignore(t => t.LinkedSourceDocumentCount);
+        builder.Ignore(t => t.IsLinked);
+        builder.Ignore(t => t.HasMultipleLinkedSourceDocuments);
+
         builder.HasMany(t => t.SourceDocuments)
-            .WithMany()
+            .WithMany(d => d.Transactions)
             .UsingEntity("TransactionSourceDocuments",
                 l => l.HasOne(typeof(SourceDocument)).WithMany().HasForeignKey("SourceDocumentId"),
                 r => r.HasOne(typeof(Transaction)).WithMany().HasForeignKey("TransactionId"),
