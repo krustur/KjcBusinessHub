@@ -24,13 +24,12 @@
 
         <!-- Filter row -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="8,0,8,4">
-            <!-- See All / See Month toggle -->
-            <Button Content="See all" Command="{Binding SetSeeAllCommand}" />
-            <Button Content="See month" Command="{Binding SetSeeMonthCommand}" />
+            <CheckBox Content="Show all months"
+                      IsChecked="{Binding ShowAllMonths}"
+                      VerticalAlignment="Center" />
 
-            <!-- Month navigation (visible only in See Month mode) -->
-            <StackPanel Orientation="Horizontal" Spacing="4"
-                        IsVisible="{Binding IsSeeMonthMode}">
+            <!-- Month navigation -->
+            <StackPanel Orientation="Horizontal" Spacing="4">
                 <Button Content="◀" Command="{Binding GoToPreviousMonthCommand}" />
                 <Button Content="This month" Command="{Binding GoToThisMonthCommand}" />
                 <TextBlock Text="{Binding SelectedMonthLabel}"
@@ -42,12 +41,12 @@
                 <CheckBox Content="Include neighbouring months"
                           IsChecked="{Binding IncludeNeighbouringMonths}"
                           VerticalAlignment="Center" />
-                <CheckBox Content="Use separate month for Source Documents"
-                          IsChecked="{Binding UseSeparateSourceDocumentMonth}"
+                <CheckBox Content="Sync transaction and source document month"
+                          IsChecked="{Binding SyncTransactionAndSourceDocumentMonth}"
                           VerticalAlignment="Center" />
                 <StackPanel Orientation="Horizontal"
                             Spacing="4"
-                            IsVisible="{Binding UseSeparateSourceDocumentMonth}">
+                            IsVisible="{Binding IsSeparateSourceDocumentMonthMode}">
                     <TextBlock Text="Docs:"
                                VerticalAlignment="Center"
                                Margin="8,0,0,0" />

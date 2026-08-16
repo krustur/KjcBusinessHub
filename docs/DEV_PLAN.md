@@ -6,11 +6,11 @@ This document tracks the development progress of KjcBusinessHub.
 
 ## MVP Priority — Next Features
 
-- [ ] Make month-based workflow the default reconciliation mode
-  - [ ] Set month view as default for Transactions and SourceDocuments
-  - [ ] Replace "See all / See month" buttons with checkbox `Show all months`
-  - [ ] Replace `Use separate month for Source Documents` with checkbox `Sync transaction and source document month`
-  - [ ] Keep quick month navigation accessible (this month, previous month, next month)
+- [x] Make month-based workflow the default reconciliation mode
+  - [x] Set month view as default for Transactions and SourceDocuments
+  - [x] Replace "See all / See month" buttons with checkbox `Show all months`
+  - [x] Replace `Use separate month for Source Documents` with checkbox `Sync transaction and source document month`
+  - [x] Keep quick month navigation accessible (this month, previous month, next month)
 - [ ] Add monthly coverage visibility
   - [ ] Show handled-vs-total for Transactions per selected month
   - [ ] Show handled-vs-total for SourceDocuments per selected month

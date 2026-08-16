@@ -69,7 +69,8 @@ public partial class AppViewModel : ViewModelBase
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSeeMonthMode))]
     [NotifyPropertyChangedFor(nameof(IsSeeAllMode))]
-    public partial FilterMode FilterMode { get; set; } = FilterMode.SeeAll;
+    [NotifyPropertyChangedFor(nameof(ShowAllMonths))]
+    public partial FilterMode FilterMode { get; set; } = FilterMode.SeeMonth;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedMonthLabel))]
@@ -91,10 +92,42 @@ public partial class AppViewModel : ViewModelBase
     public partial int SelectedSourceDocumentMonth { get; set; } = DateOnly.FromDateTime(DateTime.Today).Month;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSeparateSourceDocumentMonthMode))]
+    [NotifyPropertyChangedFor(nameof(SyncTransactionAndSourceDocumentMonth))]
     public partial bool UseSeparateSourceDocumentMonth { get; set; } = false;
 
     public bool IsSeeAllMode => FilterMode == FilterMode.SeeAll;
     public bool IsSeeMonthMode => FilterMode == FilterMode.SeeMonth;
+    public bool IsSeparateSourceDocumentMonthMode => UseSeparateSourceDocumentMonth;
+    public bool ShowAllMonths
+    {
+        get => FilterMode == FilterMode.SeeAll;
+        set
+        {
+            var nextMode = value ? FilterMode.SeeAll : FilterMode.SeeMonth;
+            if (FilterMode == nextMode)
+                return;
+
+            FilterMode = nextMode;
+            _ = RefreshAsync();
+        }
+    }
+
+    public bool SyncTransactionAndSourceDocumentMonth
+    {
+        get => !UseSeparateSourceDocumentMonth;
+        set
+        {
+            var useSeparateMonth = !value;
+            if (UseSeparateSourceDocumentMonth == useSeparateMonth)
+                return;
+
+            SelectedSourceDocumentYear = SelectedYear;
+            SelectedSourceDocumentMonth = SelectedMonth;
+            UseSeparateSourceDocumentMonth = useSeparateMonth;
+            _ = RefreshAsync();
+        }
+    }
 
     public string SelectedMonthLabel =>
         new DateOnly(SelectedYear, SelectedMonth, 1).ToString("MMMM yyyy");
@@ -219,9 +252,6 @@ public partial class AppViewModel : ViewModelBase
     }
 
     partial void OnIncludeNeighbouringMonthsChanged(bool value) =>
-        _ = RefreshAsync();
-
-    partial void OnUseSeparateSourceDocumentMonthChanged(bool value) =>
         _ = RefreshAsync();
 
     // --- Linking commands ---
