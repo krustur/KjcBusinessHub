@@ -6,6 +6,22 @@ This document tracks the development progress of KjcBusinessHub.
 
 ## MVP Priority — Next Features
 
+- [ ] Make month-based workflow the default reconciliation mode
+  - [ ] Set month view as default for Transactions and SourceDocuments
+  - [ ] Replace "See all / See month" buttons with checkbox `Show all months`
+  - [ ] Replace `Use separate month for Source Documents` with checkbox `Sync transaction and source document month`
+  - [ ] Keep quick month navigation accessible (this month, previous month, next month)
+- [ ] Add monthly coverage visibility
+  - [ ] Show handled-vs-total for Transactions per selected month
+  - [ ] Show handled-vs-total for SourceDocuments per selected month
+  - [ ] Show clear `Month complete` indicator when both sides are fully handled
+- [ ] Add explicit handling for Transactions that do not require a SourceDocument
+  - [ ] Add a user action to mark a Transaction as handled without linked document
+  - [ ] Ensure handled-without-document Transactions count as covered in monthly completion
+- [ ] Add SourceDocument annual classification
+  - [ ] Add `AnnualType` enum values: `NotAnnual`, `Annual`, `OldAnnual`
+  - [ ] Visually flag `Annual` and `OldAnnual` SourceDocuments in the UI
+  - [ ] Always include `Annual` SourceDocuments in `Available Source Documents` regardless of selected month
 - [x] Prioritize "See month" split-month filtering before other planned MVP items
   - [x] Add toggle: `Use separate month for Source Documents`
   - [x] When enabled, Source Documents use their own month selector

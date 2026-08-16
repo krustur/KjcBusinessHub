@@ -38,6 +38,7 @@ Represents a receipt, invoice, or other document that justifies a transaction.
 | Amount               | decimal?       | Amount stated on the document                 |
 | Ccy                  | enum?          | Currency for `CcyAmount` (`EUR`, `USD`)       |
 | CcyAmount            | decimal?       | Amount stated in the selected currency        |
+| AnnualType           | enum           | `NotAnnual`, `Annual`, `OldAnnual`            |
 | Status               | enum           | `New`, `Active`, `RemovedFromDisk`, `Removed` |
 | Transactions         | List\<Transaction\> | Linked transactions                     |
 | FileCreatedDate      | DateTimeOffset | Creation date from the File metadata          |
@@ -49,6 +50,7 @@ Represents a receipt, invoice, or other document that justifies a transaction.
 - `FileSubPath` is required.
 - If `CcyAmount` is set, `Ccy` is required.
 - `Ccy` is limited to `EUR` and `USD`.
+- `AnnualType` is required and defaults to `NotAnnual`.
 - To transition a SourceDocument to `Active`, at least one of `Amount` or `CcyAmount` must be set.
 
 ---
@@ -78,11 +80,23 @@ EUR
 USD
 ```
 
+### SourceDocumentAnnualType
+```
+NotAnnual           // Regular month-scoped document
+Annual              // Yearly document still valid for current accounting period
+OldAnnual           // Yearly document from earlier period, kept for reference
+```
+
 ---
 
 ## Business Rules
 
 - A `SourceDocument` may be linked to multiple `Transaction` entries.
 - Currency conversion is out of scope; `Ccy` and `CcyAmount` are informational values shown to the user.
+- `Annual` SourceDocuments are always visible in the Available SourceDocuments list, independent of selected month.
+- `Annual` and `OldAnnual` SourceDocuments must be visually flagged in the UI.
+- `OldAnnual` SourceDocuments follow normal month filtering and are not always visible in month-based view.
+- Monthly coverage is complete when all Transactions and SourceDocuments in scope are either linked or explicitly marked as handled.
+- Monthly SourceDocument coverage scope includes only month-filtered items; always-visible `Annual` items do not affect the `Month complete` indicator.
 
 ---
