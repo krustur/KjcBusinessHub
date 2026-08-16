@@ -37,7 +37,7 @@ public class SourceDocumentValidator
 
         if (document.CcyAmount.HasValue && !document.Ccy.HasValue)
         {
-            result.AddError(nameof(document.Ccy), "Ccy is required when CcyAmount is set.");
+            result.AddError(nameof(document.Ccy), "A currency must be selected when a currency amount is provided.");
         }
 
         return result;

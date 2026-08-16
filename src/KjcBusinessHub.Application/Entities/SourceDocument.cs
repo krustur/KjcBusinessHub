@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using KjcBusinessHub.Application.Enums;
 
 namespace KjcBusinessHub.Application.Entities;
@@ -18,4 +19,10 @@ public class SourceDocument
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
     public ICollection<Transaction> Transactions { get; set; } = [];
+
+    [NotMapped]
+    public string CurrencyDisplay =>
+        Ccy.HasValue && CcyAmount.HasValue
+            ? $"{Ccy.Value} {CcyAmount.Value:N2}"
+            : string.Empty;
 }

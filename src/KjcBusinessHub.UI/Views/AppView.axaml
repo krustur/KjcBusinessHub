@@ -85,20 +85,17 @@
                                 <DataTemplate x:DataType="entities:SourceDocument">
                                     <Grid RowDefinitions="Auto,Auto">
                                         <!-- Main info row -->
-                                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
+                                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                                             <TextBlock Grid.Column="0" Text="{Binding FileNameDate}" Margin="0,0,8,0" />
                                             <TextBlock Grid.Column="1" Text="{Binding Description}" TextTrimming="CharacterEllipsis" />
                                             <TextBlock Grid.Column="2"
                                                        Text="{Binding Amount, StringFormat='{}{0:N2}'}"
                                                        HorizontalAlignment="Right" Margin="8,0,0,0" />
                                             <TextBlock Grid.Column="3"
-                                                       Text="{Binding Ccy}"
-                                                       HorizontalAlignment="Right" Margin="8,0,0,0" />
-                                            <TextBlock Grid.Column="4"
-                                                       Text="{Binding CcyAmount, StringFormat='{}{0:N2}'}"
+                                                       Text="{Binding CurrencyDisplay}"
                                                        HorizontalAlignment="Right" Margin="8,0,0,0" />
                                             <!-- Status badge for non-Active documents -->
-                                            <Border Grid.Column="5"
+                                            <Border Grid.Column="4"
                                                     Background="Orange"
                                                     CornerRadius="3"
                                                     Padding="4,1"
@@ -185,8 +182,7 @@
                                         <TextBlock Text="{Binding SourceDocument.FileNameDate}" />
                                         <TextBlock Text="{Binding SourceDocument.Description}" TextTrimming="CharacterEllipsis" />
                                         <TextBlock Text="{Binding SourceDocument.Amount, StringFormat='{}{0:N2}'}" />
-                                        <TextBlock Text="{Binding SourceDocument.Ccy}" />
-                                        <TextBlock Text="{Binding SourceDocument.CcyAmount, StringFormat='{}{0:N2}'}" />
+                                        <TextBlock Text="{Binding SourceDocument.CurrencyDisplay}" />
                                         <Button Content="Open"
                                                 Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).OpenDocumentCommand}"
                                                 CommandParameter="{Binding SourceDocument}" />

@@ -29,7 +29,7 @@ public partial class AppViewModel : ViewModelBase
     public ObservableCollection<SourceDocument> AvailableSourceDocuments { get; } = [];
     public ObservableCollection<LinkedPair> LinkedPairs { get; } = [];
     public IReadOnlyList<SourceDocumentCurrency> SupportedCurrencies { get; } =
-        [SourceDocumentCurrency.EUR, SourceDocumentCurrency.USD];
+        Enum.GetValues<SourceDocumentCurrency>();
 
     [ObservableProperty]
     public partial bool IsLoading { get; set; }
