@@ -197,7 +197,6 @@ public partial class AppViewModel : ViewModelBase
         var today = DateOnly.FromDateTime(DateTime.Today);
         SelectedSourceDocumentYear = today.Year;
         SelectedSourceDocumentMonth = today.Month;
-        FilterMode = FilterMode.SeeMonth;
         await RefreshAsync();
     }
 
@@ -207,7 +206,6 @@ public partial class AppViewModel : ViewModelBase
         var current = new DateOnly(SelectedSourceDocumentYear, SelectedSourceDocumentMonth, 1).AddMonths(-1);
         SelectedSourceDocumentYear = current.Year;
         SelectedSourceDocumentMonth = current.Month;
-        FilterMode = FilterMode.SeeMonth;
         await RefreshAsync();
     }
 
@@ -217,7 +215,6 @@ public partial class AppViewModel : ViewModelBase
         var current = new DateOnly(SelectedSourceDocumentYear, SelectedSourceDocumentMonth, 1).AddMonths(1);
         SelectedSourceDocumentYear = current.Year;
         SelectedSourceDocumentMonth = current.Month;
-        FilterMode = FilterMode.SeeMonth;
         await RefreshAsync();
     }
 
