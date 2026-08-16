@@ -36,7 +36,10 @@ Represents a receipt, invoice, or other document that justifies a transaction.
 | FileNameDate         | DateOnly       | Date in the file name                         |
 | Description          | string         | Description of the document                   |
 | Amount               | decimal?       | Amount stated on the document                 |
+| Ccy                  | enum?          | Currency for `CcyAmount` (`EUR`, `USD`)       |
+| CcyAmount            | decimal?       | Amount stated in the selected currency        |
 | Status               | enum           | `New`, `Active`, `RemovedFromDisk`, `Removed` |
+| Transactions         | List\<Transaction\> | Linked transactions                     |
 | FileCreatedDate      | DateTimeOffset | Creation date from the File metadata          |
 | FileModifiedDate     | DateTimeOffset | Modified date from the File metadata          |
 
@@ -44,6 +47,9 @@ Represents a receipt, invoice, or other document that justifies a transaction.
 **Validation Rules:**
 - `DocumentCreationDate` is required.
 - `FileSubPath` is required.
+- If `CcyAmount` is set, `Ccy` is required.
+- `Ccy` is limited to `EUR` and `USD`.
+- To transition a SourceDocument to `Active`, at least one of `Amount` or `CcyAmount` must be set.
 
 ---
 
@@ -58,19 +64,25 @@ Removed             // Confirmed Removed by the User
 
 ### SourceDocumentStatus
 ```
-New                 // Newly found SourceDocument missing Amount
-Active              // SourceDocument is active and have Amount
+New                 // Newly found SourceDocument missing both Amount and CcyAmount
+Active              // SourceDocument is active and has at least Amount or CcyAmount
 Changed             // SourceDocument has changed
 RemovedFromDisk     // File has been removed from the SourceDocumentsDirectory
 Removed             // Confirmed Removed by the User
 Revived             // Previously removed SourceDocument matched by file hash and restored
 ```
 
+### SourceDocumentCurrency
+```
+EUR
+USD
+```
+
 ---
 
 ## Business Rules
 
-
+- A `SourceDocument` may be linked to multiple `Transaction` entries.
+- Currency conversion is out of scope; `Ccy` and `CcyAmount` are informational values shown to the user.
 
 ---
-
