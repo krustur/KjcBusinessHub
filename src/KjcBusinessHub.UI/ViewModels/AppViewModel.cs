@@ -293,24 +293,23 @@ public partial class AppViewModel : ViewModelBase
         try
         {
             var selectedCurrency = ccyAmount.HasValue ? SelectedCurrency : null;
-            var previousAmount = DocumentBeingAmounted.Amount;
-            var previousCcyAmount = DocumentBeingAmounted.CcyAmount;
-            var previousCurrency = DocumentBeingAmounted.Ccy;
+            var candidate = new SourceDocument
+            {
+                Amount = amount,
+                CcyAmount = ccyAmount,
+                Ccy = selectedCurrency,
+            };
 
-            DocumentBeingAmounted.Amount = amount;
-            DocumentBeingAmounted.CcyAmount = ccyAmount;
-            DocumentBeingAmounted.Ccy = selectedCurrency;
-
-            var validationResult = _sourceDocumentValidator.ValidateSetAmount(DocumentBeingAmounted);
+            var validationResult = _sourceDocumentValidator.ValidateSetAmount(candidate);
             if (!validationResult.IsValid)
             {
-                DocumentBeingAmounted.Amount = previousAmount;
-                DocumentBeingAmounted.CcyAmount = previousCcyAmount;
-                DocumentBeingAmounted.Ccy = previousCurrency;
                 StatusMessage = string.Join(" ", validationResult.Errors.Select(error => error.Message));
                 return;
             }
 
+            DocumentBeingAmounted.Amount = amount;
+            DocumentBeingAmounted.CcyAmount = ccyAmount;
+            DocumentBeingAmounted.Ccy = selectedCurrency;
             DocumentBeingAmounted.Status = SourceDocumentStatus.Active;
             DocumentBeingAmounted.UpdatedAt = DateTimeOffset.UtcNow;
             await _sourceDocumentRepository.UpdateAsync(DocumentBeingAmounted);
