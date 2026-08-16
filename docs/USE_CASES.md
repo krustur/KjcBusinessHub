@@ -86,6 +86,34 @@ This document describes use cases for the KjcBusinessHub application.
 
 The user should see a view of all available Transactions top left and all available source documents top right. Linked items should remain visible in those lists, display a visible link indicator, and show the linked count when linked more than once. In both lists, unlinked items should appear before linked items. Linked pairs should be shown below, grouped by Transaction so that each Transaction is listed once with its linked source documents beneath it.
 
+**Acceptance Criteria:**
+
+- Default view mode is month-based (`See month`)
+- A checkbox `Show all months` toggles between month-based and all-month views
+- A checkbox `Sync transaction and source document month` controls whether both lists use one shared month selector
+- When sync is disabled, Transactions and SourceDocuments can be filtered by separate months
+- SourceDocuments marked as `Annual` must always be visible in `Available Source Documents`, even in month-based view
+- SourceDocuments marked as `Annual` or `OldAnnual` must be visually flagged in the list
+- SourceDocuments marked as `OldAnnual` follow normal month filtering unless `Show all months` is enabled
+- Only `Annual` has always-visible behavior; `OldAnnual` must not be forced visible in month-based view
+- The user should be able to see monthly coverage for the selected month:
+  - Transactions: handled count vs total count
+  - SourceDocuments: handled count vs total count
+  - A clear `Month complete` indicator when both counts are fully handled
+
+### UC-0202 Mark transaction as handled without SourceDocument
+
+**Pre-Conditions:**
+
+- At least one Transaction must exist
+
+**Acceptance Criteria:**
+
+- The user should be able to mark a Transaction as handled without linking a SourceDocument
+- Marked Transactions should be visibly distinguishable from linked and unhandled Transactions
+- Marked Transactions should be included as handled in monthly coverage calculations
+- The user should be able to revert the handled-without-document marking
+
 
 
 
@@ -174,10 +202,12 @@ Documents should show: dates and names. 
 Default order: Transaction date, then document date, then transaction dates for all mapped documents.
 
 Options: 
-- See all, see month
-- For see month, include neighboring months as a toggle option
-- For see month, these navigations should be easily accessible: this month, next month and previous month
-- For see month, users can choose `Use separate month for Source Documents` to control document month independently from transaction month
+- Default to month-based view with quick navigation: this month, previous month, next month
+- Checkbox `Show all months` to include all months in one view
+- Checkbox `Sync transaction and source document month` to keep both month selectors in lockstep
+- For month view, include neighboring months as a toggle option
+- SourceDocuments marked `Annual` should always be shown in `Available Source Documents`
+- SourceDocuments marked `Annual` or `OldAnnual` should have a visual flag
 
 ### Backlog / Unsorted
 
