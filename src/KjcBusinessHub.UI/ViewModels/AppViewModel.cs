@@ -92,13 +92,11 @@ public partial class AppViewModel : ViewModelBase
     public partial int SelectedSourceDocumentMonth { get; set; } = DateOnly.FromDateTime(DateTime.Today).Month;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsSeparateSourceDocumentMonthMode))]
     [NotifyPropertyChangedFor(nameof(SyncTransactionAndSourceDocumentMonth))]
     public partial bool UseSeparateSourceDocumentMonth { get; set; } = false;
 
     public bool IsSeeAllMode => FilterMode == FilterMode.SeeAll;
     public bool IsSeeMonthMode => FilterMode == FilterMode.SeeMonth;
-    public bool IsSeparateSourceDocumentMonthMode => UseSeparateSourceDocumentMonth;
     public bool ShowAllMonths
     {
         get => FilterMode == FilterMode.SeeAll;

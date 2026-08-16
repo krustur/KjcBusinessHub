@@ -46,7 +46,7 @@
                           VerticalAlignment="Center" />
                 <StackPanel Orientation="Horizontal"
                             Spacing="4"
-                            IsVisible="{Binding IsSeparateSourceDocumentMonthMode}">
+                            IsVisible="{Binding UseSeparateSourceDocumentMonth}">
                     <TextBlock Text="Docs:"
                                VerticalAlignment="Center"
                                Margin="8,0,0,0" />
