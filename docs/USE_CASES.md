@@ -177,6 +177,7 @@ Options: 
 - See all, see month
 - For see month, include neighboring months as a toggle option
 - For see month, these navigations should be easily accessible: this month, next month and previous month
+- For see month, users can choose `Use separate month for Source Documents` to control document month independently from transaction month
 
 ### Backlog / Unsorted
 

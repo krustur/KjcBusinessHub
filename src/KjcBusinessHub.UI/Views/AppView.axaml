@@ -42,6 +42,24 @@
                 <CheckBox Content="Include neighbouring months"
                           IsChecked="{Binding IncludeNeighbouringMonths}"
                           VerticalAlignment="Center" />
+                <CheckBox Content="Use separate month for Source Documents"
+                          IsChecked="{Binding UseSeparateSourceDocumentMonth}"
+                          VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal"
+                            Spacing="4"
+                            IsVisible="{Binding UseSeparateSourceDocumentMonth}">
+                    <TextBlock Text="Docs:"
+                               VerticalAlignment="Center"
+                               Margin="8,0,0,0" />
+                    <Button Content="◀" Command="{Binding GoToSourceDocumentPreviousMonthCommand}" />
+                    <Button Content="This month" Command="{Binding GoToSourceDocumentThisMonthCommand}" />
+                    <TextBlock Text="{Binding SelectedSourceDocumentMonthLabel}"
+                               VerticalAlignment="Center"
+                               FontWeight="SemiBold"
+                               MinWidth="120"
+                               TextAlignment="Center" />
+                    <Button Content="▶" Command="{Binding GoToSourceDocumentNextMonthCommand}" />
+                </StackPanel>
             </StackPanel>
         </StackPanel>
 
