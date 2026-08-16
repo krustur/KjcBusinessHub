@@ -17,5 +17,5 @@ public class SourceDocument
     public DateTimeOffset FileModifiedDate { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
-    public List<Transaction> Transactions { get; set; } = [];
+    public ICollection<Transaction> Transactions { get; set; } = [];
 }

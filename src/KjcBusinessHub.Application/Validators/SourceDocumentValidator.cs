@@ -32,7 +32,7 @@ public class SourceDocumentValidator
 
         if (!document.Amount.HasValue && !document.CcyAmount.HasValue)
         {
-            result.AddError(nameof(document.Amount), "Amount or CcyAmount is required.");
+            result.AddError(nameof(document.Amount), "At least one of Amount or CcyAmount must be provided.");
         }
 
         if (document.CcyAmount.HasValue && !document.Ccy.HasValue)
