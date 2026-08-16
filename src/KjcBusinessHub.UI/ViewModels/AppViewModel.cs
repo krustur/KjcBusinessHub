@@ -388,15 +388,13 @@ public partial class AppViewModel : ViewModelBase
         LinkedTransactionGroups.Clear();
         AvailableSourceDocuments.Clear();
 
-        // Linked pairs are intentionally not subject to the month filter: they represent
-        // confirmed matches and should remain visible for context even when browsing a
-        // specific month.
         var activeTransactions = allTransactions
             .Where(t => t.Status == TransactionStatus.Active)
             .OrderBy(t => t.TransactionDate)
             .ToList();
 
-        var linkedTransactions = activeTransactions.Where(t => t.IsLinked).ToList();
+        var monthFilteredTransactions = ApplyTransactionMonthFilter(activeTransactions).ToList();
+        var linkedTransactions = monthFilteredTransactions.Where(t => t.IsLinked).ToList();
 
         // Linked pairs grouped by transaction and sorted by transaction date, then document date.
         foreach (var tx in linkedTransactions)
@@ -410,7 +408,7 @@ public partial class AppViewModel : ViewModelBase
         }
 
         // Available transactions — apply optional month filter and keep linked items below unlinked ones.
-        var filteredTransactions = ApplyTransactionMonthFilter(activeTransactions)
+        var filteredTransactions = monthFilteredTransactions
             .OrderBy(t => t.IsLinked)
             .ThenBy(t => t.TransactionDate)
             .ThenBy(t => t.AccountingDate);
