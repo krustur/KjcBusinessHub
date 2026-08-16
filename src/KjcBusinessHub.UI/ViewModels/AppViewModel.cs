@@ -25,9 +25,9 @@ public partial class AppViewModel : ViewModelBase
     private readonly IFileSystemService _fileSystemService;
     private readonly SourceDocumentValidator _sourceDocumentValidator;
 
-    public ObservableCollection<Transaction> UnlinkedTransactions { get; } = [];
+    public ObservableCollection<Transaction> AvailableTransactions { get; } = [];
     public ObservableCollection<SourceDocument> AvailableSourceDocuments { get; } = [];
-    public ObservableCollection<LinkedPair> LinkedPairs { get; } = [];
+    public ObservableCollection<LinkedTransactionGroup> LinkedTransactionGroups { get; } = [];
     public IReadOnlyList<SourceDocumentCurrency> SupportedCurrencies { get; } =
         Enum.GetValues<SourceDocumentCurrency>();
 
@@ -39,7 +39,7 @@ public partial class AppViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LinkDocumentCommand))]
-    public partial Transaction? SelectedUnlinkedTransaction { get; set; }
+    public partial Transaction? SelectedAvailableTransaction { get; set; }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LinkDocumentCommand))]
@@ -183,23 +183,23 @@ public partial class AppViewModel : ViewModelBase
     // --- Linking commands ---
 
     private bool CanLinkDocument() =>
-        SelectedUnlinkedTransaction is not null &&
+        SelectedAvailableTransaction is not null &&
         SelectedAvailableSourceDocument is not null &&
         SelectedAvailableSourceDocument.Status == SourceDocumentStatus.Active;
 
     [RelayCommand(CanExecute = nameof(CanLinkDocument))]
     private async Task LinkDocumentAsync()
     {
-        if (SelectedUnlinkedTransaction is null || SelectedAvailableSourceDocument is null)
+        if (SelectedAvailableTransaction is null || SelectedAvailableSourceDocument is null)
             return;
 
         try
         {
             await _transactionRepository.LinkDocumentAsync(
-                SelectedUnlinkedTransaction.Id,
+                SelectedAvailableTransaction.Id,
                 SelectedAvailableSourceDocument.Id);
             await _transactionRepository.SaveChangesAsync();
-            SelectedUnlinkedTransaction = null;
+            SelectedAvailableTransaction = null;
             SelectedAvailableSourceDocument = null;
             await RefreshAsync();
         }
@@ -340,8 +340,8 @@ public partial class AppViewModel : ViewModelBase
         var allTransactions = await _transactionRepository.GetAllAsync();
         var allDocs = await _sourceDocumentRepository.GetAllAsync();
 
-        UnlinkedTransactions.Clear();
-        LinkedPairs.Clear();
+        AvailableTransactions.Clear();
+        LinkedTransactionGroups.Clear();
         AvailableSourceDocuments.Clear();
 
         // Linked pairs are intentionally not subject to the month filter: they represent
@@ -352,26 +352,30 @@ public partial class AppViewModel : ViewModelBase
             .OrderBy(t => t.TransactionDate)
             .ToList();
 
-        var linkedTransactions = activeTransactions.Where(t => t.SourceDocuments.Count > 0).ToList();
-        var unlinkedTransactions = activeTransactions.Where(t => t.SourceDocuments.Count == 0).ToList();
+        var linkedTransactions = activeTransactions.Where(t => t.IsLinked).ToList();
 
-        // Linked pairs sorted by transaction date, then document date
+        // Linked pairs grouped by transaction and sorted by transaction date, then document date.
         foreach (var tx in linkedTransactions)
         {
-            foreach (var doc in tx.SourceDocuments.OrderBy(d => d.FileNameDate))
-            {
-                LinkedPairs.Add(new LinkedPair(tx, doc));
-            }
+            LinkedTransactionGroups.Add(new LinkedTransactionGroup(
+                tx,
+                tx.SourceDocuments
+                    .OrderBy(d => d.FileNameDate)
+                    .Select(doc => new LinkedPair(tx, doc))
+                    .ToList()));
         }
 
-        // Unlinked transactions — apply optional month filter
-        var filteredUnlinked = ApplyTransactionMonthFilter(unlinkedTransactions);
-        foreach (var tx in filteredUnlinked)
+        // Available transactions — apply optional month filter and keep linked items below unlinked ones.
+        var filteredTransactions = ApplyTransactionMonthFilter(activeTransactions)
+            .OrderBy(t => t.IsLinked)
+            .ThenBy(t => t.TransactionDate)
+            .ThenBy(t => t.AccountingDate);
+        foreach (var tx in filteredTransactions)
         {
-            UnlinkedTransactions.Add(tx);
+            AvailableTransactions.Add(tx);
         }
 
-        // Available source documents — apply optional month filter
+        // Available source documents — apply optional month filter and keep linked items below unlinked ones.
         var visibleDocs = allDocs
             .Where(d =>
                 d.Status != SourceDocumentStatus.Removed &&
@@ -379,7 +383,10 @@ public partial class AppViewModel : ViewModelBase
             .OrderBy(d => d.FileNameDate)
             .ToList();
 
-        var filteredDocs = ApplyDocumentMonthFilter(visibleDocs);
+        var filteredDocs = ApplyDocumentMonthFilter(visibleDocs)
+            .OrderBy(d => d.IsLinked)
+            .ThenBy(d => d.FileNameDate)
+            .ThenBy(d => d.Description);
         foreach (var doc in filteredDocs)
         {
             AvailableSourceDocuments.Add(doc);
@@ -445,3 +452,7 @@ public enum FilterMode
 }
 
 public sealed record LinkedPair(Transaction Transaction, SourceDocument SourceDocument);
+
+public sealed record LinkedTransactionGroup(
+    Transaction Transaction,
+    IReadOnlyList<LinkedPair> LinkedDocuments);

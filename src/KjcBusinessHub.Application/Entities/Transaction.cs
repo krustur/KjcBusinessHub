@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using KjcBusinessHub.Application.Enums;
 
 namespace KjcBusinessHub.Application.Entities;
@@ -14,4 +15,13 @@ public class Transaction
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
     public ICollection<SourceDocument> SourceDocuments { get; private set; } = [];
+
+    [NotMapped]
+    public int LinkedSourceDocumentCount => SourceDocuments.Count;
+
+    [NotMapped]
+    public bool IsLinked => LinkedSourceDocumentCount > 0;
+
+    [NotMapped]
+    public bool HasMultipleLinkedSourceDocuments => LinkedSourceDocumentCount > 1;
 }

@@ -93,5 +93,44 @@ public class SourceDocumentRepositoryTests : IDisposable
         Assert.Equal(doc.Id, found[0].Id);
     }
 
+    [Fact]
+    public async Task GetAllAsync_includes_linked_transactions()
+    {
+        var tx = new Transaction
+        {
+            Id = Guid.NewGuid(),
+            AccountingDate = new DateOnly(2026, 7, 31),
+            TransactionDate = new DateOnly(2026, 7, 1),
+            Amount = 123.45m,
+            Balance = 1000m,
+            Description = "Linked transaction",
+            Status = TransactionStatus.Active,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+        var doc = new SourceDocument
+        {
+            Id = Guid.NewGuid(),
+            FileSubPath = "2026-07/2026-07-01 Invoice.pdf",
+            FileHash = "linked",
+            FileNameDate = new DateOnly(2026, 7, 1),
+            Description = "Invoice",
+            Status = SourceDocumentStatus.Active,
+            FileCreatedDate = DateTimeOffset.UtcNow,
+            FileModifiedDate = DateTimeOffset.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        doc.Transactions.Add(tx);
+
+        await _db.SourceDocuments.AddAsync(doc);
+        await _db.Transactions.AddAsync(tx);
+        await _repository.SaveChangesAsync();
+
+        var all = await _repository.GetAllAsync();
+
+        Assert.Single(all);
+        Assert.Single(all[0].Transactions, linked => linked.Id == tx.Id);
+    }
+
     public void Dispose() => _db.Dispose();
 }

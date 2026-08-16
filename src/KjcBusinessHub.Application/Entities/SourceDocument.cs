@@ -25,4 +25,13 @@ public class SourceDocument
         Ccy.HasValue && CcyAmount.HasValue
             ? $"{Ccy.Value} {CcyAmount.Value:N2}"
             : string.Empty;
+
+    [NotMapped]
+    public int LinkedTransactionCount => Transactions.Count;
+
+    [NotMapped]
+    public bool IsLinked => LinkedTransactionCount > 0;
+
+    [NotMapped]
+    public bool HasMultipleLinkedTransactions => LinkedTransactionCount > 1;
 }
