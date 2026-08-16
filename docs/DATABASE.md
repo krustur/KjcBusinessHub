@@ -83,6 +83,8 @@ public class AppDbContext : DbContext
 
 ### Entity Configuration Example
 
+All entity configuration — including keys, properties, relationships, and computed/unmapped properties — must be done exclusively via `IEntityTypeConfiguration<T>` classes. Do **not** use data annotation attributes (e.g. `[NotMapped]`, `[Column]`) on entity classes; use `builder.Ignore()` and other fluent API calls instead.
+
 ```csharp
 public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
 {
@@ -91,6 +93,10 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         builder.HasKey(t => t.Id);
         builder.Property(t => t.Amount).HasColumnType("decimal(18,2)");
         builder.Property(t => t.Description).HasMaxLength(500).IsRequired();
+
+        // Computed properties that are not persisted must be ignored here,
+        // not annotated with [NotMapped] on the entity class.
+        builder.Ignore(t => t.IsLinked);
 
         builder.HasMany(t => t.SourceDocuments)
                .WithMany()

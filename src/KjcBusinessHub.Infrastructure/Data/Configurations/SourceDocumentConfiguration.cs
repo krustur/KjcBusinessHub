@@ -42,5 +42,10 @@ public class SourceDocumentConfiguration : IEntityTypeConfiguration<SourceDocume
 
         builder.Property(d => d.CreatedAt)
             .IsRequired();
+
+        builder.Ignore(d => d.CurrencyDisplay);
+        builder.Ignore(d => d.LinkedTransactionCount);
+        builder.Ignore(d => d.IsLinked);
+        builder.Ignore(d => d.HasMultipleLinkedTransactions);
     }
 }

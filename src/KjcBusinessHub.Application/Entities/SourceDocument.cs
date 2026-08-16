@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations.Schema;
 using KjcBusinessHub.Application.Enums;
 
 namespace KjcBusinessHub.Application.Entities;
@@ -20,18 +19,14 @@ public class SourceDocument
     public DateTimeOffset? UpdatedAt { get; set; }
     public ICollection<Transaction> Transactions { get; private set; } = [];
 
-    [NotMapped]
     public string CurrencyDisplay =>
         Ccy.HasValue && CcyAmount.HasValue
             ? $"{Ccy.Value} {CcyAmount.Value:N2}"
             : string.Empty;
 
-    [NotMapped]
     public int LinkedTransactionCount => Transactions.Count;
 
-    [NotMapped]
     public bool IsLinked => LinkedTransactionCount > 0;
 
-    [NotMapped]
     public bool HasMultipleLinkedTransactions => LinkedTransactionCount > 1;
 }
