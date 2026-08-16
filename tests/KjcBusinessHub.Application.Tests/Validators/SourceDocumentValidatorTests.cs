@@ -97,4 +97,17 @@ public class SourceDocumentValidatorTests
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors, error => error.PropertyName == nameof(SourceDocument.Ccy));
     }
+
+    [Fact]
+    public void Set_amount_validation_fails_when_currency_has_no_currency_amount()
+    {
+        var doc = ValidDocument();
+        doc.Amount = 25m;
+        doc.Ccy = SourceDocumentCurrency.EUR;
+
+        var result = _validator.ValidateSetAmount(doc);
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, error => error.PropertyName == nameof(SourceDocument.CcyAmount));
+    }
 }

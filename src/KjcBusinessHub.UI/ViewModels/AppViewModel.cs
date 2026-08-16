@@ -288,14 +288,13 @@ public partial class AppViewModel : ViewModelBase
 
         try
         {
-            var selectedCurrency = ccyAmount.HasValue ? SelectedCurrency : null;
             var previousAmount = DocumentBeingAmounted.Amount;
             var previousCcyAmount = DocumentBeingAmounted.CcyAmount;
             var previousCurrency = DocumentBeingAmounted.Ccy;
 
             DocumentBeingAmounted.Amount = amount;
             DocumentBeingAmounted.CcyAmount = ccyAmount;
-            DocumentBeingAmounted.Ccy = selectedCurrency;
+            DocumentBeingAmounted.Ccy = SelectedCurrency;
 
             var validationResult = _sourceDocumentValidator.ValidateSetAmount(DocumentBeingAmounted);
             if (!validationResult.IsValid)

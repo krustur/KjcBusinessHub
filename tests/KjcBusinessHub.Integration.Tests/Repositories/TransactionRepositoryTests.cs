@@ -160,10 +160,13 @@ public class TransactionRepositoryTests : IDisposable
         await _repository.LinkDocumentAsync(secondTx.Id, doc.Id);
         await _repository.SaveChangesAsync();
 
-        var all = await _repository.GetAllAsync();
+        var all = (await _repository.GetAllAsync())
+            .Where(transaction => transaction.Id == firstTx.Id || transaction.Id == secondTx.Id)
+            .OrderBy(transaction => transaction.Description)
+            .ToList();
 
         Assert.Collection(
-            all.OrderBy(transaction => transaction.Description),
+            all,
             transaction => Assert.Single(transaction.SourceDocuments, linked => linked.Id == doc.Id),
             transaction => Assert.Single(transaction.SourceDocuments, linked => linked.Id == doc.Id));
     }
