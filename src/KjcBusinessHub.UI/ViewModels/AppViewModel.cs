@@ -125,7 +125,6 @@ public partial class AppViewModel : ViewModelBase
             SelectedSourceDocumentYear = SelectedYear;
             SelectedSourceDocumentMonth = SelectedMonth;
             UseSeparateSourceDocumentMonth = useSeparateMonth;
-            _ = RefreshAsync();
         }
     }
 
@@ -252,6 +251,9 @@ public partial class AppViewModel : ViewModelBase
     }
 
     partial void OnIncludeNeighbouringMonthsChanged(bool value) =>
+        _ = RefreshAsync();
+
+    partial void OnUseSeparateSourceDocumentMonthChanged(bool value) =>
         _ = RefreshAsync();
 
     // --- Linking commands ---
