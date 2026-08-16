@@ -40,11 +40,6 @@ public class SourceDocumentValidator
             result.AddError(nameof(document.Ccy), "A currency must be selected when a currency amount is provided.");
         }
 
-        if (document.Ccy.HasValue && !document.CcyAmount.HasValue)
-        {
-            result.AddError(nameof(document.CcyAmount), "A currency amount must be provided when a currency is selected.");
-        }
-
         return result;
     }
 }

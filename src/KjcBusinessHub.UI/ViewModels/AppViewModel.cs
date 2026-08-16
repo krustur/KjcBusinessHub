@@ -23,7 +23,7 @@ public partial class AppViewModel : ViewModelBase
     private readonly FileWatcherService _fileWatcherService;
     private readonly ISettingsService _settings;
     private readonly IFileSystemService _fileSystemService;
-    private readonly SourceDocumentValidator _sourceDocumentValidator = new();
+    private readonly SourceDocumentValidator _sourceDocumentValidator;
 
     public ObservableCollection<Transaction> UnlinkedTransactions { get; } = [];
     public ObservableCollection<SourceDocument> AvailableSourceDocuments { get; } = [];
@@ -55,12 +55,14 @@ public partial class AppViewModel : ViewModelBase
     public partial string AmountInputText { get; set; } = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanSelectCurrency))]
     public partial string CcyAmountInputText { get; set; } = string.Empty;
 
     [ObservableProperty]
     public partial SourceDocumentCurrency? SelectedCurrency { get; set; }
 
     public bool IsSettingAmount => DocumentBeingAmounted is not null;
+    public bool CanSelectCurrency => !string.IsNullOrWhiteSpace(CcyAmountInputText);
 
     // --- Filter state ---
 
@@ -93,7 +95,8 @@ public partial class AppViewModel : ViewModelBase
         SourceDocumentImportService sourceDocumentImportService,
         FileWatcherService fileWatcherService,
         ISettingsService settings,
-        IFileSystemService fileSystemService)
+        IFileSystemService fileSystemService,
+        SourceDocumentValidator sourceDocumentValidator)
     {
         _transactionRepository = transactionRepository;
         _sourceDocumentRepository = sourceDocumentRepository;
@@ -102,6 +105,7 @@ public partial class AppViewModel : ViewModelBase
         _fileWatcherService = fileWatcherService;
         _settings = settings;
         _fileSystemService = fileSystemService;
+        _sourceDocumentValidator = sourceDocumentValidator;
     }
 
     public async Task InitialiseAsync()
@@ -288,13 +292,14 @@ public partial class AppViewModel : ViewModelBase
 
         try
         {
+            var selectedCurrency = ccyAmount.HasValue ? SelectedCurrency : null;
             var previousAmount = DocumentBeingAmounted.Amount;
             var previousCcyAmount = DocumentBeingAmounted.CcyAmount;
             var previousCurrency = DocumentBeingAmounted.Ccy;
 
             DocumentBeingAmounted.Amount = amount;
             DocumentBeingAmounted.CcyAmount = ccyAmount;
-            DocumentBeingAmounted.Ccy = SelectedCurrency;
+            DocumentBeingAmounted.Ccy = selectedCurrency;
 
             var validationResult = _sourceDocumentValidator.ValidateSetAmount(DocumentBeingAmounted);
             if (!validationResult.IsValid)
@@ -319,6 +324,14 @@ public partial class AppViewModel : ViewModelBase
         catch (Exception ex)
         {
             StatusMessage = $"Error saving amount: {ex.Message}";
+        }
+    }
+
+    partial void OnCcyAmountInputTextChanged(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            SelectedCurrency = null;
         }
     }
 

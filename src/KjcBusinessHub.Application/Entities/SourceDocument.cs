@@ -18,7 +18,7 @@ public class SourceDocument
     public DateTimeOffset FileModifiedDate { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
-    public ICollection<Transaction> Transactions { get; set; } = [];
+    public ICollection<Transaction> Transactions { get; private set; } = [];
 
     [NotMapped]
     public string CurrencyDisplay =>
