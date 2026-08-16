@@ -6,6 +6,10 @@ This document tracks the development progress of KjcBusinessHub.
 
 ## MVP Priority — Next Features
 
+- [x] Prioritize "See month" split-month filtering before other planned MVP items
+  - [x] Add toggle: `Use separate month for Source Documents`
+  - [x] When enabled, Source Documents use their own month selector
+  - [x] When disabled, Source Documents follow the Transactions month selector
 - [x] Support linking one SourceDocument to multiple Transactions
   - [x] Domain and persistence: keep many-to-many links for repeated receipts on one paper
   - [x] UI linking flow: allow adding additional links without replacing existing ones
@@ -59,6 +63,7 @@ This document tracks the development progress of KjcBusinessHub.
 - [x] Filter: "See all" vs "See month" toggle
   - [x] "See month": include neighbouring months toggle
   - [x] "See month": quick-navigation buttons (this month, previous month, next month)
+  - [x] "See month": optional separate month selector for Source Documents
 
 ---
 

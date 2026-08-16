@@ -82,11 +82,25 @@ public partial class AppViewModel : ViewModelBase
     [ObservableProperty]
     public partial bool IncludeNeighbouringMonths { get; set; } = false;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedSourceDocumentMonthLabel))]
+    public partial int SelectedSourceDocumentYear { get; set; } = DateOnly.FromDateTime(DateTime.Today).Year;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedSourceDocumentMonthLabel))]
+    public partial int SelectedSourceDocumentMonth { get; set; } = DateOnly.FromDateTime(DateTime.Today).Month;
+
+    [ObservableProperty]
+    public partial bool UseSeparateSourceDocumentMonth { get; set; } = false;
+
     public bool IsSeeAllMode => FilterMode == FilterMode.SeeAll;
     public bool IsSeeMonthMode => FilterMode == FilterMode.SeeMonth;
 
     public string SelectedMonthLabel =>
         new DateOnly(SelectedYear, SelectedMonth, 1).ToString("MMMM yyyy");
+
+    public string SelectedSourceDocumentMonthLabel =>
+        new DateOnly(SelectedSourceDocumentYear, SelectedSourceDocumentMonth, 1).ToString("MMMM yyyy");
 
     public AppViewModel(
         ITransactionRepository transactionRepository,
@@ -177,7 +191,37 @@ public partial class AppViewModel : ViewModelBase
         await RefreshAsync();
     }
 
+    [RelayCommand]
+    private async Task GoToSourceDocumentThisMonthAsync()
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        SelectedSourceDocumentYear = today.Year;
+        SelectedSourceDocumentMonth = today.Month;
+        await RefreshAsync();
+    }
+
+    [RelayCommand]
+    private async Task GoToSourceDocumentPreviousMonthAsync()
+    {
+        var current = new DateOnly(SelectedSourceDocumentYear, SelectedSourceDocumentMonth, 1).AddMonths(-1);
+        SelectedSourceDocumentYear = current.Year;
+        SelectedSourceDocumentMonth = current.Month;
+        await RefreshAsync();
+    }
+
+    [RelayCommand]
+    private async Task GoToSourceDocumentNextMonthAsync()
+    {
+        var current = new DateOnly(SelectedSourceDocumentYear, SelectedSourceDocumentMonth, 1).AddMonths(1);
+        SelectedSourceDocumentYear = current.Year;
+        SelectedSourceDocumentMonth = current.Month;
+        await RefreshAsync();
+    }
+
     partial void OnIncludeNeighbouringMonthsChanged(bool value) =>
+        _ = RefreshAsync();
+
+    partial void OnUseSeparateSourceDocumentMonthChanged(bool value) =>
         _ = RefreshAsync();
 
     // --- Linking commands ---
@@ -344,15 +388,13 @@ public partial class AppViewModel : ViewModelBase
         LinkedTransactionGroups.Clear();
         AvailableSourceDocuments.Clear();
 
-        // Linked pairs are intentionally not subject to the month filter: they represent
-        // confirmed matches and should remain visible for context even when browsing a
-        // specific month.
         var activeTransactions = allTransactions
             .Where(t => t.Status == TransactionStatus.Active)
             .OrderBy(t => t.TransactionDate)
             .ToList();
 
-        var linkedTransactions = activeTransactions.Where(t => t.IsLinked).ToList();
+        var monthFilteredTransactions = ApplyTransactionMonthFilter(activeTransactions).ToList();
+        var linkedTransactions = monthFilteredTransactions.Where(t => t.IsLinked).ToList();
 
         // Linked pairs grouped by transaction and sorted by transaction date, then document date.
         foreach (var tx in linkedTransactions)
@@ -366,7 +408,7 @@ public partial class AppViewModel : ViewModelBase
         }
 
         // Available transactions — apply optional month filter and keep linked items below unlinked ones.
-        var filteredTransactions = ApplyTransactionMonthFilter(activeTransactions)
+        var filteredTransactions = monthFilteredTransactions
             .OrderBy(t => t.IsLinked)
             .ThenBy(t => t.TransactionDate)
             .ThenBy(t => t.AccountingDate);
@@ -417,7 +459,7 @@ public partial class AppViewModel : ViewModelBase
         if (FilterMode == FilterMode.SeeAll)
             return transactions;
 
-        return transactions.Where(t => IsInMonthRange(t.TransactionDate));
+        return transactions.Where(t => IsInMonthRange(t.TransactionDate, SelectedYear, SelectedMonth));
     }
 
     private IEnumerable<SourceDocument> ApplyDocumentMonthFilter(IEnumerable<SourceDocument> docs)
@@ -425,12 +467,14 @@ public partial class AppViewModel : ViewModelBase
         if (FilterMode == FilterMode.SeeAll)
             return docs;
 
-        return docs.Where(d => IsInMonthRange(d.FileNameDate));
+        var selectedYear = UseSeparateSourceDocumentMonth ? SelectedSourceDocumentYear : SelectedYear;
+        var selectedMonth = UseSeparateSourceDocumentMonth ? SelectedSourceDocumentMonth : SelectedMonth;
+        return docs.Where(d => IsInMonthRange(d.FileNameDate, selectedYear, selectedMonth));
     }
 
-    private bool IsInMonthRange(DateOnly date)
+    private bool IsInMonthRange(DateOnly date, int selectedYear, int selectedMonth)
     {
-        var selected = new DateOnly(SelectedYear, SelectedMonth, 1);
+        var selected = new DateOnly(selectedYear, selectedMonth, 1);
 
         if (IncludeNeighbouringMonths)
         {
@@ -441,7 +485,7 @@ public partial class AppViewModel : ViewModelBase
                    (date.Year == next.Year && date.Month == next.Month);
         }
 
-        return date.Year == SelectedYear && date.Month == SelectedMonth;
+        return date.Year == selectedYear && date.Month == selectedMonth;
     }
 }
 
