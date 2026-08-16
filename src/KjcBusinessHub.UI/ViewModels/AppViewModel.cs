@@ -120,8 +120,12 @@ public partial class AppViewModel : ViewModelBase
             if (UseSeparateSourceDocumentMonth == useSeparateMonth)
                 return;
 
-            SelectedSourceDocumentYear = SelectedYear;
-            SelectedSourceDocumentMonth = SelectedMonth;
+            if (value)
+            {
+                SelectedSourceDocumentYear = SelectedYear;
+                SelectedSourceDocumentMonth = SelectedMonth;
+            }
+
             UseSeparateSourceDocumentMonth = useSeparateMonth;
         }
     }
