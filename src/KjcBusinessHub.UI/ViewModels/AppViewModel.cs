@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -20,6 +21,7 @@ public partial class AppViewModel : ViewModelBase
     private readonly SourceDocumentImportService _sourceDocumentImportService;
     private readonly FileWatcherService _fileWatcherService;
     private readonly ISettingsService _settings;
+    private readonly IFileSystemService _fileSystemService;
 
     public ObservableCollection<Transaction> UnlinkedTransactions { get; } = [];
     public ObservableCollection<SourceDocument> UnlinkedSourceDocuments { get; } = [];
@@ -38,6 +40,17 @@ public partial class AppViewModel : ViewModelBase
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LinkDocumentCommand))]
     public partial SourceDocument? SelectedUnlinkedSourceDocument { get; set; }
+
+    // --- Set Amount inline editing ---
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSettingAmount))]
+    public partial SourceDocument? DocumentBeingAmounted { get; set; }
+
+    [ObservableProperty]
+    public partial string AmountInputText { get; set; } = string.Empty;
+
+    public bool IsSettingAmount => DocumentBeingAmounted is not null;
 
     // --- Filter state ---
 
@@ -69,7 +82,8 @@ public partial class AppViewModel : ViewModelBase
         TransactionImportService transactionImportService,
         SourceDocumentImportService sourceDocumentImportService,
         FileWatcherService fileWatcherService,
-        ISettingsService settings)
+        ISettingsService settings,
+        IFileSystemService fileSystemService)
     {
         _transactionRepository = transactionRepository;
         _sourceDocumentRepository = sourceDocumentRepository;
@@ -77,6 +91,7 @@ public partial class AppViewModel : ViewModelBase
         _sourceDocumentImportService = sourceDocumentImportService;
         _fileWatcherService = fileWatcherService;
         _settings = settings;
+        _fileSystemService = fileSystemService;
     }
 
     public async Task InitialiseAsync()
@@ -154,7 +169,9 @@ public partial class AppViewModel : ViewModelBase
     // --- Linking commands ---
 
     private bool CanLinkDocument() =>
-        SelectedUnlinkedTransaction is not null && SelectedUnlinkedSourceDocument is not null;
+        SelectedUnlinkedTransaction is not null &&
+        SelectedUnlinkedSourceDocument is not null &&
+        SelectedUnlinkedSourceDocument.Status == SourceDocumentStatus.Active;
 
     [RelayCommand(CanExecute = nameof(CanLinkDocument))]
     private async Task LinkDocumentAsync()
@@ -192,6 +209,81 @@ public partial class AppViewModel : ViewModelBase
         catch (Exception ex)
         {
             StatusMessage = $"Error unlinking document: {ex.Message}";
+        }
+    }
+
+    // --- Source document actions (UC-0301 / UC-0302 / UC-0303) ---
+
+    [RelayCommand]
+    private void OpenDocument(SourceDocument doc)
+    {
+        try
+        {
+            var fullPath = _fileSystemService.GetFullPath(_settings.SourceDocumentFolder!, doc.FileSubPath);
+            _fileSystemService.OpenFile(fullPath);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Could not open document: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private void ShowInExplorer(SourceDocument doc)
+    {
+        try
+        {
+            var fullPath = _fileSystemService.GetFullPath(_settings.SourceDocumentFolder!, doc.FileSubPath);
+            _fileSystemService.ShowInExplorer(fullPath);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Could not show file in file manager: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private void BeginSetAmount(SourceDocument doc)
+    {
+        AmountInputText = doc.Amount.HasValue
+            ? doc.Amount.Value.ToString("G", CultureInfo.InvariantCulture)
+            : string.Empty;
+        DocumentBeingAmounted = doc;
+    }
+
+    [RelayCommand]
+    private void CancelSetAmount()
+    {
+        DocumentBeingAmounted = null;
+        AmountInputText = string.Empty;
+    }
+
+    [RelayCommand]
+    private async Task ConfirmSetAmountAsync()
+    {
+        if (DocumentBeingAmounted is null)
+            return;
+
+        if (!decimal.TryParse(AmountInputText, NumberStyles.Any, CultureInfo.CurrentCulture, out var amount))
+        {
+            StatusMessage = "Invalid amount. Please enter a valid number.";
+            return;
+        }
+
+        try
+        {
+            DocumentBeingAmounted.Amount = amount;
+            DocumentBeingAmounted.Status = SourceDocumentStatus.Active;
+            DocumentBeingAmounted.UpdatedAt = DateTimeOffset.UtcNow;
+            await _sourceDocumentRepository.UpdateAsync(DocumentBeingAmounted);
+            await _sourceDocumentRepository.SaveChangesAsync();
+            DocumentBeingAmounted = null;
+            AmountInputText = string.Empty;
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error saving amount: {ex.Message}";
         }
     }
 

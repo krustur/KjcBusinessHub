@@ -1,6 +1,7 @@
 using KjcBusinessHub.Application.Interfaces;
 using KjcBusinessHub.Application.Services;
 using KjcBusinessHub.Infrastructure.Data;
+using KjcBusinessHub.Infrastructure.FileSystem;
 using KjcBusinessHub.Infrastructure.Repositories;
 using KjcBusinessHub.Infrastructure.Settings;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<ISourceDocumentRepository, SourceDocumentRepository>();
         services.AddSingleton<ISettingsService, SettingsService>();
+        services.AddSingleton<IFileSystemService, FileSystemService>();
         services.AddTransient<TransactionImportService>();
         services.AddTransient<SourceDocumentImportService>();
         services.AddSingleton<FileWatcherService>();

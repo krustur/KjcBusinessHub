@@ -53,7 +53,16 @@ This document tracks the development progress of KjcBusinessHub.
 
 ---
 
-## Phase 5 — Source Document Lifecycle
+## Phase 5 — Source Document Actions
+
+- [x] UC-0301 Open Document: open a source document using the default OS application
+- [x] UC-0302 Show in Explorer: open the file explorer and highlight the document in its folder
+- [x] UC-0303 Set Amount: allow user to enter an amount for a document; transitions status to `Active`
+- [x] UC-0304 Link Source Document: enforce that only `Active` documents can be linked to a transaction
+
+---
+
+## Phase 6 — Source Document Lifecycle
 
 - [ ] Handle `New` status: prompt user to enter Amount for newly discovered documents
 - [ ] Handle `RemovedFromDisk` status: show indication, allow user to confirm removal (`Removed`)
@@ -62,14 +71,14 @@ This document tracks the development progress of KjcBusinessHub.
 
 ---
 
-## Phase 6 — Transaction Lifecycle
+## Phase 7 — Transaction Lifecycle
 
 - [ ] Handle `RemovedFromFile` status: show indication, allow user to confirm removal (`Removed`)
 - [ ] Display deleted / removed transactions separately or with visual indicator
 
 ---
 
-## Phase 7 — Quality of Life
+## Phase 8 — Quality of Life
 
 - [ ] Easy visual differentiation of incoming (credit) vs outgoing (debit) transactions
 - [ ] Filter transactions by incoming / outgoing
@@ -79,7 +88,7 @@ This document tracks the development progress of KjcBusinessHub.
 
 ---
 
-## Phase 8 — Data Safety & Maintenance
+## Phase 9 — Data Safety & Maintenance
 
 - [ ] Daily backup of the database to a human-readable text file
 - [ ] Formal DB schema documentation (docs/DATABASE.md)

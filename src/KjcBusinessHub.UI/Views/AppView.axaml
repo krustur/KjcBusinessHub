@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:KjcBusinessHub.UI.ViewModels"
+             xmlns:entities="using:KjcBusinessHub.Application.Entities"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
@@ -76,22 +77,73 @@
 
                 <!-- Unlinked Source Documents -->
                 <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1" Margin="4,0,0,0" CornerRadius="4">
-                    <Grid RowDefinitions="Auto,*">
+                    <Grid RowDefinitions="Auto,*,Auto">
                         <TextBlock Grid.Row="0" Text="Unlinked Source Documents" FontWeight="Bold" Margin="8,4" />
                         <ListBox Grid.Row="1" ItemsSource="{Binding UnlinkedSourceDocuments}"
                                  SelectedItem="{Binding SelectedUnlinkedSourceDocument}">
                             <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid ColumnDefinitions="Auto,*,Auto">
-                                        <TextBlock Grid.Column="0" Text="{Binding FileNameDate}" Margin="0,0,8,0" />
-                                        <TextBlock Grid.Column="1" Text="{Binding Description}" TextTrimming="CharacterEllipsis" />
-                                        <TextBlock Grid.Column="2"
-                                                   Text="{Binding Amount, StringFormat='{}{0:N2}'}"
-                                                   HorizontalAlignment="Right" Margin="8,0,0,0" />
+                                <DataTemplate x:DataType="entities:SourceDocument">
+                                    <Grid RowDefinitions="Auto,Auto">
+                                        <!-- Main info row -->
+                                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto">
+                                            <TextBlock Grid.Column="0" Text="{Binding FileNameDate}" Margin="0,0,8,0" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Description}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Column="2"
+                                                       Text="{Binding Amount, StringFormat='{}{0:N2}'}"
+                                                       HorizontalAlignment="Right" Margin="8,0,0,0" />
+                                            <!-- Status badge for non-Active documents -->
+                                            <Border Grid.Column="3"
+                                                    Background="Orange"
+                                                    CornerRadius="3"
+                                                    Padding="4,1"
+                                                    Margin="6,0,0,0"
+                                                    IsVisible="{Binding Status, Converter={x:Static vm:Converters.IsNotActive}}">
+                                                <TextBlock Text="{Binding Status}"
+                                                           FontSize="10"
+                                                           Foreground="White" />
+                                            </Border>
+                                        </Grid>
+                                        <!-- Action buttons row -->
+                                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="0,2,0,0">
+                                            <Button Content="Open"
+                                                    Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).OpenDocumentCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Padding="6,2" FontSize="11" />
+                                            <Button Content="Show in Explorer"
+                                                    Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).ShowInExplorerCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Padding="6,2" FontSize="11" />
+                                            <Button Content="Set Amount"
+                                                    Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).BeginSetAmountCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Padding="6,2" FontSize="11" />
+                                        </StackPanel>
                                     </Grid>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
+                        <!-- Inline Set Amount panel -->
+                        <Border Grid.Row="2"
+                                IsVisible="{Binding IsSettingAmount}"
+                                BorderBrush="SteelBlue" BorderThickness="1"
+                                CornerRadius="4" Margin="4" Padding="8">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="{Binding DocumentBeingAmounted.Description,
+                                                  StringFormat='Set amount for: {0}'}"
+                                           FontWeight="SemiBold" />
+                                <Grid ColumnDefinitions="*,Auto,Auto">
+                                    <TextBox Grid.Column="0"
+                                             Text="{Binding AmountInputText}"
+                                             PlaceholderText="Enter amount…" />
+                                    <Button Grid.Column="1" Content="Confirm"
+                                            Command="{Binding ConfirmSetAmountCommand}"
+                                            Margin="4,0,0,0" />
+                                    <Button Grid.Column="2" Content="Cancel"
+                                            Command="{Binding CancelSetAmountCommand}"
+                                            Margin="4,0,0,0" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
                     </Grid>
                 </Border>
 
@@ -119,6 +171,12 @@
                                         <TextBlock Text="{Binding SourceDocument.FileNameDate}" />
                                         <TextBlock Text="{Binding SourceDocument.Description}" TextTrimming="CharacterEllipsis" />
                                         <TextBlock Text="{Binding SourceDocument.Amount, StringFormat='{}{0:N2}'}" />
+                                        <Button Content="Open"
+                                                Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).OpenDocumentCommand}"
+                                                CommandParameter="{Binding SourceDocument}" />
+                                        <Button Content="Show in Explorer"
+                                                Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).ShowInExplorerCommand}"
+                                                CommandParameter="{Binding SourceDocument}" />
                                     </StackPanel>
                                     <!-- Unlink button -->
                                     <Button Grid.Column="3" Content="Unlink"
