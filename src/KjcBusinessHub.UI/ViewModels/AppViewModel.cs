@@ -10,6 +10,7 @@ using KjcBusinessHub.Application.Entities;
 using KjcBusinessHub.Application.Enums;
 using KjcBusinessHub.Application.Interfaces;
 using KjcBusinessHub.Application.Services;
+using KjcBusinessHub.Application.Validators;
 
 namespace KjcBusinessHub.UI.ViewModels;
 
@@ -22,10 +23,13 @@ public partial class AppViewModel : ViewModelBase
     private readonly FileWatcherService _fileWatcherService;
     private readonly ISettingsService _settings;
     private readonly IFileSystemService _fileSystemService;
+    private readonly SourceDocumentValidator _sourceDocumentValidator = new();
 
     public ObservableCollection<Transaction> UnlinkedTransactions { get; } = [];
-    public ObservableCollection<SourceDocument> UnlinkedSourceDocuments { get; } = [];
+    public ObservableCollection<SourceDocument> AvailableSourceDocuments { get; } = [];
     public ObservableCollection<LinkedPair> LinkedPairs { get; } = [];
+    public IReadOnlyList<SourceDocumentCurrency> SupportedCurrencies { get; } =
+        [SourceDocumentCurrency.EUR, SourceDocumentCurrency.USD];
 
     [ObservableProperty]
     public partial bool IsLoading { get; set; }
@@ -39,7 +43,7 @@ public partial class AppViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LinkDocumentCommand))]
-    public partial SourceDocument? SelectedUnlinkedSourceDocument { get; set; }
+    public partial SourceDocument? SelectedAvailableSourceDocument { get; set; }
 
     // --- Set Amount inline editing ---
 
@@ -49,6 +53,12 @@ public partial class AppViewModel : ViewModelBase
 
     [ObservableProperty]
     public partial string AmountInputText { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string CcyAmountInputText { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial SourceDocumentCurrency? SelectedCurrency { get; set; }
 
     public bool IsSettingAmount => DocumentBeingAmounted is not null;
 
@@ -170,23 +180,23 @@ public partial class AppViewModel : ViewModelBase
 
     private bool CanLinkDocument() =>
         SelectedUnlinkedTransaction is not null &&
-        SelectedUnlinkedSourceDocument is not null &&
-        SelectedUnlinkedSourceDocument.Status == SourceDocumentStatus.Active;
+        SelectedAvailableSourceDocument is not null &&
+        SelectedAvailableSourceDocument.Status == SourceDocumentStatus.Active;
 
     [RelayCommand(CanExecute = nameof(CanLinkDocument))]
     private async Task LinkDocumentAsync()
     {
-        if (SelectedUnlinkedTransaction is null || SelectedUnlinkedSourceDocument is null)
+        if (SelectedUnlinkedTransaction is null || SelectedAvailableSourceDocument is null)
             return;
 
         try
         {
             await _transactionRepository.LinkDocumentAsync(
                 SelectedUnlinkedTransaction.Id,
-                SelectedUnlinkedSourceDocument.Id);
+                SelectedAvailableSourceDocument.Id);
             await _transactionRepository.SaveChangesAsync();
             SelectedUnlinkedTransaction = null;
-            SelectedUnlinkedSourceDocument = null;
+            SelectedAvailableSourceDocument = null;
             await RefreshAsync();
         }
         catch (Exception ex)
@@ -248,6 +258,10 @@ public partial class AppViewModel : ViewModelBase
         AmountInputText = doc.Amount.HasValue
             ? doc.Amount.Value.ToString("G", CultureInfo.InvariantCulture)
             : string.Empty;
+        CcyAmountInputText = doc.CcyAmount.HasValue
+            ? doc.CcyAmount.Value.ToString("G", CultureInfo.InvariantCulture)
+            : string.Empty;
+        SelectedCurrency = doc.Ccy;
         DocumentBeingAmounted = doc;
     }
 
@@ -256,6 +270,8 @@ public partial class AppViewModel : ViewModelBase
     {
         DocumentBeingAmounted = null;
         AmountInputText = string.Empty;
+        CcyAmountInputText = string.Empty;
+        SelectedCurrency = null;
     }
 
     [RelayCommand]
@@ -264,21 +280,33 @@ public partial class AppViewModel : ViewModelBase
         if (DocumentBeingAmounted is null)
             return;
 
-        if (!decimal.TryParse(AmountInputText, NumberStyles.Any, CultureInfo.CurrentCulture, out var amount))
-        {
-            StatusMessage = "Invalid amount. Please enter a valid number.";
+        if (!TryParseOptionalAmount(AmountInputText, "amount", out var amount))
             return;
-        }
+
+        if (!TryParseOptionalAmount(CcyAmountInputText, "currency amount", out var ccyAmount))
+            return;
 
         try
         {
             DocumentBeingAmounted.Amount = amount;
+            DocumentBeingAmounted.CcyAmount = ccyAmount;
+            DocumentBeingAmounted.Ccy = ccyAmount.HasValue ? SelectedCurrency : null;
+
+            var validationResult = _sourceDocumentValidator.ValidateSetAmount(DocumentBeingAmounted);
+            if (!validationResult.IsValid)
+            {
+                StatusMessage = string.Join(" ", validationResult.Errors.Select(error => error.Message));
+                return;
+            }
+
             DocumentBeingAmounted.Status = SourceDocumentStatus.Active;
             DocumentBeingAmounted.UpdatedAt = DateTimeOffset.UtcNow;
             await _sourceDocumentRepository.UpdateAsync(DocumentBeingAmounted);
             await _sourceDocumentRepository.SaveChangesAsync();
             DocumentBeingAmounted = null;
             AmountInputText = string.Empty;
+            CcyAmountInputText = string.Empty;
+            SelectedCurrency = null;
             await RefreshAsync();
         }
         catch (Exception ex)
@@ -295,9 +323,7 @@ public partial class AppViewModel : ViewModelBase
 
         UnlinkedTransactions.Clear();
         LinkedPairs.Clear();
-        UnlinkedSourceDocuments.Clear();
-
-        var linkedDocIds = new HashSet<Guid>();
+        AvailableSourceDocuments.Clear();
 
         // Linked pairs are intentionally not subject to the month filter: they represent
         // confirmed matches and should remain visible for context even when browsing a
@@ -316,7 +342,6 @@ public partial class AppViewModel : ViewModelBase
             foreach (var doc in tx.SourceDocuments.OrderBy(d => d.FileNameDate))
             {
                 LinkedPairs.Add(new LinkedPair(tx, doc));
-                linkedDocIds.Add(doc.Id);
             }
         }
 
@@ -327,20 +352,38 @@ public partial class AppViewModel : ViewModelBase
             UnlinkedTransactions.Add(tx);
         }
 
-        // Unlinked source documents — apply optional month filter
+        // Available source documents — apply optional month filter
         var visibleDocs = allDocs
             .Where(d =>
                 d.Status != SourceDocumentStatus.Removed &&
-                d.Status != SourceDocumentStatus.RemovedFromDisk &&
-                !linkedDocIds.Contains(d.Id))
+                d.Status != SourceDocumentStatus.RemovedFromDisk)
             .OrderBy(d => d.FileNameDate)
             .ToList();
 
         var filteredDocs = ApplyDocumentMonthFilter(visibleDocs);
         foreach (var doc in filteredDocs)
         {
-            UnlinkedSourceDocuments.Add(doc);
+            AvailableSourceDocuments.Add(doc);
         }
+    }
+
+    private bool TryParseOptionalAmount(string input, string fieldName, out decimal? value)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            value = null;
+            return true;
+        }
+
+        if (decimal.TryParse(input, NumberStyles.Any, CultureInfo.CurrentCulture, out var parsedValue))
+        {
+            value = parsedValue;
+            return true;
+        }
+
+        StatusMessage = $"Invalid {fieldName}. Please enter a valid number.";
+        value = null;
+        return false;
     }
 
     private IEnumerable<Transaction> ApplyTransactionMonthFilter(IEnumerable<Transaction> transactions)

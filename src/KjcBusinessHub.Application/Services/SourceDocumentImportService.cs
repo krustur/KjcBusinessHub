@@ -158,6 +158,8 @@ public partial class SourceDocumentImportService(
                 FileNameDate = fileNameDate,
                 Description = description,
                 Amount = null,
+                Ccy = null,
+                CcyAmount = null,
                 Status = SourceDocumentStatus.New,
                 FileCreatedDate = fileCreatedDate,
                 FileModifiedDate = fileModifiedDate,

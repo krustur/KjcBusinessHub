@@ -29,7 +29,7 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
             .IsRequired();
 
         builder.HasMany(t => t.SourceDocuments)
-            .WithMany()
+            .WithMany(d => d.Transactions)
             .UsingEntity("TransactionSourceDocuments",
                 l => l.HasOne(typeof(SourceDocument)).WithMany().HasForeignKey("SourceDocumentId"),
                 r => r.HasOne(typeof(Transaction)).WithMany().HasForeignKey("TransactionId"),

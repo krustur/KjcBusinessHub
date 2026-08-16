@@ -75,24 +75,30 @@
                     </Grid>
                 </Border>
 
-                <!-- Unlinked Source Documents -->
+                <!-- Available Source Documents -->
                 <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1" Margin="4,0,0,0" CornerRadius="4">
                     <Grid RowDefinitions="Auto,*,Auto">
-                        <TextBlock Grid.Row="0" Text="Unlinked Source Documents" FontWeight="Bold" Margin="8,4" />
-                        <ListBox Grid.Row="1" ItemsSource="{Binding UnlinkedSourceDocuments}"
-                                 SelectedItem="{Binding SelectedUnlinkedSourceDocument}">
+                        <TextBlock Grid.Row="0" Text="Available Source Documents" FontWeight="Bold" Margin="8,4" />
+                        <ListBox Grid.Row="1" ItemsSource="{Binding AvailableSourceDocuments}"
+                                 SelectedItem="{Binding SelectedAvailableSourceDocument}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate x:DataType="entities:SourceDocument">
                                     <Grid RowDefinitions="Auto,Auto">
                                         <!-- Main info row -->
-                                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto">
+                                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
                                             <TextBlock Grid.Column="0" Text="{Binding FileNameDate}" Margin="0,0,8,0" />
                                             <TextBlock Grid.Column="1" Text="{Binding Description}" TextTrimming="CharacterEllipsis" />
                                             <TextBlock Grid.Column="2"
                                                        Text="{Binding Amount, StringFormat='{}{0:N2}'}"
                                                        HorizontalAlignment="Right" Margin="8,0,0,0" />
+                                            <TextBlock Grid.Column="3"
+                                                       Text="{Binding Ccy}"
+                                                       HorizontalAlignment="Right" Margin="8,0,0,0" />
+                                            <TextBlock Grid.Column="4"
+                                                       Text="{Binding CcyAmount, StringFormat='{}{0:N2}'}"
+                                                       HorizontalAlignment="Right" Margin="8,0,0,0" />
                                             <!-- Status badge for non-Active documents -->
-                                            <Border Grid.Column="3"
+                                            <Border Grid.Column="5"
                                                     Background="Orange"
                                                     CornerRadius="3"
                                                     Padding="4,1"
@@ -131,14 +137,22 @@
                                 <TextBlock Text="{Binding DocumentBeingAmounted.Description,
                                                   StringFormat='Set amount for: {0}'}"
                                            FontWeight="SemiBold" />
-                                <Grid ColumnDefinitions="*,Auto,Auto">
+                                <Grid ColumnDefinitions="*,*,Auto,Auto,*">
                                     <TextBox Grid.Column="0"
                                              Text="{Binding AmountInputText}"
                                              PlaceholderText="Enter amount…" />
-                                    <Button Grid.Column="1" Content="Confirm"
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding CcyAmountInputText}"
+                                             PlaceholderText="Enter currency amount…" 
+                                             Margin="4,0,0,0" />
+                                    <ComboBox Grid.Column="2"
+                                             ItemsSource="{Binding SupportedCurrencies}"
+                                             SelectedItem="{Binding SelectedCurrency}"
+                                             Margin="4,0,0,0" />
+                                    <Button Grid.Column="3" Content="Confirm"
                                             Command="{Binding ConfirmSetAmountCommand}"
                                             Margin="4,0,0,0" />
-                                    <Button Grid.Column="2" Content="Cancel"
+                                    <Button Grid.Column="4" Content="Cancel"
                                             Command="{Binding CancelSetAmountCommand}"
                                             Margin="4,0,0,0" />
                                 </Grid>
@@ -171,6 +185,8 @@
                                         <TextBlock Text="{Binding SourceDocument.FileNameDate}" />
                                         <TextBlock Text="{Binding SourceDocument.Description}" TextTrimming="CharacterEllipsis" />
                                         <TextBlock Text="{Binding SourceDocument.Amount, StringFormat='{}{0:N2}'}" />
+                                        <TextBlock Text="{Binding SourceDocument.Ccy}" />
+                                        <TextBlock Text="{Binding SourceDocument.CcyAmount, StringFormat='{}{0:N2}'}" />
                                         <Button Content="Open"
                                                 Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).OpenDocumentCommand}"
                                                 CommandParameter="{Binding SourceDocument}" />

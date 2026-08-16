@@ -24,6 +24,13 @@ public class SourceDocumentConfiguration : IEntityTypeConfiguration<SourceDocume
         builder.Property(d => d.Amount)
             .HasColumnType("decimal(18,2)");
 
+        builder.Property(d => d.Ccy)
+            .HasConversion<string>()
+            .HasMaxLength(3);
+
+        builder.Property(d => d.CcyAmount)
+            .HasColumnType("decimal(18,2)");
+
         builder.Property(d => d.Status)
             .IsRequired();
 
