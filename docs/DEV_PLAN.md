@@ -6,17 +6,17 @@ This document tracks the development progress of KjcBusinessHub.
 
 ## MVP Priority — Next Features
 
-- [ ] Support linking one SourceDocument to multiple Transactions
-  - [ ] Domain and persistence: keep many-to-many links for repeated receipts on one paper
-  - [ ] UI linking flow: allow adding additional links without replacing existing ones
-- [ ] Extend SourceDocument with currency display fields
-  - [ ] Add `Ccy` with allowed values `EUR` and `USD`
-  - [ ] Add `CcyAmount` as optional amount in selected currency
-  - [ ] No currency conversion; values are only shown to the user
-- [ ] Update Set Amount validation rules
-  - [ ] Allow setting `Amount`, `CcyAmount`, or both
-  - [ ] Require at least one of `Amount` or `CcyAmount`
-  - [ ] Require `Ccy` whenever `CcyAmount` is set
+- [x] Support linking one SourceDocument to multiple Transactions
+  - [x] Domain and persistence: keep many-to-many links for repeated receipts on one paper
+  - [x] UI linking flow: allow adding additional links without replacing existing ones
+- [x] Extend SourceDocument with currency display fields
+  - [x] Add `Ccy` with allowed values `EUR` and `USD`
+  - [x] Add `CcyAmount` as optional amount in selected currency
+  - [x] No currency conversion; values are only shown to the user
+- [x] Update Set Amount validation rules
+  - [x] Allow setting `Amount`, `CcyAmount`, or both
+  - [x] Require at least one of `Amount` or `CcyAmount`
+  - [x] Require `Ccy` whenever `CcyAmount` is set
 
 ---
 
