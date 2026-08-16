@@ -6,6 +6,14 @@ namespace KjcBusinessHub.Infrastructure.FileSystem;
 
 public class FileSystemService : IFileSystemService
 {
+    public string GetFullPath(string baseFolder, string fileSubPath)
+    {
+        var normalizedSubPath = fileSubPath
+            .Replace('/', Path.DirectorySeparatorChar)
+            .Replace('\\', Path.DirectorySeparatorChar);
+        return Path.Combine(baseFolder, normalizedSubPath);
+    }
+
     public void OpenFile(string fullPath)
     {
         Process.Start(new ProcessStartInfo

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -215,20 +214,13 @@ public partial class AppViewModel : ViewModelBase
 
     // --- Source document actions (UC-0301 / UC-0302 / UC-0303) ---
 
-    private string GetFullPath(SourceDocument doc)
-    {
-        var normalizedSubPath = doc.FileSubPath
-            .Replace('/', Path.DirectorySeparatorChar)
-            .Replace('\\', Path.DirectorySeparatorChar);
-        return Path.Combine(_settings.SourceDocumentFolder!, normalizedSubPath);
-    }
-
     [RelayCommand]
     private void OpenDocument(SourceDocument doc)
     {
         try
         {
-            _fileSystemService.OpenFile(GetFullPath(doc));
+            var fullPath = _fileSystemService.GetFullPath(_settings.SourceDocumentFolder!, doc.FileSubPath);
+            _fileSystemService.OpenFile(fullPath);
         }
         catch (Exception ex)
         {
@@ -241,7 +233,8 @@ public partial class AppViewModel : ViewModelBase
     {
         try
         {
-            _fileSystemService.ShowInExplorer(GetFullPath(doc));
+            var fullPath = _fileSystemService.GetFullPath(_settings.SourceDocumentFolder!, doc.FileSubPath);
+            _fileSystemService.ShowInExplorer(fullPath);
         }
         catch (Exception ex)
         {
