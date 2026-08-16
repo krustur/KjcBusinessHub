@@ -126,8 +126,11 @@ The user should see a view of all Unlinked Transactions top left and all Unlinke
 **Acceptance Criteria:**
 
 - The user should be able to trigger "Set Amount" for any SourceDocument
-- The user should be able to enter an amount value for the document
-- When an amount is set, the SourceDocument should change its state to `Active`
+- The user should be able to set `Amount`, `CcyAmount`, or both for the document
+- At least one of `Amount` or `CcyAmount` must be set before the action can be saved
+- If `CcyAmount` is set, `Ccy` must also be set
+- `Ccy` is limited to `EUR` and `USD`
+- When at least one of `Amount` or `CcyAmount` is set and validations pass, the SourceDocument should change its state to `Active`
 
 ### UC-0304 Link Source Document to Transaction
 
@@ -139,7 +142,8 @@ The user should see a view of all Unlinked Transactions top left and all Unlinke
 
 **Acceptance Criteria:**
 
-- The user should be able to link an `Active` SourceDocument to a Transaction
+- The user should be able to link an `Active` SourceDocument to one or more Transactions
+- Linking a SourceDocument to an additional Transaction should keep existing links intact
 - Only SourceDocuments with state `Active` should be allowed to be linked to a Transaction
 - SourceDocuments that are not `Active` should not be selectable or available for linking
 

@@ -62,6 +62,8 @@ Parse the SourceDocumentsFolder and add all identified SourceDocuments to the Ap
 - FileNameDate     = as parsed
 - Description      = as parsed
 - Amount           = null
+- Ccy              = null
+- CcyAmount        = null
 - Status           = `New`
 - FileCreatedDate  = from file metadata
 - FileModifiedDate = from file metadata
@@ -83,5 +85,4 @@ For every SourceDocument in the App that was not present during the scan:
 
 1. The SourceDocument has been deleted from the disk or moved to outside of the SourceDocumentsFolder, update the SourceDocument:
 - Status = `RemovedFromDisk`
-
 
