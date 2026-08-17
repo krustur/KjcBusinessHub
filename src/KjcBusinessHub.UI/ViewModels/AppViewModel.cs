@@ -69,14 +69,17 @@ public partial class AppViewModel : ViewModelBase
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSeeMonthMode))]
     [NotifyPropertyChangedFor(nameof(IsSeeAllMode))]
-    public partial FilterMode FilterMode { get; set; } = FilterMode.SeeAll;
+    [NotifyPropertyChangedFor(nameof(ShowAllMonths))]
+    public partial FilterMode FilterMode { get; set; } = FilterMode.SeeMonth;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedMonthLabel))]
+    [NotifyCanExecuteChangedFor(nameof(SyncSourceDocumentMonthWithTransactionCommand))]
     public partial int SelectedYear { get; set; } = DateOnly.FromDateTime(DateTime.Today).Year;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedMonthLabel))]
+    [NotifyCanExecuteChangedFor(nameof(SyncSourceDocumentMonthWithTransactionCommand))]
     public partial int SelectedMonth { get; set; } = DateOnly.FromDateTime(DateTime.Today).Month;
 
     [ObservableProperty]
@@ -84,17 +87,53 @@ public partial class AppViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedSourceDocumentMonthLabel))]
+    [NotifyCanExecuteChangedFor(nameof(SyncSourceDocumentMonthWithTransactionCommand))]
     public partial int SelectedSourceDocumentYear { get; set; } = DateOnly.FromDateTime(DateTime.Today).Year;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedSourceDocumentMonthLabel))]
+    [NotifyCanExecuteChangedFor(nameof(SyncSourceDocumentMonthWithTransactionCommand))]
     public partial int SelectedSourceDocumentMonth { get; set; } = DateOnly.FromDateTime(DateTime.Today).Month;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SyncTransactionAndSourceDocumentMonth))]
+    [NotifyCanExecuteChangedFor(nameof(SyncSourceDocumentMonthWithTransactionCommand))]
     public partial bool UseSeparateSourceDocumentMonth { get; set; } = false;
 
     public bool IsSeeAllMode => FilterMode == FilterMode.SeeAll;
     public bool IsSeeMonthMode => FilterMode == FilterMode.SeeMonth;
+    public bool ShowAllMonths
+    {
+        get => FilterMode == FilterMode.SeeAll;
+        set
+        {
+            var nextMode = value ? FilterMode.SeeAll : FilterMode.SeeMonth;
+            if (FilterMode == nextMode)
+                return;
+
+            FilterMode = nextMode;
+            _ = RefreshAsync();
+        }
+    }
+
+    public bool SyncTransactionAndSourceDocumentMonth
+    {
+        get => !UseSeparateSourceDocumentMonth;
+        set
+        {
+            var useSeparateMonth = !value;
+            if (UseSeparateSourceDocumentMonth == useSeparateMonth)
+                return;
+
+            if (!value)
+            {
+                SelectedSourceDocumentYear = SelectedYear;
+                SelectedSourceDocumentMonth = SelectedMonth;
+            }
+
+            UseSeparateSourceDocumentMonth = useSeparateMonth;
+        }
+    }
 
     public string SelectedMonthLabel =>
         new DateOnly(SelectedYear, SelectedMonth, 1).ToString("MMMM yyyy");
@@ -215,6 +254,18 @@ public partial class AppViewModel : ViewModelBase
         var current = new DateOnly(SelectedSourceDocumentYear, SelectedSourceDocumentMonth, 1).AddMonths(1);
         SelectedSourceDocumentYear = current.Year;
         SelectedSourceDocumentMonth = current.Month;
+        await RefreshAsync();
+    }
+
+    private bool CanSyncSourceDocumentMonthWithTransaction() =>
+        UseSeparateSourceDocumentMonth &&
+        (SelectedSourceDocumentYear != SelectedYear || SelectedSourceDocumentMonth != SelectedMonth);
+
+    [RelayCommand(CanExecute = nameof(CanSyncSourceDocumentMonthWithTransaction))]
+    private async Task SyncSourceDocumentMonthWithTransactionAsync()
+    {
+        SelectedSourceDocumentYear = SelectedYear;
+        SelectedSourceDocumentMonth = SelectedMonth;
         await RefreshAsync();
     }
 
