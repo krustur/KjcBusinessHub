@@ -224,22 +224,6 @@ The user should see a view of all available Transactions top left and all availa
 
 
 
-### View transactions 
-
-Transactions should show: dates, account no, texts, amounts
-
-Documents should show: dates and names. 
-
-Default order: Transaction date, then document date, then transaction dates for all mapped documents.
-
-Options: 
-- Default to month-based view with quick navigation: this month, previous month, next month
-- Checkbox `Show all months` to include all months in one view
-- Checkbox `Sync transaction and source document month` to keep both month selectors in lockstep
-- When separate month selection is shown for SourceDocuments, keep its current month when leaving sync mode and offer a `Sync with Transaction` action when the two month selections differ
-- For month view, include neighboring months as a toggle option
-- SourceDocuments marked `Annual` should always be shown in `Available Source Documents`
-- SourceDocuments marked `Annual` or `OldAnnual` should have a visual flag
 
 ### Backlog / Unsorted
 
