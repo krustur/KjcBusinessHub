@@ -290,9 +290,18 @@ public partial class AppViewModel : ViewModelBase
 
         try
         {
+            var doc = SelectedAvailableSourceDocument;
             await _transactionRepository.LinkDocumentAsync(
                 SelectedAvailableTransaction.Id,
-                SelectedAvailableSourceDocument.Id);
+                doc.Id);
+
+            if (doc.IsFutureTransaction)
+            {
+                doc.IsFutureTransaction = false;
+                doc.UpdatedAt = DateTimeOffset.UtcNow;
+                await _sourceDocumentRepository.UpdateAsync(doc);
+            }
+
             await _transactionRepository.SaveChangesAsync();
             SelectedAvailableTransaction = null;
             SelectedAvailableSourceDocument = null;
@@ -429,6 +438,66 @@ public partial class AppViewModel : ViewModelBase
         }
     }
 
+    // --- Monthly coverage ---
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsMonthComplete))]
+    public partial int TransactionTotalCount { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsMonthComplete))]
+    public partial int TransactionHandledCount { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsMonthComplete))]
+    public partial int SourceDocumentTotalCount { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsMonthComplete))]
+    public partial int SourceDocumentHandledCount { get; set; }
+
+    public bool IsMonthComplete =>
+        TransactionTotalCount > 0 &&
+        SourceDocumentTotalCount > 0 &&
+        TransactionHandledCount == TransactionTotalCount &&
+        SourceDocumentHandledCount == SourceDocumentTotalCount;
+
+    // --- Mark as Future Transaction (UC-0306 / UC-0307) ---
+
+    [RelayCommand]
+    private async Task MarkAsFutureTransactionAsync(SourceDocument doc)
+    {
+        try
+        {
+            doc.IsFutureTransaction = true;
+            doc.UpdatedAt = DateTimeOffset.UtcNow;
+            await _sourceDocumentRepository.UpdateAsync(doc);
+            await _sourceDocumentRepository.SaveChangesAsync();
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error marking document as future: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task UnmarkAsFutureTransactionAsync(SourceDocument doc)
+    {
+        try
+        {
+            doc.IsFutureTransaction = false;
+            doc.UpdatedAt = DateTimeOffset.UtcNow;
+            await _sourceDocumentRepository.UpdateAsync(doc);
+            await _sourceDocumentRepository.SaveChangesAsync();
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error removing future mark from document: {ex.Message}";
+        }
+    }
+
     [RelayCommand]
     private async Task RefreshAsync()
     {
@@ -479,11 +548,20 @@ public partial class AppViewModel : ViewModelBase
         var filteredDocs = ApplyDocumentMonthFilter(visibleDocs)
             .OrderBy(d => d.IsLinked)
             .ThenBy(d => d.FileNameDate)
-            .ThenBy(d => d.Description);
+            .ThenBy(d => d.Description)
+            .ToList();
         foreach (var doc in filteredDocs)
         {
             AvailableSourceDocuments.Add(doc);
         }
+
+        // Monthly coverage counts — future-marked documents are excluded from SourceDocument totals
+        TransactionTotalCount = monthFilteredTransactions.Count;
+        TransactionHandledCount = monthFilteredTransactions.Count(t => t.IsLinked);
+
+        var coverageDocs = filteredDocs.Where(d => !d.IsFutureTransaction).ToList();
+        SourceDocumentTotalCount = coverageDocs.Count;
+        SourceDocumentHandledCount = coverageDocs.Count(d => d.IsLinked);
     }
 
     private bool TryParseOptionalAmount(string input, string fieldName, out decimal? value)
@@ -520,7 +598,7 @@ public partial class AppViewModel : ViewModelBase
 
         var selectedYear = UseSeparateSourceDocumentMonth ? SelectedSourceDocumentYear : SelectedYear;
         var selectedMonth = UseSeparateSourceDocumentMonth ? SelectedSourceDocumentMonth : SelectedMonth;
-        return docs.Where(d => IsInMonthRange(d.FileNameDate, selectedYear, selectedMonth));
+        return docs.Where(d => d.IsFutureTransaction || IsInMonthRange(d.FileNameDate, selectedYear, selectedMonth));
     }
 
     private bool IsInMonthRange(DateOnly date, int selectedYear, int selectedMonth)

@@ -15,6 +15,26 @@
             <Button Content="Refresh" Command="{Binding RefreshCommand}" />
             <Button Content="Link ↔" Command="{Binding LinkDocumentCommand}" />
             <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" Foreground="Gray" />
+            <Separator />
+            <TextBlock VerticalAlignment="Center" Foreground="Gray">
+                <TextBlock.Text>
+                    <MultiBinding StringFormat="Transactions: {0}/{1}  Docs: {2}/{3}">
+                        <Binding Path="TransactionHandledCount" />
+                        <Binding Path="TransactionTotalCount" />
+                        <Binding Path="SourceDocumentHandledCount" />
+                        <Binding Path="SourceDocumentTotalCount" />
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+            <Border Background="Green"
+                    CornerRadius="4"
+                    Padding="8,2"
+                    IsVisible="{Binding IsMonthComplete}">
+                <TextBlock Text="✓ Month complete"
+                           Foreground="White"
+                           FontWeight="SemiBold"
+                           FontSize="12" />
+            </Border>
         </StackPanel>
 
         <!-- Loading indicator -->
@@ -112,7 +132,7 @@
                                 <DataTemplate x:DataType="entities:SourceDocument">
                                     <Grid RowDefinitions="Auto,Auto">
                                         <!-- Main info row -->
-                                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto">
+                                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto">
                                             <TextBlock Grid.Column="0" Text="{Binding FileNameDate}" Margin="0,0,8,0" />
                                             <TextBlock Grid.Column="1" Text="{Binding Description}" TextTrimming="CharacterEllipsis" />
                                             <TextBlock Grid.Column="2"
@@ -129,8 +149,19 @@
                                                        Text="{Binding LinkedTransactionCount}"
                                                        Margin="4,0,0,0"
                                                        IsVisible="{Binding HasMultipleLinkedTransactions}" />
-                                            <!-- Status badge for non-Active documents -->
+                                            <!-- Pending badge for future transactions -->
                                             <Border Grid.Column="6"
+                                                    Background="SteelBlue"
+                                                    CornerRadius="3"
+                                                    Padding="4,1"
+                                                    Margin="6,0,0,0"
+                                                    IsVisible="{Binding IsFutureTransaction}">
+                                                <TextBlock Text="Pending"
+                                                           FontSize="10"
+                                                           Foreground="White" />
+                                            </Border>
+                                            <!-- Status badge for non-Active documents -->
+                                            <Border Grid.Column="7"
                                                     Background="Orange"
                                                     CornerRadius="3"
                                                     Padding="4,1"
@@ -155,6 +186,16 @@
                                                     Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).BeginSetAmountCommand}"
                                                     CommandParameter="{Binding}"
                                                     Padding="6,2" FontSize="11" />
+                                            <Button Content="Mark as Pending"
+                                                    Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).MarkAsFutureTransactionCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Padding="6,2" FontSize="11"
+                                                    IsVisible="{Binding IsFutureTransaction, Converter={x:Static BoolConverters.Not}}" />
+                                            <Button Content="Remove Pending"
+                                                    Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).UnmarkAsFutureTransactionCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Padding="6,2" FontSize="11"
+                                                    IsVisible="{Binding IsFutureTransaction}" />
                                         </StackPanel>
                                     </Grid>
                                 </DataTemplate>

@@ -40,6 +40,7 @@ Represents a receipt, invoice, or other document that justifies a transaction.
 | CcyAmount            | decimal?       | Amount stated in the selected currency        |
 | AnnualType           | enum           | `NotAnnual`, `Annual`, `OldAnnual`            |
 | Status               | enum           | `New`, `Active`, `RemovedFromDisk`, `Removed` |
+| IsFutureTransaction  | bool           | Marks the document as a future/pending transaction; defaults to `false` |
 | Transactions         | List\<Transaction\> | Linked transactions                     |
 | FileCreatedDate      | DateTimeOffset | Creation date from the File metadata          |
 | FileModifiedDate     | DateTimeOffset | Modified date from the File metadata          |
@@ -98,5 +99,7 @@ OldAnnual           // Yearly document from earlier period, kept for reference
 - `OldAnnual` SourceDocuments follow normal month filtering and are not always visible in month-based view.
 - Monthly coverage is complete when all Transactions and SourceDocuments in scope are either linked or explicitly marked as handled.
 - Monthly SourceDocument coverage scope includes only month-filtered items; always-visible `Annual` items do not affect the `Month complete` indicator.
+- SourceDocuments with `IsFutureTransaction == true` are excluded from monthly SourceDocument coverage totals but remain visible in the list and can still be linked to Transactions.
+- `IsFutureTransaction` is a manual flag; it is not inferred automatically from transaction data. Clearing the flag is a manual user action.
 
 ---

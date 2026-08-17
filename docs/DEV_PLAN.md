@@ -12,9 +12,9 @@ This document tracks the development progress of KjcBusinessHub.
   - [x] Replace `Use separate month for Source Documents` with checkbox `Sync transaction and source document month`
   - [x] Keep quick month navigation accessible (this month, previous month, next month)
 - [ ] Add monthly coverage visibility
-  - [ ] Show handled-vs-total for Transactions per selected month
-  - [ ] Show handled-vs-total for SourceDocuments per selected month
-  - [ ] Show clear `Month complete` indicator when both sides are fully handled
+  - [x] Show handled-vs-total for Transactions per selected month
+  - [x] Show handled-vs-total for SourceDocuments per selected month
+  - [x] Show clear `Month complete` indicator when both sides are fully handled
 - [ ] Add explicit handling for Transactions that do not require a SourceDocument
   - [ ] Add a user action to mark a Transaction as handled without linked document
   - [ ] Ensure handled-without-document Transactions count as covered in monthly completion
@@ -22,6 +22,11 @@ This document tracks the development progress of KjcBusinessHub.
   - [ ] Add `AnnualType` enum values: `NotAnnual`, `Annual`, `OldAnnual`
   - [ ] Visually flag `Annual` and `OldAnnual` SourceDocuments in the UI
   - [ ] Always include `Annual` SourceDocuments in `Available Source Documents` regardless of selected month
+- [x] Add Future / Pending flag for SourceDocuments (UC-0306 / UC-0307)
+  - [x] Add `IsFutureTransaction` bool on `SourceDocument` (default `false`)
+  - [x] Add EF Core migration for `IsFutureTransaction`
+  - [x] Mark/unmark action buttons and `Pending` badge in the UI
+  - [x] Exclude future-marked documents from monthly SourceDocument coverage totals
 - [x] Prioritize "See month" split-month filtering before other planned MVP items
   - [x] Add toggle: `Use separate month for Source Documents`
   - [x] When enabled, Source Documents use their own month selector

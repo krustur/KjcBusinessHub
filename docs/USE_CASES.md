@@ -97,9 +97,10 @@ The user should see a view of all available Transactions top left and all availa
 - SourceDocuments marked as `Annual` or `OldAnnual` must be visually flagged in the list
 - SourceDocuments marked as `OldAnnual` follow normal month filtering unless `Show all months` is enabled
 - Only `Annual` has always-visible behavior; `OldAnnual` must not be forced visible in month-based view
+- SourceDocuments marked `IsFutureTransaction` must always be visible in `Available Source Documents` regardless of which month is selected, and must be visually flagged with a `Pending` badge
 - The user should be able to see monthly coverage for the selected month:
   - Transactions: handled count vs total count
-  - SourceDocuments: handled count vs total count
+  - SourceDocuments: handled count vs total count (SourceDocuments with `IsFutureTransaction == true` are excluded from these totals)
   - A clear `Month complete` indicator when both counts are fully handled
 
 ### UC-0202 Mark transaction as handled without SourceDocument
@@ -177,6 +178,7 @@ The user should see a view of all available Transactions top left and all availa
 - Linked items in the available lists should display a visible link indicator, and when linked more than once the number of links should also be shown
 - Only SourceDocuments with state `Active` should be allowed to be linked to a Transaction
 - SourceDocuments that are not `Active` should not be selectable or available for linking
+- If a SourceDocument is marked `Pending` (`IsFutureTransaction = true`), linking it to a Transaction automatically clears the `Pending` mark
 
 ### UC-0305 Unlink Source Document from Transaction
 
@@ -189,27 +191,39 @@ The user should see a view of all available Transactions top left and all availa
 - The user should be able to unlink a SourceDocument from a Transaction
 - After unlinking, the SourceDocument and Transaction should no longer be associated
 
+### UC-0306 Mark SourceDocument as Future transaction
+
+**Pre-Conditions:**
+
+- The application must have a configured SourceDocumentFolder
+- At least one SourceDocument must exist
+
+**Acceptance Criteria:**
+
+- The user can mark a SourceDocument as `Future` / `Pending` via a `Mark as Pending` action
+- The mark is persisted (`IsFutureTransaction = true`)
+- The document stays in its invoice-date month but is always visible in `Available Source Documents` regardless of which month is selected
+- The document is clearly distinguishable from normal SourceDocuments via a `Pending` badge
+- A future-marked document is excluded from SourceDocument monthly coverage totals
+- A future-marked document may still be linked to a Transaction normally; doing so automatically clears the `Pending` mark
+
+### UC-0307 Remove Future transaction mark
+
+**Pre-Conditions:**
+
+- At least one SourceDocument is marked `Future` / `Pending`
+
+**Acceptance Criteria:**
+
+- The user can clear the `Future` / `Pending` mark via a `Remove Pending` action
+- The mark is removed (`IsFutureTransaction = false`)
+- Once cleared, the document participates in monthly coverage again
+
 ## Future / Planned
 
 
 
 
-### View transactions 
-
-Transactions should show: dates, account no, texts, amounts
-
-Documents should show: dates and names. 
-
-Default order: Transaction date, then document date, then transaction dates for all mapped documents.
-
-Options: 
-- Default to month-based view with quick navigation: this month, previous month, next month
-- Checkbox `Show all months` to include all months in one view
-- Checkbox `Sync transaction and source document month` to keep both month selectors in lockstep
-- When separate month selection is shown for SourceDocuments, keep its current month when leaving sync mode and offer a `Sync with Transaction` action when the two month selections differ
-- For month view, include neighboring months as a toggle option
-- SourceDocuments marked `Annual` should always be shown in `Available Source Documents`
-- SourceDocuments marked `Annual` or `OldAnnual` should have a visual flag
 
 ### Backlog / Unsorted
 

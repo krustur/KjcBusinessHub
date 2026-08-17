@@ -49,6 +49,7 @@ This document describes the database schema, migrations strategy, and EF Core se
 | FileCreatedDate      | DATETIMEOFFSET   | NOT NULL                   |
 | FileModifiedDate     | DATETIMEOFFSET   | NOT NULL                   |
 | Status               | INT              | NOT NULL, default 0        |
+| IsFutureTransaction  | BIT              | NOT NULL, default 0        |
 | CreatedAt            | DATETIMEOFFSET   | NOT NULL                   |
 | UpdatedAt            | DATETIMEOFFSET   | NULL                       |
 
