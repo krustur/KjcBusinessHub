@@ -11,17 +11,17 @@ This document tracks the development progress of KjcBusinessHub.
   - [x] Replace "See all / See month" buttons with checkbox `Show all months`
   - [x] Replace `Use separate month for Source Documents` with checkbox `Sync transaction and source document month`
   - [x] Keep quick month navigation accessible (this month, previous month, next month)
-- [ ] Add monthly coverage visibility
+- [x] Add monthly coverage visibility
   - [x] Show handled-vs-total for Transactions per selected month
   - [x] Show handled-vs-total for SourceDocuments per selected month
   - [x] Show clear `Month complete` indicator when both sides are fully handled
-- [ ] Add explicit handling for Transactions that do not require a SourceDocument
-  - [ ] Add a user action to mark a Transaction as handled without linked document
-  - [ ] Ensure handled-without-document Transactions count as covered in monthly completion
-- [ ] Add SourceDocument annual classification
-  - [ ] Add `AnnualType` enum values: `NotAnnual`, `Annual`, `OldAnnual`
-  - [ ] Visually flag `Annual` and `OldAnnual` SourceDocuments in the UI
-  - [ ] Always include `Annual` SourceDocuments in `Available Source Documents` regardless of selected month
+- [x] Add explicit handling for Transactions that do not require a SourceDocument
+  - [x] Add a user action to mark a Transaction as handled without linked document
+  - [x] Ensure handled-without-document Transactions count as covered in monthly completion
+- [x] Add SourceDocument annual classification
+  - [x] Add `AnnualType` enum values: `NotAnnual`, `Annual`, `OldAnnual`
+  - [x] Visually flag `Annual` and `OldAnnual` SourceDocuments in the UI
+  - [x] Always include `Annual` SourceDocuments in `Available Source Documents` regardless of selected month
 - [x] Add Future / Pending flag for SourceDocuments (UC-0306 / UC-0307)
   - [x] Add `IsFutureTransaction` bool on `SourceDocument` (default `false`)
   - [x] Add EF Core migration for `IsFutureTransaction`

@@ -31,4 +31,10 @@ public class SourceDocument
     public bool HasMultipleLinkedTransactions => LinkedTransactionCount > 1;
 
     public bool IsFutureTransaction { get; set; } = false;
+
+    public SourceDocumentAnnualType AnnualType { get; set; } = SourceDocumentAnnualType.NotAnnual;
+
+    public bool IsAnnual => AnnualType == SourceDocumentAnnualType.Annual;
+
+    public bool IsOldAnnual => AnnualType == SourceDocumentAnnualType.OldAnnual;
 }

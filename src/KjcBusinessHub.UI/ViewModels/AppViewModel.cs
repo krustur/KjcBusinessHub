@@ -462,6 +462,95 @@ public partial class AppViewModel : ViewModelBase
         TransactionHandledCount == TransactionTotalCount &&
         SourceDocumentHandledCount == SourceDocumentTotalCount;
 
+    // --- Mark Transaction as handled without a linked document ---
+
+    [RelayCommand]
+    private async Task MarkAsHandledWithoutDocumentAsync(Transaction tx)
+    {
+        try
+        {
+            tx.IsHandledWithoutDocument = true;
+            tx.UpdatedAt = DateTimeOffset.UtcNow;
+            await _transactionRepository.UpdateAsync(tx);
+            await _transactionRepository.SaveChangesAsync();
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error marking transaction as handled: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task UnmarkAsHandledWithoutDocumentAsync(Transaction tx)
+    {
+        try
+        {
+            tx.IsHandledWithoutDocument = false;
+            tx.UpdatedAt = DateTimeOffset.UtcNow;
+            await _transactionRepository.UpdateAsync(tx);
+            await _transactionRepository.SaveChangesAsync();
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error removing handled mark from transaction: {ex.Message}";
+        }
+    }
+
+    // --- Set SourceDocument annual classification ---
+
+    [RelayCommand]
+    private async Task MarkAsAnnualAsync(SourceDocument doc)
+    {
+        try
+        {
+            doc.AnnualType = SourceDocumentAnnualType.Annual;
+            doc.UpdatedAt = DateTimeOffset.UtcNow;
+            await _sourceDocumentRepository.UpdateAsync(doc);
+            await _sourceDocumentRepository.SaveChangesAsync();
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error marking document as annual: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task MarkAsOldAnnualAsync(SourceDocument doc)
+    {
+        try
+        {
+            doc.AnnualType = SourceDocumentAnnualType.OldAnnual;
+            doc.UpdatedAt = DateTimeOffset.UtcNow;
+            await _sourceDocumentRepository.UpdateAsync(doc);
+            await _sourceDocumentRepository.SaveChangesAsync();
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error marking document as old annual: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task ClearAnnualTypeAsync(SourceDocument doc)
+    {
+        try
+        {
+            doc.AnnualType = SourceDocumentAnnualType.NotAnnual;
+            doc.UpdatedAt = DateTimeOffset.UtcNow;
+            await _sourceDocumentRepository.UpdateAsync(doc);
+            await _sourceDocumentRepository.SaveChangesAsync();
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error clearing annual type: {ex.Message}";
+        }
+    }
+
     // --- Mark as Future Transaction (UC-0306 / UC-0307) ---
 
     [RelayCommand]
@@ -557,7 +646,7 @@ public partial class AppViewModel : ViewModelBase
 
         // Monthly coverage counts — future-marked documents are excluded from SourceDocument totals
         TransactionTotalCount = monthFilteredTransactions.Count;
-        TransactionHandledCount = monthFilteredTransactions.Count(t => t.IsLinked);
+        TransactionHandledCount = monthFilteredTransactions.Count(t => t.IsHandled);
 
         var coverageDocs = filteredDocs.Where(d => !d.IsFutureTransaction).ToList();
         SourceDocumentTotalCount = coverageDocs.Count;
@@ -598,7 +687,10 @@ public partial class AppViewModel : ViewModelBase
 
         var selectedYear = UseSeparateSourceDocumentMonth ? SelectedSourceDocumentYear : SelectedYear;
         var selectedMonth = UseSeparateSourceDocumentMonth ? SelectedSourceDocumentMonth : SelectedMonth;
-        return docs.Where(d => d.IsFutureTransaction || IsInMonthRange(d.FileNameDate, selectedYear, selectedMonth));
+        return docs.Where(d =>
+            d.IsFutureTransaction ||
+            d.IsAnnual ||
+            IsInMonthRange(d.FileNameDate, selectedYear, selectedMonth));
     }
 
     private bool IsInMonthRange(DateOnly date, int selectedYear, int selectedMonth)

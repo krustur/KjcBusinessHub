@@ -1,4 +1,5 @@
 using KjcBusinessHub.Application.Entities;
+using KjcBusinessHub.Application.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -47,9 +48,15 @@ public class SourceDocumentConfiguration : IEntityTypeConfiguration<SourceDocume
         builder.Ignore(d => d.LinkedTransactionCount);
         builder.Ignore(d => d.IsLinked);
         builder.Ignore(d => d.HasMultipleLinkedTransactions);
+        builder.Ignore(d => d.IsAnnual);
+        builder.Ignore(d => d.IsOldAnnual);
 
         builder.Property(d => d.IsFutureTransaction)
             .IsRequired()
             .HasDefaultValue(false);
+
+        builder.Property(d => d.AnnualType)
+            .IsRequired()
+            .HasDefaultValue(SourceDocumentAnnualType.NotAnnual);
     }
 }

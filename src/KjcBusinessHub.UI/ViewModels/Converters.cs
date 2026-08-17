@@ -8,4 +8,10 @@ public static class Converters
 {
     public static readonly IValueConverter IsNotActive =
         new FuncValueConverter<SourceDocumentStatus, bool>(status => status != SourceDocumentStatus.Active);
+
+    public static readonly IValueConverter HasAnnualType =
+        new FuncValueConverter<SourceDocumentAnnualType, bool>(type => type != SourceDocumentAnnualType.NotAnnual);
+
+    public static readonly IValueConverter IsNotAnnualType =
+        new FuncValueConverter<SourceDocumentAnnualType, bool>(type => type == SourceDocumentAnnualType.NotAnnual);
 }

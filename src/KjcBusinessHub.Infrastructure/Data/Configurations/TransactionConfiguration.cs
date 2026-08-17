@@ -31,6 +31,11 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         builder.Ignore(t => t.LinkedSourceDocumentCount);
         builder.Ignore(t => t.IsLinked);
         builder.Ignore(t => t.HasMultipleLinkedSourceDocuments);
+        builder.Ignore(t => t.IsHandled);
+
+        builder.Property(t => t.IsHandledWithoutDocument)
+            .IsRequired()
+            .HasDefaultValue(false);
 
         builder.HasMany(t => t.SourceDocuments)
             .WithMany(d => d.Transactions)

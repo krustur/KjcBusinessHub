@@ -98,23 +98,49 @@
                                  SelectedItem="{Binding SelectedAvailableTransaction}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate x:DataType="entities:Transaction">
-                                    <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">
-                                        <TextBlock Grid.Column="0" Text="{Binding AccountingDate}"
-                                                   Foreground="Gray" Margin="0,0,4,0" />
-                                        <TextBlock Grid.Column="1" Text="{Binding TransactionDate}"
-                                                   Margin="0,0,8,0" />
-                                        <TextBlock Grid.Column="2" Text="{Binding Description}"
-                                                   TextTrimming="CharacterEllipsis" />
-                                        <TextBlock Grid.Column="3" Text="{Binding Amount, StringFormat='{}{0:N2}'}"
-                                                   HorizontalAlignment="Right" Margin="8,0,0,0" />
-                                        <TextBlock Grid.Column="4"
-                                                   Text="🔗"
-                                                   Margin="8,0,0,0"
-                                                   IsVisible="{Binding IsLinked}" />
-                                        <TextBlock Grid.Column="5"
-                                                   Text="{Binding LinkedSourceDocumentCount}"
-                                                   Margin="4,0,0,0"
-                                                   IsVisible="{Binding HasMultipleLinkedSourceDocuments}" />
+                                    <Grid RowDefinitions="Auto,Auto">
+                                        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto">
+                                            <TextBlock Grid.Column="0" Text="{Binding AccountingDate}"
+                                                       Foreground="Gray" Margin="0,0,4,0" />
+                                            <TextBlock Grid.Column="1" Text="{Binding TransactionDate}"
+                                                       Margin="0,0,8,0" />
+                                            <TextBlock Grid.Column="2" Text="{Binding Description}"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Column="3" Text="{Binding Amount, StringFormat='{}{0:N2}'}"
+                                                       HorizontalAlignment="Right" Margin="8,0,0,0" />
+                                            <TextBlock Grid.Column="4"
+                                                       Text="🔗"
+                                                       Margin="8,0,0,0"
+                                                       IsVisible="{Binding IsLinked}" />
+                                            <TextBlock Grid.Column="5"
+                                                       Text="{Binding LinkedSourceDocumentCount}"
+                                                       Margin="4,0,0,0"
+                                                       IsVisible="{Binding HasMultipleLinkedSourceDocuments}" />
+                                            <!-- Handled-without-document badge -->
+                                            <Border Grid.Column="6"
+                                                    Background="DarkGreen"
+                                                    CornerRadius="3"
+                                                    Padding="4,1"
+                                                    Margin="6,0,0,0"
+                                                    IsVisible="{Binding IsHandledWithoutDocument}">
+                                                <TextBlock Text="✓ No doc needed"
+                                                           FontSize="10"
+                                                           Foreground="White" />
+                                            </Border>
+                                        </Grid>
+                                        <!-- Action buttons for transactions -->
+                                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="0,2,0,0">
+                                            <Button Content="Mark as handled (no doc)"
+                                                    Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).MarkAsHandledWithoutDocumentCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Padding="6,2" FontSize="11"
+                                                    IsVisible="{Binding IsHandledWithoutDocument, Converter={x:Static BoolConverters.Not}}" />
+                                            <Button Content="Remove handled mark"
+                                                    Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).UnmarkAsHandledWithoutDocumentCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Padding="6,2" FontSize="11"
+                                                    IsVisible="{Binding IsHandledWithoutDocument}" />
+                                        </StackPanel>
                                     </Grid>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
@@ -132,7 +158,7 @@
                                 <DataTemplate x:DataType="entities:SourceDocument">
                                     <Grid RowDefinitions="Auto,Auto">
                                         <!-- Main info row -->
-                                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto">
+                                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                                             <TextBlock Grid.Column="0" Text="{Binding FileNameDate}" Margin="0,0,8,0" />
                                             <TextBlock Grid.Column="1" Text="{Binding Description}" TextTrimming="CharacterEllipsis" />
                                             <TextBlock Grid.Column="2"
@@ -171,6 +197,28 @@
                                                            FontSize="10"
                                                            Foreground="White" />
                                             </Border>
+                                            <!-- Annual badge -->
+                                            <Border Grid.Column="8"
+                                                    Background="DarkOrange"
+                                                    CornerRadius="3"
+                                                    Padding="4,1"
+                                                    Margin="6,0,0,0"
+                                                    IsVisible="{Binding IsAnnual}">
+                                                <TextBlock Text="Annual"
+                                                           FontSize="10"
+                                                           Foreground="White" />
+                                            </Border>
+                                            <!-- OldAnnual badge -->
+                                            <Border Grid.Column="9"
+                                                    Background="Gray"
+                                                    CornerRadius="3"
+                                                    Padding="4,1"
+                                                    Margin="6,0,0,0"
+                                                    IsVisible="{Binding IsOldAnnual}">
+                                                <TextBlock Text="Old Annual"
+                                                           FontSize="10"
+                                                           Foreground="White" />
+                                            </Border>
                                         </Grid>
                                         <!-- Action buttons row -->
                                         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="0,2,0,0">
@@ -196,6 +244,21 @@
                                                     CommandParameter="{Binding}"
                                                     Padding="6,2" FontSize="11"
                                                     IsVisible="{Binding IsFutureTransaction}" />
+                                            <Button Content="Mark Annual"
+                                                    Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).MarkAsAnnualCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Padding="6,2" FontSize="11"
+                                                    IsVisible="{Binding AnnualType, Converter={x:Static vm:Converters.IsNotAnnualType}}" />
+                                            <Button Content="Mark Old Annual"
+                                                    Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).MarkAsOldAnnualCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Padding="6,2" FontSize="11"
+                                                    IsVisible="{Binding AnnualType, Converter={x:Static vm:Converters.IsNotAnnualType}}" />
+                                            <Button Content="Clear Annual"
+                                                    Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).ClearAnnualTypeCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Padding="6,2" FontSize="11"
+                                                    IsVisible="{Binding AnnualType, Converter={x:Static vm:Converters.HasAnnualType}}" />
                                         </StackPanel>
                                     </Grid>
                                 </DataTemplate>
