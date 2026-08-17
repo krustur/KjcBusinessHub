@@ -539,19 +539,18 @@ public partial class AppViewModel : ViewModelBase
         var filteredDocs = ApplyDocumentMonthFilter(visibleDocs)
             .OrderBy(d => d.IsLinked)
             .ThenBy(d => d.FileNameDate)
-            .ThenBy(d => d.Description);
+            .ThenBy(d => d.Description)
+            .ToList();
         foreach (var doc in filteredDocs)
         {
             AvailableSourceDocuments.Add(doc);
         }
 
-        // Monthly coverage counts
+        // Monthly coverage counts — future-marked documents are excluded from SourceDocument totals
         TransactionTotalCount = monthFilteredTransactions.Count;
         TransactionHandledCount = monthFilteredTransactions.Count(t => t.IsLinked);
 
-        var coverageDocs = ApplyDocumentMonthFilter(visibleDocs)
-            .Where(d => !d.IsFutureTransaction)
-            .ToList();
+        var coverageDocs = filteredDocs.Where(d => !d.IsFutureTransaction).ToList();
         SourceDocumentTotalCount = coverageDocs.Count;
         SourceDocumentHandledCount = coverageDocs.Count(d => d.IsLinked);
     }

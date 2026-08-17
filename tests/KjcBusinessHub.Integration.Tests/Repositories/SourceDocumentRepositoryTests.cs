@@ -14,6 +14,7 @@ public class SourceDocumentRepositoryTests : IDisposable
 
     public SourceDocumentRepositoryTests()
     {
+        // xUnit creates a new class instance per test, so each test gets its own isolated in-memory database.
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
