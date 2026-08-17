@@ -132,5 +132,54 @@ public class SourceDocumentRepositoryTests : IDisposable
         Assert.Single(all[0].Transactions, linked => linked.Id == tx.Id);
     }
 
+    [Fact]
+    public async Task IsFutureTransaction_persists_and_round_trips()
+    {
+        var doc = new SourceDocument
+        {
+            Id = Guid.NewGuid(),
+            FileSubPath = "2026-08/2026-08-01 Future Invoice.pdf",
+            FileHash = "future123",
+            FileNameDate = new DateOnly(2026, 8, 1),
+            Description = "Future Invoice",
+            Status = SourceDocumentStatus.New,
+            IsFutureTransaction = true,
+            FileCreatedDate = DateTimeOffset.UtcNow,
+            FileModifiedDate = DateTimeOffset.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        await _repository.AddAsync(doc);
+        await _repository.SaveChangesAsync();
+
+        var all = await _repository.GetAllAsync();
+        Assert.Single(all);
+        Assert.True(all[0].IsFutureTransaction);
+    }
+
+    [Fact]
+    public async Task IsFutureTransaction_defaults_to_false()
+    {
+        var doc = new SourceDocument
+        {
+            Id = Guid.NewGuid(),
+            FileSubPath = "2026-08/2026-08-02 Normal Invoice.pdf",
+            FileHash = "normal456",
+            FileNameDate = new DateOnly(2026, 8, 2),
+            Description = "Normal Invoice",
+            Status = SourceDocumentStatus.New,
+            FileCreatedDate = DateTimeOffset.UtcNow,
+            FileModifiedDate = DateTimeOffset.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        await _repository.AddAsync(doc);
+        await _repository.SaveChangesAsync();
+
+        var all = await _repository.GetAllAsync();
+        Assert.Single(all);
+        Assert.False(all[0].IsFutureTransaction);
+    }
+
     public void Dispose() => _db.Dispose();
 }

@@ -47,5 +47,9 @@ public class SourceDocumentConfiguration : IEntityTypeConfiguration<SourceDocume
         builder.Ignore(d => d.LinkedTransactionCount);
         builder.Ignore(d => d.IsLinked);
         builder.Ignore(d => d.HasMultipleLinkedTransactions);
+
+        builder.Property(d => d.IsFutureTransaction)
+            .IsRequired()
+            .HasDefaultValue(false);
     }
 }

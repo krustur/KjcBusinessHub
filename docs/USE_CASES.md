@@ -97,9 +97,10 @@ The user should see a view of all available Transactions top left and all availa
 - SourceDocuments marked as `Annual` or `OldAnnual` must be visually flagged in the list
 - SourceDocuments marked as `OldAnnual` follow normal month filtering unless `Show all months` is enabled
 - Only `Annual` has always-visible behavior; `OldAnnual` must not be forced visible in month-based view
+- SourceDocuments marked `IsFutureTransaction` must remain visible in `Available Source Documents` and must be visually flagged with a `Pending` badge
 - The user should be able to see monthly coverage for the selected month:
   - Transactions: handled count vs total count
-  - SourceDocuments: handled count vs total count
+  - SourceDocuments: handled count vs total count (SourceDocuments with `IsFutureTransaction == true` are excluded from these totals)
   - A clear `Month complete` indicator when both counts are fully handled
 
 ### UC-0202 Mark transaction as handled without SourceDocument
@@ -188,6 +189,34 @@ The user should see a view of all available Transactions top left and all availa
 
 - The user should be able to unlink a SourceDocument from a Transaction
 - After unlinking, the SourceDocument and Transaction should no longer be associated
+
+### UC-0306 Mark SourceDocument as Future transaction
+
+**Pre-Conditions:**
+
+- The application must have a configured SourceDocumentFolder
+- At least one SourceDocument must exist
+
+**Acceptance Criteria:**
+
+- The user can mark a SourceDocument as `Future` / `Pending` via a `Mark as Pending` action
+- The mark is persisted (`IsFutureTransaction = true`)
+- The document stays in its invoice-date month
+- The document is clearly distinguishable from normal SourceDocuments via a `Pending` badge
+- A future-marked document is excluded from SourceDocument monthly coverage totals
+- A future-marked document may still be linked to a Transaction normally
+
+### UC-0307 Remove Future transaction mark
+
+**Pre-Conditions:**
+
+- At least one SourceDocument is marked `Future` / `Pending`
+
+**Acceptance Criteria:**
+
+- The user can clear the `Future` / `Pending` mark via a `Remove Pending` action
+- The mark is removed (`IsFutureTransaction = false`)
+- Once cleared, the document participates in monthly coverage again
 
 ## Future / Planned
 

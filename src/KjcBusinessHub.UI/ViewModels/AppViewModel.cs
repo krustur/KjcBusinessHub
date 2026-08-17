@@ -429,6 +429,66 @@ public partial class AppViewModel : ViewModelBase
         }
     }
 
+    // --- Monthly coverage ---
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsMonthComplete))]
+    public partial int TransactionTotalCount { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsMonthComplete))]
+    public partial int TransactionHandledCount { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsMonthComplete))]
+    public partial int SourceDocumentTotalCount { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsMonthComplete))]
+    public partial int SourceDocumentHandledCount { get; set; }
+
+    public bool IsMonthComplete =>
+        TransactionTotalCount > 0 &&
+        SourceDocumentTotalCount > 0 &&
+        TransactionHandledCount == TransactionTotalCount &&
+        SourceDocumentHandledCount == SourceDocumentTotalCount;
+
+    // --- Mark as Future Transaction (UC-0306 / UC-0307) ---
+
+    [RelayCommand]
+    private async Task MarkAsFutureTransactionAsync(SourceDocument doc)
+    {
+        try
+        {
+            doc.IsFutureTransaction = true;
+            doc.UpdatedAt = DateTimeOffset.UtcNow;
+            await _sourceDocumentRepository.UpdateAsync(doc);
+            await _sourceDocumentRepository.SaveChangesAsync();
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error marking document as future: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task UnmarkAsFutureTransactionAsync(SourceDocument doc)
+    {
+        try
+        {
+            doc.IsFutureTransaction = false;
+            doc.UpdatedAt = DateTimeOffset.UtcNow;
+            await _sourceDocumentRepository.UpdateAsync(doc);
+            await _sourceDocumentRepository.SaveChangesAsync();
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error removing future mark from document: {ex.Message}";
+        }
+    }
+
     [RelayCommand]
     private async Task RefreshAsync()
     {
@@ -484,6 +544,16 @@ public partial class AppViewModel : ViewModelBase
         {
             AvailableSourceDocuments.Add(doc);
         }
+
+        // Monthly coverage counts
+        TransactionTotalCount = monthFilteredTransactions.Count;
+        TransactionHandledCount = monthFilteredTransactions.Count(t => t.IsLinked);
+
+        var coverageDocs = ApplyDocumentMonthFilter(visibleDocs)
+            .Where(d => !d.IsFutureTransaction)
+            .ToList();
+        SourceDocumentTotalCount = coverageDocs.Count;
+        SourceDocumentHandledCount = coverageDocs.Count(d => d.IsLinked);
     }
 
     private bool TryParseOptionalAmount(string input, string fieldName, out decimal? value)

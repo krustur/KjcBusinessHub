@@ -29,4 +29,6 @@ public class SourceDocument
     public bool IsLinked => LinkedTransactionCount > 0;
 
     public bool HasMultipleLinkedTransactions => LinkedTransactionCount > 1;
+
+    public bool IsFutureTransaction { get; set; } = false;
 }
