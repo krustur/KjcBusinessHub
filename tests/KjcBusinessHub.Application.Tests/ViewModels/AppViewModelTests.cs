@@ -29,8 +29,6 @@ public class AppViewModelTests
         var sut = CreateSubject();
         sut.SelectedYear = 2026;
         sut.SelectedMonth = 8;
-        sut.SelectedSourceDocumentYear = 2024;
-        sut.SelectedSourceDocumentMonth = 2;
 
         sut.SyncTransactionAndSourceDocumentMonth = false;
 
