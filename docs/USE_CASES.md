@@ -178,6 +178,7 @@ The user should see a view of all available Transactions top left and all availa
 - Linked items in the available lists should display a visible link indicator, and when linked more than once the number of links should also be shown
 - Only SourceDocuments with state `Active` should be allowed to be linked to a Transaction
 - SourceDocuments that are not `Active` should not be selectable or available for linking
+- If a SourceDocument is marked `Pending` (`IsFutureTransaction = true`), linking it to a Transaction automatically clears the `Pending` mark
 
 ### UC-0305 Unlink Source Document from Transaction
 
@@ -204,7 +205,7 @@ The user should see a view of all available Transactions top left and all availa
 - The document stays in its invoice-date month
 - The document is clearly distinguishable from normal SourceDocuments via a `Pending` badge
 - A future-marked document is excluded from SourceDocument monthly coverage totals
-- A future-marked document may still be linked to a Transaction normally
+- A future-marked document may still be linked to a Transaction normally; doing so automatically clears the `Pending` mark
 
 ### UC-0307 Remove Future transaction mark
 

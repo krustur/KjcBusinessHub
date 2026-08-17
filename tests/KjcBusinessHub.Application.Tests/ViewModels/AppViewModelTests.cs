@@ -143,6 +143,42 @@ public class AppViewModelTests
         Assert.False(sut.IsMonthComplete);
     }
 
+    [Fact]
+    public async Task Linking_a_pending_document_to_a_transaction_clears_the_pending_flag()
+    {
+        var month = new DateOnly(2026, 8, 1);
+        var futureDoc = MakeActiveDoc(Guid.NewGuid(), month, isFuture: true);
+        var transaction = new Transaction
+        {
+            Id = Guid.NewGuid(),
+            AccountingDate = month,
+            TransactionDate = month,
+            Amount = 100m,
+            Balance = 0m,
+            Description = "Test",
+            Status = TransactionStatus.Active,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        _transactionRepository.GetAllAsync().Returns(
+            Task.FromResult<IReadOnlyList<Transaction>>([transaction]));
+        _sourceDocumentRepository.GetAllAsync().Returns(
+            Task.FromResult<IReadOnlyList<SourceDocument>>([futureDoc]));
+
+        var sut = CreateSubject();
+        sut.SelectedYear = 2026;
+        sut.SelectedMonth = 8;
+        sut.FilterMode = FilterMode.SeeMonth;
+        await sut.RefreshCommand.ExecuteAsync(null);
+
+        sut.SelectedAvailableTransaction = transaction;
+        sut.SelectedAvailableSourceDocument = futureDoc;
+        await sut.LinkDocumentCommand.ExecuteAsync(null);
+
+        Assert.False(futureDoc.IsFutureTransaction);
+        await _sourceDocumentRepository.Received(1).UpdateAsync(futureDoc);
+    }
+
     private static SourceDocument MakeActiveDoc(Guid id, DateOnly fileNameDate, bool isFuture) =>
         new()
         {

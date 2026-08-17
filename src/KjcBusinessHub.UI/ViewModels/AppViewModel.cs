@@ -290,9 +290,18 @@ public partial class AppViewModel : ViewModelBase
 
         try
         {
+            var doc = SelectedAvailableSourceDocument;
             await _transactionRepository.LinkDocumentAsync(
                 SelectedAvailableTransaction.Id,
-                SelectedAvailableSourceDocument.Id);
+                doc.Id);
+
+            if (doc.IsFutureTransaction)
+            {
+                doc.IsFutureTransaction = false;
+                doc.UpdatedAt = DateTimeOffset.UtcNow;
+                await _sourceDocumentRepository.UpdateAsync(doc);
+            }
+
             await _transactionRepository.SaveChangesAsync();
             SelectedAvailableTransaction = null;
             SelectedAvailableSourceDocument = null;
