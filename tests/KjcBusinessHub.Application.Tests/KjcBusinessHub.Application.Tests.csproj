@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\KjcBusinessHub.Application\KjcBusinessHub.Application.csproj" />
+    <ProjectReference Include="..\..\src\KjcBusinessHub.UI\KjcBusinessHub.UI.csproj" />
   </ItemGroup>
 
 </Project>

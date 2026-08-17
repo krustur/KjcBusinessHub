@@ -91,7 +91,8 @@ The user should see a view of all available Transactions top left and all availa
 - Default view mode is month-based (`See month`)
 - A checkbox `Show all months` toggles between month-based and all-month views
 - A checkbox `Sync transaction and source document month` controls whether both lists use one shared month selector
-- When sync is disabled, Transactions and SourceDocuments can be filtered by separate months
+- When sync is disabled, the SourceDocument month selector keeps the currently shown month and can then diverge from the Transaction month
+- When sync is disabled and the SourceDocument month differs from the Transaction month, a `Sync with Transaction` button is enabled to realign the SourceDocument month
 - SourceDocuments marked as `Annual` must always be visible in `Available Source Documents`, even in month-based view
 - SourceDocuments marked as `Annual` or `OldAnnual` must be visually flagged in the list
 - SourceDocuments marked as `OldAnnual` follow normal month filtering unless `Show all months` is enabled
@@ -205,6 +206,7 @@ Options: 
 - Default to month-based view with quick navigation: this month, previous month, next month
 - Checkbox `Show all months` to include all months in one view
 - Checkbox `Sync transaction and source document month` to keep both month selectors in lockstep
+- When separate month selection is shown for SourceDocuments, keep its current month when leaving sync mode and offer a `Sync with Transaction` action when the two month selections differ
 - For month view, include neighboring months as a toggle option
 - SourceDocuments marked `Annual` should always be shown in `Available Source Documents`
 - SourceDocuments marked `Annual` or `OldAnnual` should have a visual flag

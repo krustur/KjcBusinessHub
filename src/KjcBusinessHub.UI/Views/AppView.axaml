@@ -58,6 +58,8 @@
                                MinWidth="120"
                                TextAlignment="Center" />
                     <Button Content="▶" Command="{Binding GoToSourceDocumentNextMonthCommand}" />
+                    <Button Content="Sync with Transaction"
+                            Command="{Binding SyncSourceDocumentMonthWithTransactionCommand}" />
                 </StackPanel>
             </StackPanel>
         </StackPanel>
