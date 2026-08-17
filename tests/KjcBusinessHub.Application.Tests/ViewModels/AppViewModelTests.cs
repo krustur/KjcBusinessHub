@@ -54,6 +54,14 @@ public class AppViewModelTests
 
         Assert.Equal(8, sut.SelectedSourceDocumentMonth);
         Assert.False(sut.SyncSourceDocumentMonthWithTransactionCommand.CanExecute(null));
+
+        sut.SelectedSourceDocumentYear = 2025;
+        Assert.True(sut.SyncSourceDocumentMonthWithTransactionCommand.CanExecute(null));
+
+        await sut.SyncSourceDocumentMonthWithTransactionCommand.ExecuteAsync(null);
+
+        Assert.Equal(2026, sut.SelectedSourceDocumentYear);
+        Assert.False(sut.SyncSourceDocumentMonthWithTransactionCommand.CanExecute(null));
     }
 
     private AppViewModel CreateSubject()
