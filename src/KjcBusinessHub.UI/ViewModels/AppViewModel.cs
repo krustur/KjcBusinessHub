@@ -598,7 +598,7 @@ public partial class AppViewModel : ViewModelBase
 
         var selectedYear = UseSeparateSourceDocumentMonth ? SelectedSourceDocumentYear : SelectedYear;
         var selectedMonth = UseSeparateSourceDocumentMonth ? SelectedSourceDocumentMonth : SelectedMonth;
-        return docs.Where(d => IsInMonthRange(d.FileNameDate, selectedYear, selectedMonth));
+        return docs.Where(d => d.IsFutureTransaction || IsInMonthRange(d.FileNameDate, selectedYear, selectedMonth));
     }
 
     private bool IsInMonthRange(DateOnly date, int selectedYear, int selectedMonth)

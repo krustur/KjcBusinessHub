@@ -106,6 +106,25 @@ public class AppViewModelTests
     }
 
     [Fact]
+    public async Task Future_marked_documents_are_visible_even_when_viewing_a_different_month()
+    {
+        var docMonth = new DateOnly(2026, 7, 1);
+        var futureDoc = MakeActiveDoc(Guid.NewGuid(), docMonth, isFuture: true);
+
+        _sourceDocumentRepository.GetAllAsync().Returns(
+            Task.FromResult<IReadOnlyList<SourceDocument>>([futureDoc]));
+
+        var sut = CreateSubject();
+        sut.SelectedYear = 2026;
+        sut.SelectedMonth = 8; // viewing August, but the document is dated July
+        sut.FilterMode = FilterMode.SeeMonth;
+        await sut.RefreshCommand.ExecuteAsync(null);
+
+        Assert.Single(sut.AvailableSourceDocuments);
+        Assert.True(sut.AvailableSourceDocuments[0].IsFutureTransaction);
+    }
+
+    [Fact]
     public async Task IsMonthComplete_is_false_when_there_are_unhandled_documents()
     {
         var month = new DateOnly(2026, 8, 1);

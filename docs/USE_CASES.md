@@ -97,7 +97,7 @@ The user should see a view of all available Transactions top left and all availa
 - SourceDocuments marked as `Annual` or `OldAnnual` must be visually flagged in the list
 - SourceDocuments marked as `OldAnnual` follow normal month filtering unless `Show all months` is enabled
 - Only `Annual` has always-visible behavior; `OldAnnual` must not be forced visible in month-based view
-- SourceDocuments marked `IsFutureTransaction` must remain visible in `Available Source Documents` and must be visually flagged with a `Pending` badge
+- SourceDocuments marked `IsFutureTransaction` must always be visible in `Available Source Documents` regardless of which month is selected, and must be visually flagged with a `Pending` badge
 - The user should be able to see monthly coverage for the selected month:
   - Transactions: handled count vs total count
   - SourceDocuments: handled count vs total count (SourceDocuments with `IsFutureTransaction == true` are excluded from these totals)
@@ -202,7 +202,7 @@ The user should see a view of all available Transactions top left and all availa
 
 - The user can mark a SourceDocument as `Future` / `Pending` via a `Mark as Pending` action
 - The mark is persisted (`IsFutureTransaction = true`)
-- The document stays in its invoice-date month
+- The document stays in its invoice-date month but is always visible in `Available Source Documents` regardless of which month is selected
 - The document is clearly distinguishable from normal SourceDocuments via a `Pending` badge
 - A future-marked document is excluded from SourceDocument monthly coverage totals
 - A future-marked document may still be linked to a Transaction normally; doing so automatically clears the `Pending` mark
