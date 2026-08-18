@@ -208,14 +208,14 @@
                                                            FontSize="10"
                                                            Foreground="White" />
                                             </Border>
-                                            <!-- OldAnnual badge -->
+                                            <!-- ExpiredAnnual badge -->
                                             <Border Grid.Column="9"
                                                     Background="Gray"
                                                     CornerRadius="3"
                                                     Padding="4,1"
                                                     Margin="6,0,0,0"
-                                                    IsVisible="{Binding IsOldAnnual}">
-                                                <TextBlock Text="Old Annual"
+                                                    IsVisible="{Binding IsExpiredAnnual}">
+                                                <TextBlock Text="Expired Annual"
                                                            FontSize="10"
                                                            Foreground="White" />
                                             </Border>
@@ -249,11 +249,11 @@
                                                     CommandParameter="{Binding}"
                                                     Padding="6,2" FontSize="11"
                                                     IsVisible="{Binding CanMarkAsAnnual}" />
-                                            <Button Content="Mark Old Annual"
-                                                    Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).MarkAsOldAnnualCommand}"
+                                            <Button Content="Mark Expired Annual"
+                                                    Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).MarkAsExpiredAnnualCommand}"
                                                     CommandParameter="{Binding}"
                                                     Padding="6,2" FontSize="11"
-                                                    IsVisible="{Binding CanMarkAsOldAnnual}" />
+                                                    IsVisible="{Binding CanMarkAsExpiredAnnual}" />
                                             <Button Content="Clear Annual"
                                                     Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).ClearAnnualTypeCommand}"
                                                     CommandParameter="{Binding}"

@@ -94,9 +94,9 @@ The user should see a view of all available Transactions top left and all availa
 - When sync is disabled, the SourceDocument month selector keeps the currently shown month and can then diverge from the Transaction month
 - When sync is disabled and the SourceDocument month differs from the Transaction month, a `Sync with Transaction` button is enabled to realign the SourceDocument month
 - SourceDocuments marked as `Annual` must always be visible in `Available Source Documents`, even in month-based view
-- SourceDocuments marked as `Annual` or `OldAnnual` must be visually flagged in the list
-- SourceDocuments marked as `OldAnnual` follow normal month filtering unless `Show all months` is enabled
-- Only `Annual` has always-visible behavior; `OldAnnual` must not be forced visible in month-based view
+- SourceDocuments marked as `Annual` or `ExpiredAnnual` must be visually flagged in the list
+- SourceDocuments marked as `ExpiredAnnual` follow normal month filtering unless `Show all months` is enabled
+- Only `Annual` has always-visible behavior; `ExpiredAnnual` must not be forced visible in month-based view
 - SourceDocuments marked `IsFutureTransaction` must always be visible in `Available Source Documents` regardless of which month is selected, and must be visually flagged with a `Pending` badge
 - The user should be able to see monthly coverage for the selected month:
   - Transactions: handled count vs total count

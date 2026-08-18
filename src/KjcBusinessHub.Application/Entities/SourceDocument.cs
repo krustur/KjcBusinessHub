@@ -36,11 +36,11 @@ public class SourceDocument
 
     public bool IsAnnual => AnnualType == SourceDocumentAnnualType.Annual;
 
-    public bool IsOldAnnual => AnnualType == SourceDocumentAnnualType.OldAnnual;
+    public bool IsExpiredAnnual => AnnualType == SourceDocumentAnnualType.ExpiredAnnual;
 
     public bool CanMarkAsAnnual => CanTransitionAnnualTypeTo(SourceDocumentAnnualType.Annual);
 
-    public bool CanMarkAsOldAnnual => CanTransitionAnnualTypeTo(SourceDocumentAnnualType.OldAnnual);
+    public bool CanMarkAsExpiredAnnual => CanTransitionAnnualTypeTo(SourceDocumentAnnualType.ExpiredAnnual);
 
     public bool CanClearAnnualType => CanTransitionAnnualTypeTo(SourceDocumentAnnualType.NotAnnual);
 
@@ -49,9 +49,9 @@ public class SourceDocument
         {
             (SourceDocumentAnnualType.NotAnnual, SourceDocumentAnnualType.Annual) => true,
             (SourceDocumentAnnualType.Annual, SourceDocumentAnnualType.NotAnnual) => true,
-            (SourceDocumentAnnualType.Annual, SourceDocumentAnnualType.OldAnnual) => true,
-            (SourceDocumentAnnualType.OldAnnual, SourceDocumentAnnualType.Annual) => true,
-            (SourceDocumentAnnualType.OldAnnual, SourceDocumentAnnualType.NotAnnual) => true,
+            (SourceDocumentAnnualType.Annual, SourceDocumentAnnualType.ExpiredAnnual) => true,
+            (SourceDocumentAnnualType.ExpiredAnnual, SourceDocumentAnnualType.Annual) => true,
+            (SourceDocumentAnnualType.ExpiredAnnual, SourceDocumentAnnualType.NotAnnual) => true,
             _ => false,
         };
 }

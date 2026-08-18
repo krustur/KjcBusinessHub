@@ -4,5 +4,5 @@ public enum SourceDocumentAnnualType
 {
     NotAnnual = 0,
     Annual = 1,
-    OldAnnual = 2,
+    ExpiredAnnual = 2,
 }

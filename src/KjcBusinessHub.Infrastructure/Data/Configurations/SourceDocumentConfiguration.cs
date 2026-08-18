@@ -49,7 +49,7 @@ public class SourceDocumentConfiguration : IEntityTypeConfiguration<SourceDocume
         builder.Ignore(d => d.IsLinked);
         builder.Ignore(d => d.HasMultipleLinkedTransactions);
         builder.Ignore(d => d.IsAnnual);
-        builder.Ignore(d => d.IsOldAnnual);
+        builder.Ignore(d => d.IsExpiredAnnual);
 
         builder.Property(d => d.IsFutureTransaction)
             .IsRequired()

@@ -19,8 +19,8 @@ This document tracks the development progress of KjcBusinessHub.
   - [x] Add a user action to mark a Transaction as handled without linked document
   - [x] Ensure handled-without-document Transactions count as covered in monthly completion
 - [x] Add SourceDocument annual classification
-  - [x] Add `AnnualType` enum values: `NotAnnual`, `Annual`, `OldAnnual`
-  - [x] Visually flag `Annual` and `OldAnnual` SourceDocuments in the UI
+  - [x] Add `AnnualType` enum values: `NotAnnual`, `Annual`, `ExpiredAnnual`
+  - [x] Visually flag `Annual` and `ExpiredAnnual` SourceDocuments in the UI
   - [x] Always include `Annual` SourceDocuments in `Available Source Documents` regardless of selected month
 - [x] Add Future / Pending flag for SourceDocuments (UC-0306 / UC-0307)
   - [x] Add `IsFutureTransaction` bool on `SourceDocument` (default `false`)

@@ -507,9 +507,9 @@ public partial class AppViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task MarkAsOldAnnualAsync(SourceDocument doc)
+    private async Task MarkAsExpiredAnnualAsync(SourceDocument doc)
     {
-        await SetAnnualTypeAsync(doc, SourceDocumentAnnualType.OldAnnual, "marking document as old annual");
+        await SetAnnualTypeAsync(doc, SourceDocumentAnnualType.ExpiredAnnual, "marking document as expired annual");
     }
 
     [RelayCommand]
