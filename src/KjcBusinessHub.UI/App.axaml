@@ -3,7 +3,18 @@
              x:Class="KjcBusinessHub.UI.App"
              xmlns:local="using:KjcBusinessHub.UI"
              RequestedThemeVariant="Default">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+    <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+
+    <Application.Resources>
+        <SolidColorBrush x:Key="PageBackgroundBrush">#F4F7FB</SolidColorBrush>
+        <SolidColorBrush x:Key="CardBackgroundBrush">#FFFFFFFF</SolidColorBrush>
+        <SolidColorBrush x:Key="CardBorderBrush">#D8E1EE</SolidColorBrush>
+        <SolidColorBrush x:Key="SubtleBackgroundBrush">#EDF3FB</SolidColorBrush>
+        <SolidColorBrush x:Key="PrimaryTextBrush">#172033</SolidColorBrush>
+        <SolidColorBrush x:Key="SecondaryTextBrush">#5F6C80</SolidColorBrush>
+        <SolidColorBrush x:Key="AccentBrush">#2A6FDB</SolidColorBrush>
+        <SolidColorBrush x:Key="AccentForegroundBrush">#FFFFFFFF</SolidColorBrush>
+    </Application.Resources>
 
     <Application.DataTemplates>
         <local:ViewLocator />
@@ -11,5 +22,80 @@
 
     <Application.Styles>
         <FluentTheme />
+        <Style Selector="Window">
+            <Setter Property="Background" Value="{StaticResource PageBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
+        </Style>
+        <Style Selector="Border.sectionCard">
+            <Setter Property="Background" Value="{StaticResource CardBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="16" />
+        </Style>
+        <Style Selector="Border.subtleCard">
+            <Setter Property="Background" Value="{StaticResource SubtleBackgroundBrush}" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="12" />
+        </Style>
+        <Style Selector="Border.badge">
+            <Setter Property="CornerRadius" Value="999" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="Border.badgeSuccess">
+            <Setter Property="Background" Value="#EAF7EE" />
+            <Setter Property="BorderBrush" Value="#7CC58F" />
+        </Style>
+        <Style Selector="Border.badgeInfo">
+            <Setter Property="Background" Value="#EEF5FF" />
+            <Setter Property="BorderBrush" Value="#7CAAF2" />
+        </Style>
+        <Style Selector="Border.badgeWarning">
+            <Setter Property="Background" Value="#FFF4E5" />
+            <Setter Property="BorderBrush" Value="#F2B263" />
+        </Style>
+        <Style Selector="Border.badgeMuted">
+            <Setter Property="Background" Value="#F0F2F5" />
+            <Setter Property="BorderBrush" Value="#CAD3DF" />
+        </Style>
+        <Style Selector="Button.primaryAction">
+            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource AccentForegroundBrush}" />
+            <Setter Property="Padding" Value="14,10" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Button.secondaryAction">
+            <Setter Property="Background" Value="{StaticResource SubtleBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}" />
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Button.ghostAction">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}" />
+            <Setter Property="Padding" Value="10,8" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+        <Style Selector="TextBlock.pageTitle">
+            <Setter Property="FontSize" Value="26" />
+            <Setter Property="FontWeight" Value="Bold" />
+        </Style>
+        <Style Selector="TextBlock.sectionTitle">
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="TextBlock.sectionCaption">
+            <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
+        </Style>
+        <Style Selector="TextBlock.badgeText">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="ProgressBar.coverageBar">
+            <Setter Property="Height" Value="10" />
+        </Style>
     </Application.Styles>
 </Application>

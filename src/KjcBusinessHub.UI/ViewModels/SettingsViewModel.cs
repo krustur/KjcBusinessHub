@@ -14,12 +14,25 @@ public partial class SettingsViewModel : ViewModelBase
     public partial string SourceDocumentFolder { get; set; } = string.Empty;
 
     [ObservableProperty]
-    public partial string? ErrorMessage { get; set; }
+    [NotifyPropertyChangedFor(nameof(HasFeedbackMessage))]
+    public partial string? FeedbackMessage { get; set; }
 
     [ObservableProperty]
+    public partial StatusTone FeedbackTone { get; set; } = StatusTone.Info;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ConfigurationStatusTitle))]
+    [NotifyPropertyChangedFor(nameof(ConfigurationStatusDescription))]
     public partial bool CanNavigate { get; set; }
 
     public Action? NavigateToApp { get; set; }
+    public bool HasFeedbackMessage => !string.IsNullOrWhiteSpace(FeedbackMessage);
+
+    public string ConfigurationStatusTitle => CanNavigate ? "Workspace ready" : "Setup required";
+
+    public string ConfigurationStatusDescription => CanNavigate
+        ? "The document folder is configured. You can open the matching workspace at any time."
+        : "Choose the folder that contains the transactions file and the source documents.";
 
     public SettingsViewModel(ISettingsService settings)
     {
@@ -31,23 +44,27 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private void Save()
     {
-        ErrorMessage = null;
+        FeedbackMessage = null;
 
         if (string.IsNullOrWhiteSpace(SourceDocumentFolder))
         {
-            ErrorMessage = "SourceDocumentFolder is required.";
+            FeedbackTone = StatusTone.Error;
+            FeedbackMessage = "Source document folder is required.";
             return;
         }
 
         if (!Directory.Exists(SourceDocumentFolder))
         {
-            ErrorMessage = "The specified folder does not exist.";
+            FeedbackTone = StatusTone.Error;
+            FeedbackMessage = "The specified folder does not exist.";
             return;
         }
 
         _settings.SourceDocumentFolder = SourceDocumentFolder;
         _settings.Save();
         CanNavigate = true;
+        FeedbackTone = StatusTone.Success;
+        FeedbackMessage = "Folder saved. You can continue to the matching workspace.";
     }
 
     [RelayCommand]

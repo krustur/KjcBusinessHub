@@ -3,13 +3,58 @@
         xmlns:vm="using:KjcBusinessHub.UI.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+        mc:Ignorable="d" d:DesignWidth="1400" d:DesignHeight="900"
         x:Class="KjcBusinessHub.UI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="KJC Business Hub"
-        MinWidth="800" MinHeight="600">
+        MinWidth="1100" MinHeight="760">
 
-    <ContentControl Content="{Binding CurrentPage}" />
+    <Grid ColumnDefinitions="260,*" Margin="20">
+        <Border Grid.Column="0" Classes="sectionCard" Margin="0,0,20,0">
+            <StackPanel Spacing="20">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="KJC Business Hub" Classes="pageTitle" />
+                    <TextBlock Text="A focused workspace for reviewing transactions, matching documents, and tracking monthly completion."
+                               Classes="sectionCaption"
+                               TextWrapping="Wrap" />
+                </StackPanel>
 
+                <StackPanel Spacing="10">
+                    <Button Content="Matching workspace"
+                            Command="{Binding ShowMatchingCommand}"
+                            Classes="secondaryAction"
+                            IsEnabled="{Binding IsShowingMatching, Converter={x:Static BoolConverters.Not}}" />
+                    <Button Content="Settings"
+                            Command="{Binding ShowSettingsCommand}"
+                            Classes="ghostAction"
+                            IsEnabled="{Binding IsShowingSettings, Converter={x:Static BoolConverters.Not}}" />
+                </StackPanel>
+
+                <Border Classes="subtleCard" IsVisible="{Binding IsMatchingAvailable, Converter={x:Static BoolConverters.Not}}">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Setup reminder" FontWeight="SemiBold" />
+                        <TextBlock Text="Configure the source document folder before opening the matching workspace."
+                                   Classes="sectionCaption"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Column="1" RowDefinitions="Auto,*">
+            <Border Grid.Row="0" Classes="sectionCard">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="{Binding CurrentPageTitle}" Classes="pageTitle" />
+                    <TextBlock Text="{Binding CurrentPageSubtitle}"
+                               Classes="sectionCaption"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <ContentControl Grid.Row="1"
+                            Margin="0,20,0,0"
+                            Content="{Binding CurrentPage}" />
+        </Grid>
+    </Grid>
 </Window>

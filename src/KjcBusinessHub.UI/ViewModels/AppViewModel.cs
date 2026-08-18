@@ -24,25 +24,43 @@ public partial class AppViewModel : ViewModelBase
     private readonly ISettingsService _settings;
     private readonly IFileSystemService _fileSystemService;
     private readonly SourceDocumentValidator _sourceDocumentValidator;
+    private bool _hasInitialised;
+    private bool _isInitialising;
 
     public ObservableCollection<Transaction> AvailableTransactions { get; } = [];
     public ObservableCollection<SourceDocument> AvailableSourceDocuments { get; } = [];
     public ObservableCollection<LinkedTransactionGroup> LinkedTransactionGroups { get; } = [];
     public IReadOnlyList<SourceDocumentCurrency> SupportedCurrencies { get; } =
         Enum.GetValues<SourceDocumentCurrency>();
+    public IReadOnlyList<ViewScopeOption> ViewScopeOptions { get; } =
+    [
+        new(MonthViewScope.CurrentMonth, "Current month", "Show only items from the selected month."),
+        new(MonthViewScope.AdjacentMonths, "Current + adjacent months", "Include the previous and next month for easier review."),
+        new(MonthViewScope.AllMonths, "All months", "Show the full history without month filtering."),
+    ];
 
     [ObservableProperty]
     public partial bool IsLoading { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasStatusMessage))]
     public partial string? StatusMessage { get; set; }
 
     [ObservableProperty]
+    public partial StatusTone StatusTone { get; set; } = StatusTone.Info;
+
+    public bool HasStatusMessage => !string.IsNullOrWhiteSpace(StatusMessage);
+
+    [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LinkDocumentCommand))]
+    [NotifyPropertyChangedFor(nameof(SelectedTransactionSummary))]
+    [NotifyPropertyChangedFor(nameof(LinkingHint))]
     public partial Transaction? SelectedAvailableTransaction { get; set; }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LinkDocumentCommand))]
+    [NotifyPropertyChangedFor(nameof(SelectedSourceDocumentSummary))]
+    [NotifyPropertyChangedFor(nameof(LinkingHint))]
     public partial SourceDocument? SelectedAvailableSourceDocument { get; set; }
 
     // --- Set Amount inline editing ---
@@ -67,10 +85,8 @@ public partial class AppViewModel : ViewModelBase
     // --- Filter state ---
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsSeeMonthMode))]
-    [NotifyPropertyChangedFor(nameof(IsSeeAllMode))]
-    [NotifyPropertyChangedFor(nameof(ShowAllMonths))]
-    public partial FilterMode FilterMode { get; set; } = FilterMode.SeeMonth;
+    [NotifyPropertyChangedFor(nameof(IsMonthNavigationEnabled))]
+    public partial ViewScopeOption SelectedViewScopeOption { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedMonthLabel))]
@@ -81,9 +97,6 @@ public partial class AppViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(SelectedMonthLabel))]
     [NotifyCanExecuteChangedFor(nameof(SyncSourceDocumentMonthWithTransactionCommand))]
     public partial int SelectedMonth { get; set; } = DateOnly.FromDateTime(DateTime.Today).Month;
-
-    [ObservableProperty]
-    public partial bool IncludeNeighbouringMonths { get; set; } = false;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedSourceDocumentMonthLabel))]
@@ -100,21 +113,8 @@ public partial class AppViewModel : ViewModelBase
     [NotifyCanExecuteChangedFor(nameof(SyncSourceDocumentMonthWithTransactionCommand))]
     public partial bool UseSeparateSourceDocumentMonth { get; set; } = false;
 
-    public bool IsSeeAllMode => FilterMode == FilterMode.SeeAll;
-    public bool IsSeeMonthMode => FilterMode == FilterMode.SeeMonth;
-    public bool ShowAllMonths
-    {
-        get => FilterMode == FilterMode.SeeAll;
-        set
-        {
-            var nextMode = value ? FilterMode.SeeAll : FilterMode.SeeMonth;
-            if (FilterMode == nextMode)
-                return;
-
-            FilterMode = nextMode;
-            _ = RefreshAsync();
-        }
-    }
+    public bool IsMonthNavigationEnabled => SelectedViewScope != MonthViewScope.AllMonths;
+    public MonthViewScope SelectedViewScope => SelectedViewScopeOption.Scope;
 
     public bool SyncTransactionAndSourceDocumentMonth
     {
@@ -141,6 +141,45 @@ public partial class AppViewModel : ViewModelBase
     public string SelectedSourceDocumentMonthLabel =>
         new DateOnly(SelectedSourceDocumentYear, SelectedSourceDocumentMonth, 1).ToString("MMMM yyyy");
 
+    public string SelectedTransactionSummary =>
+        SelectedAvailableTransaction is null
+            ? "Choose a transaction from the list."
+            : $"{SelectedAvailableTransaction.TransactionDate:dd.MM.yyyy} • {SelectedAvailableTransaction.Description} • {SelectedAvailableTransaction.Amount:N2}";
+
+    public string SelectedSourceDocumentSummary =>
+        SelectedAvailableSourceDocument is null
+            ? "Choose a source document from the list."
+            : $"{SelectedAvailableSourceDocument.FileNameDate:dd.MM.yyyy} • {SelectedAvailableSourceDocument.Description} • {SelectedAvailableSourceDocument.Amount?.ToString("N2") ?? "No amount"}";
+
+    public string LinkingHint
+    {
+        get
+        {
+            if (SelectedAvailableTransaction is null && SelectedAvailableSourceDocument is null)
+                return "Select a transaction and a source document to create a link.";
+
+            if (SelectedAvailableTransaction is null)
+                return "Select a transaction to continue.";
+
+            if (SelectedAvailableSourceDocument is null)
+                return "Select a source document to continue.";
+
+            return SelectedAvailableSourceDocument.Status == SourceDocumentStatus.Active
+                ? "Ready to link the selected items."
+                : "Only active source documents can be linked.";
+        }
+    }
+
+    public bool HasAvailableTransactions => AvailableTransactions.Count > 0;
+    public bool HasAvailableSourceDocuments => AvailableSourceDocuments.Count > 0;
+    public bool HasLinkedTransactionGroups => LinkedTransactionGroups.Count > 0;
+
+    public double TransactionCoveragePercent =>
+        TransactionTotalCount == 0 ? 0 : (double)TransactionHandledCount / TransactionTotalCount * 100;
+
+    public double SourceDocumentCoveragePercent =>
+        SourceDocumentTotalCount == 0 ? 0 : (double)SourceDocumentHandledCount / SourceDocumentTotalCount * 100;
+
     public AppViewModel(
         ITransactionRepository transactionRepository,
         ISourceDocumentRepository sourceDocumentRepository,
@@ -159,45 +198,42 @@ public partial class AppViewModel : ViewModelBase
         _settings = settings;
         _fileSystemService = fileSystemService;
         _sourceDocumentValidator = sourceDocumentValidator;
+        SelectedViewScopeOption = ViewScopeOptions[0];
     }
 
     public async Task InitialiseAsync()
     {
+        if (_isInitialising)
+            return;
+
+        if (_hasInitialised)
+        {
+            await RefreshAsync();
+            return;
+        }
+
+        _isInitialising = true;
         IsLoading = true;
-        StatusMessage = "Importing data…";
+        SetStatus("Importing data…", StatusTone.Info);
         try
         {
             var folder = _settings.SourceDocumentFolder!;
             await _transactionImportService.ImportAsync(folder);
             await _sourceDocumentImportService.ImportAsync(folder);
             _fileWatcherService.Start();
+            _hasInitialised = true;
             await RefreshAsync();
-            StatusMessage = "Ready.";
+            SetStatus("Workspace ready. Review the summary cards and start matching documents.", StatusTone.Success);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Error during import: {ex.Message}";
+            SetStatus($"Error during import: {ex.Message}", StatusTone.Error);
         }
         finally
         {
             IsLoading = false;
+            _isInitialising = false;
         }
-    }
-
-    // --- Filter commands ---
-
-    [RelayCommand]
-    private async Task SetSeeAllAsync()
-    {
-        FilterMode = FilterMode.SeeAll;
-        await RefreshAsync();
-    }
-
-    [RelayCommand]
-    private async Task SetSeeMonthAsync()
-    {
-        FilterMode = FilterMode.SeeMonth;
-        await RefreshAsync();
     }
 
     [RelayCommand]
@@ -206,7 +242,6 @@ public partial class AppViewModel : ViewModelBase
         var today = DateOnly.FromDateTime(DateTime.Today);
         SelectedYear = today.Year;
         SelectedMonth = today.Month;
-        FilterMode = FilterMode.SeeMonth;
         await RefreshAsync();
     }
 
@@ -216,7 +251,6 @@ public partial class AppViewModel : ViewModelBase
         var current = new DateOnly(SelectedYear, SelectedMonth, 1).AddMonths(-1);
         SelectedYear = current.Year;
         SelectedMonth = current.Month;
-        FilterMode = FilterMode.SeeMonth;
         await RefreshAsync();
     }
 
@@ -226,7 +260,6 @@ public partial class AppViewModel : ViewModelBase
         var current = new DateOnly(SelectedYear, SelectedMonth, 1).AddMonths(1);
         SelectedYear = current.Year;
         SelectedMonth = current.Month;
-        FilterMode = FilterMode.SeeMonth;
         await RefreshAsync();
     }
 
@@ -269,11 +302,26 @@ public partial class AppViewModel : ViewModelBase
         await RefreshAsync();
     }
 
-    partial void OnIncludeNeighbouringMonthsChanged(bool value) =>
+    partial void OnSelectedViewScopeOptionChanged(ViewScopeOption value)
+    {
+        OnPropertyChanged(nameof(SelectedViewScope));
         _ = RefreshAsync();
+    }
 
     partial void OnUseSeparateSourceDocumentMonthChanged(bool value) =>
         _ = RefreshAsync();
+
+    partial void OnSelectedAvailableTransactionChanged(Transaction? value)
+    {
+        OnPropertyChanged(nameof(SelectedTransactionSummary));
+        OnPropertyChanged(nameof(LinkingHint));
+    }
+
+    partial void OnSelectedAvailableSourceDocumentChanged(SourceDocument? value)
+    {
+        OnPropertyChanged(nameof(SelectedSourceDocumentSummary));
+        OnPropertyChanged(nameof(LinkingHint));
+    }
 
     // --- Linking commands ---
 
@@ -306,10 +354,11 @@ public partial class AppViewModel : ViewModelBase
             SelectedAvailableTransaction = null;
             SelectedAvailableSourceDocument = null;
             await RefreshAsync();
+            SetStatus("Linked the selected transaction and source document.", StatusTone.Success);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Error linking document: {ex.Message}";
+            SetStatus($"Error linking document: {ex.Message}", StatusTone.Error);
         }
     }
 
@@ -323,10 +372,11 @@ public partial class AppViewModel : ViewModelBase
                 pair.SourceDocument.Id);
             await _transactionRepository.SaveChangesAsync();
             await RefreshAsync();
+            SetStatus("Removed the document link.", StatusTone.Success);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Error unlinking document: {ex.Message}";
+            SetStatus($"Error unlinking document: {ex.Message}", StatusTone.Error);
         }
     }
 
@@ -339,10 +389,11 @@ public partial class AppViewModel : ViewModelBase
         {
             var fullPath = _fileSystemService.GetFullPath(_settings.SourceDocumentFolder!, doc.FileSubPath);
             _fileSystemService.OpenFile(fullPath);
+            SetStatus("Opened the selected document.", StatusTone.Info);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Could not open document: {ex.Message}";
+            SetStatus($"Could not open document: {ex.Message}", StatusTone.Error);
         }
     }
 
@@ -353,10 +404,11 @@ public partial class AppViewModel : ViewModelBase
         {
             var fullPath = _fileSystemService.GetFullPath(_settings.SourceDocumentFolder!, doc.FileSubPath);
             _fileSystemService.ShowInExplorer(fullPath);
+            SetStatus("Opened the document location.", StatusTone.Info);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Could not show file in file manager: {ex.Message}";
+            SetStatus($"Could not show file in file manager: {ex.Message}", StatusTone.Error);
         }
     }
 
@@ -407,7 +459,7 @@ public partial class AppViewModel : ViewModelBase
             var validationResult = _sourceDocumentValidator.ValidateSetAmount(candidate);
             if (!validationResult.IsValid)
             {
-                StatusMessage = string.Join(" ", validationResult.Errors.Select(error => error.Message));
+                SetStatus(string.Join(" ", validationResult.Errors.Select(error => error.Message)), StatusTone.Error);
                 return;
             }
 
@@ -423,10 +475,11 @@ public partial class AppViewModel : ViewModelBase
             CcyAmountInputText = string.Empty;
             SelectedCurrency = null;
             await RefreshAsync();
+            SetStatus("Saved the document amount details.", StatusTone.Success);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Error saving amount: {ex.Message}";
+            SetStatus($"Error saving amount: {ex.Message}", StatusTone.Error);
         }
     }
 
@@ -442,18 +495,22 @@ public partial class AppViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsMonthComplete))]
+    [NotifyPropertyChangedFor(nameof(TransactionCoveragePercent))]
     public partial int TransactionTotalCount { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsMonthComplete))]
+    [NotifyPropertyChangedFor(nameof(TransactionCoveragePercent))]
     public partial int TransactionHandledCount { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsMonthComplete))]
+    [NotifyPropertyChangedFor(nameof(SourceDocumentCoveragePercent))]
     public partial int SourceDocumentTotalCount { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsMonthComplete))]
+    [NotifyPropertyChangedFor(nameof(SourceDocumentCoveragePercent))]
     public partial int SourceDocumentHandledCount { get; set; }
 
     public bool IsMonthComplete =>
@@ -474,10 +531,11 @@ public partial class AppViewModel : ViewModelBase
             await _transactionRepository.UpdateAsync(tx);
             await _transactionRepository.SaveChangesAsync();
             await RefreshAsync();
+            SetStatus("Marked the transaction as handled without a document.", StatusTone.Success);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Error marking transaction as handled: {ex.Message}";
+            SetStatus($"Error marking transaction as handled: {ex.Message}", StatusTone.Error);
         }
     }
 
@@ -491,10 +549,11 @@ public partial class AppViewModel : ViewModelBase
             await _transactionRepository.UpdateAsync(tx);
             await _transactionRepository.SaveChangesAsync();
             await RefreshAsync();
+            SetStatus("Removed the handled-without-document mark.", StatusTone.Success);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Error removing handled mark from transaction: {ex.Message}";
+            SetStatus($"Error removing handled mark from transaction: {ex.Message}", StatusTone.Error);
         }
     }
 
@@ -530,10 +589,11 @@ public partial class AppViewModel : ViewModelBase
             await _sourceDocumentRepository.UpdateAsync(doc);
             await _sourceDocumentRepository.SaveChangesAsync();
             await RefreshAsync();
+            SetStatus("Updated the annual document status.", StatusTone.Success);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Error {actionDescription}: {ex.Message}";
+            SetStatus($"Error {actionDescription}: {ex.Message}", StatusTone.Error);
         }
     }
 
@@ -549,10 +609,11 @@ public partial class AppViewModel : ViewModelBase
             await _sourceDocumentRepository.UpdateAsync(doc);
             await _sourceDocumentRepository.SaveChangesAsync();
             await RefreshAsync();
+            SetStatus("Marked the document as pending.", StatusTone.Success);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Error marking document as future: {ex.Message}";
+            SetStatus($"Error marking document as future: {ex.Message}", StatusTone.Error);
         }
     }
 
@@ -566,10 +627,11 @@ public partial class AppViewModel : ViewModelBase
             await _sourceDocumentRepository.UpdateAsync(doc);
             await _sourceDocumentRepository.SaveChangesAsync();
             await RefreshAsync();
+            SetStatus("Removed the pending mark from the document.", StatusTone.Success);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Error removing future mark from document: {ex.Message}";
+            SetStatus($"Error removing future mark from document: {ex.Message}", StatusTone.Error);
         }
     }
 
@@ -637,6 +699,10 @@ public partial class AppViewModel : ViewModelBase
         var coverageDocs = filteredDocs.Where(d => !d.IsFutureTransaction).ToList();
         SourceDocumentTotalCount = coverageDocs.Count;
         SourceDocumentHandledCount = coverageDocs.Count(d => d.IsLinked);
+
+        OnPropertyChanged(nameof(HasAvailableTransactions));
+        OnPropertyChanged(nameof(HasAvailableSourceDocuments));
+        OnPropertyChanged(nameof(HasLinkedTransactionGroups));
     }
 
     private bool TryParseOptionalAmount(string input, string fieldName, out decimal? value)
@@ -653,14 +719,14 @@ public partial class AppViewModel : ViewModelBase
             return true;
         }
 
-        StatusMessage = $"Invalid {fieldName}. Please enter a valid number.";
+        SetStatus($"Invalid {fieldName}. Please enter a valid number.", StatusTone.Error);
         value = null;
         return false;
     }
 
     private IEnumerable<Transaction> ApplyTransactionMonthFilter(IEnumerable<Transaction> transactions)
     {
-        if (FilterMode == FilterMode.SeeAll)
+        if (SelectedViewScope == MonthViewScope.AllMonths)
             return transactions;
 
         return transactions.Where(t => IsInMonthRange(t.TransactionDate, SelectedYear, SelectedMonth));
@@ -668,7 +734,7 @@ public partial class AppViewModel : ViewModelBase
 
     private IEnumerable<SourceDocument> ApplyDocumentMonthFilter(IEnumerable<SourceDocument> docs)
     {
-        if (FilterMode == FilterMode.SeeAll)
+        if (SelectedViewScope == MonthViewScope.AllMonths)
             return docs;
 
         var selectedYear = UseSeparateSourceDocumentMonth ? SelectedSourceDocumentYear : SelectedYear;
@@ -683,7 +749,7 @@ public partial class AppViewModel : ViewModelBase
     {
         var selected = new DateOnly(selectedYear, selectedMonth, 1);
 
-        if (IncludeNeighbouringMonths)
+        if (SelectedViewScope == MonthViewScope.AdjacentMonths)
         {
             var prev = selected.AddMonths(-1);
             var next = selected.AddMonths(1);
@@ -694,12 +760,32 @@ public partial class AppViewModel : ViewModelBase
 
         return date.Year == selectedYear && date.Month == selectedMonth;
     }
+
+    private void SetStatus(string message, StatusTone tone)
+    {
+        StatusTone = tone;
+        StatusMessage = message;
+    }
 }
 
-public enum FilterMode
+public enum MonthViewScope
 {
-    SeeAll,
-    SeeMonth,
+    CurrentMonth,
+    AdjacentMonths,
+    AllMonths,
+}
+
+public enum StatusTone
+{
+    Info,
+    Success,
+    Warning,
+    Error,
+}
+
+public sealed record ViewScopeOption(MonthViewScope Scope, string Label, string Description)
+{
+    public override string ToString() => Label;
 }
 
 public sealed record LinkedPair(Transaction Transaction, SourceDocument SourceDocument);
