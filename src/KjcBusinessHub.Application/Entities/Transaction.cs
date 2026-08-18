@@ -23,4 +23,8 @@ public class Transaction
     public bool HasMultipleLinkedSourceDocuments => LinkedSourceDocumentCount > 1;
 
     public bool IsHandled => IsLinked || IsHandledWithoutDocument;
+
+    public bool CanMarkAsHandledWithoutDocument => !IsLinked && !IsHandledWithoutDocument;
+
+    public bool CanRemoveHandledMark => IsHandledWithoutDocument;
 }
