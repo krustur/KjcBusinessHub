@@ -39,11 +39,16 @@ public partial class AppViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LinkDocumentCommand))]
+    [NotifyPropertyChangedFor(nameof(HasBothSelected))]
     public partial Transaction? SelectedAvailableTransaction { get; set; }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LinkDocumentCommand))]
+    [NotifyPropertyChangedFor(nameof(HasBothSelected))]
     public partial SourceDocument? SelectedAvailableSourceDocument { get; set; }
+
+    public bool HasBothSelected =>
+        SelectedAvailableTransaction is not null && SelectedAvailableSourceDocument is not null;
 
     // --- Set Amount inline editing ---
 
@@ -66,10 +71,20 @@ public partial class AppViewModel : ViewModelBase
 
     // --- Filter state ---
 
+    // All VM mutations happen on the Avalonia UI thread, so a simple bool
+    // flag is sufficient to suppress re-entrant refreshes.
+    private bool _suppressRefresh;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSeeMonthMode))]
     [NotifyPropertyChangedFor(nameof(IsSeeAllMode))]
     [NotifyPropertyChangedFor(nameof(ShowAllMonths))]
+    [NotifyPropertyChangedFor(nameof(ViewScope))]
+    [NotifyPropertyChangedFor(nameof(IsCurrentMonthScope))]
+    [NotifyPropertyChangedFor(nameof(IsAdjacentMonthsScope))]
+    [NotifyPropertyChangedFor(nameof(IsAllMonthsScope))]
+    [NotifyPropertyChangedFor(nameof(IsMonthScopeVisible))]
+    [NotifyPropertyChangedFor(nameof(IsShowDocumentsMonthSelector))]
     public partial FilterMode FilterMode { get; set; } = FilterMode.SeeMonth;
 
     [ObservableProperty]
@@ -83,6 +98,10 @@ public partial class AppViewModel : ViewModelBase
     public partial int SelectedMonth { get; set; } = DateOnly.FromDateTime(DateTime.Today).Month;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ViewScope))]
+    [NotifyPropertyChangedFor(nameof(IsCurrentMonthScope))]
+    [NotifyPropertyChangedFor(nameof(IsAdjacentMonthsScope))]
+    [NotifyPropertyChangedFor(nameof(IsShowDocumentsMonthSelector))]
     public partial bool IncludeNeighbouringMonths { get; set; } = false;
 
     [ObservableProperty]
@@ -97,23 +116,68 @@ public partial class AppViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SyncTransactionAndSourceDocumentMonth))]
+    [NotifyPropertyChangedFor(nameof(IsShowDocumentsMonthSelector))]
     [NotifyCanExecuteChangedFor(nameof(SyncSourceDocumentMonthWithTransactionCommand))]
     public partial bool UseSeparateSourceDocumentMonth { get; set; } = false;
 
     public bool IsSeeAllMode => FilterMode == FilterMode.SeeAll;
     public bool IsSeeMonthMode => FilterMode == FilterMode.SeeMonth;
+
+    // --- View scope (collapses FilterMode + IncludeNeighbouringMonths into a single enum) ---
+
+    public ViewScope ViewScope
+    {
+        get => FilterMode switch
+        {
+            FilterMode.SeeAll => ViewScope.AllMonths,
+            FilterMode.SeeMonth when IncludeNeighbouringMonths => ViewScope.AdjacentMonths,
+            _ => ViewScope.CurrentMonth,
+        };
+        set
+        {
+            var (newMode, newInclude) = value switch
+            {
+                ViewScope.AllMonths => (FilterMode.SeeAll, false),
+                ViewScope.AdjacentMonths => (FilterMode.SeeMonth, true),
+                _ => (FilterMode.SeeMonth, false),
+            };
+
+            if (FilterMode == newMode && IncludeNeighbouringMonths == newInclude)
+                return;
+
+            _suppressRefresh = true;
+            FilterMode = newMode;
+            IncludeNeighbouringMonths = newInclude;
+            _suppressRefresh = false;
+            _ = RefreshAsync();
+        }
+    }
+
+    public bool IsCurrentMonthScope
+    {
+        get => ViewScope == ViewScope.CurrentMonth;
+        set { if (value) ViewScope = ViewScope.CurrentMonth; }
+    }
+
+    public bool IsAdjacentMonthsScope
+    {
+        get => ViewScope == ViewScope.AdjacentMonths;
+        set { if (value) ViewScope = ViewScope.AdjacentMonths; }
+    }
+
+    public bool IsAllMonthsScope
+    {
+        get => ViewScope == ViewScope.AllMonths;
+        set { if (value) ViewScope = ViewScope.AllMonths; }
+    }
+
+    public bool IsMonthScopeVisible => ViewScope != ViewScope.AllMonths;
+    public bool IsShowDocumentsMonthSelector => IsMonthScopeVisible && UseSeparateSourceDocumentMonth;
+
     public bool ShowAllMonths
     {
         get => FilterMode == FilterMode.SeeAll;
-        set
-        {
-            var nextMode = value ? FilterMode.SeeAll : FilterMode.SeeMonth;
-            if (FilterMode == nextMode)
-                return;
-
-            FilterMode = nextMode;
-            _ = RefreshAsync();
-        }
+        set => ViewScope = value ? ViewScope.AllMonths : ViewScope.CurrentMonth;
     }
 
     public bool SyncTransactionAndSourceDocumentMonth
@@ -133,6 +197,12 @@ public partial class AppViewModel : ViewModelBase
 
             UseSeparateSourceDocumentMonth = useSeparateMonth;
         }
+    }
+
+    [RelayCommand]
+    private void ToggleSeparateDocumentMonth()
+    {
+        SyncTransactionAndSourceDocumentMonth = !SyncTransactionAndSourceDocumentMonth;
     }
 
     public string SelectedMonthLabel =>
@@ -269,8 +339,10 @@ public partial class AppViewModel : ViewModelBase
         await RefreshAsync();
     }
 
-    partial void OnIncludeNeighbouringMonthsChanged(bool value) =>
-        _ = RefreshAsync();
+    partial void OnIncludeNeighbouringMonthsChanged(bool value)
+    {
+        if (!_suppressRefresh) _ = RefreshAsync();
+    }
 
     partial void OnUseSeparateSourceDocumentMonthChanged(bool value) =>
         _ = RefreshAsync();
@@ -694,6 +766,13 @@ public partial class AppViewModel : ViewModelBase
 
         return date.Year == selectedYear && date.Month == selectedMonth;
     }
+}
+
+public enum ViewScope
+{
+    CurrentMonth,
+    AdjacentMonths,
+    AllMonths,
 }
 
 public enum FilterMode

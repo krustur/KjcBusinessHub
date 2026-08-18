@@ -2,18 +2,21 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:KjcBusinessHub.UI.ViewModels"
              xmlns:entities="using:KjcBusinessHub.Application.Entities"
+             xmlns:materialIcons="using:Material.Icons.Avalonia"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
              x:Class="KjcBusinessHub.UI.Views.AppView"
-             x:DataType="vm:AppViewModel">
+             x:DataType="vm:AppViewModel"
+             x:Name="RootControl">
 
-    <Grid RowDefinitions="Auto,Auto,*">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
 
-        <!-- Toolbar row -->
+        <!-- ── Toolbar ────────────────────────────────────────────────── -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="8,8,8,4">
-            <Button Content="Refresh" Command="{Binding RefreshCommand}" />
-            <Button Content="Link ↔" Command="{Binding LinkDocumentCommand}" />
+            <Button Command="{Binding RefreshCommand}" Padding="6,4" ToolTip.Tip="Refresh">
+                <materialIcons:MaterialIcon Kind="Refresh" Width="16" Height="16" />
+            </Button>
             <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" Foreground="Gray" />
             <Separator />
             <TextBlock VerticalAlignment="Center" Foreground="Gray">
@@ -26,15 +29,12 @@
                     </MultiBinding>
                 </TextBlock.Text>
             </TextBlock>
-            <Border Background="Green"
-                    CornerRadius="4"
-                    Padding="8,2"
-                    IsVisible="{Binding IsMonthComplete}">
-                <TextBlock Text="✓ Month complete"
-                           Foreground="White"
-                           FontWeight="SemiBold"
-                           FontSize="12" />
-            </Border>
+            <materialIcons:MaterialIcon Kind="CheckboxMarked"
+                                        Width="18" Height="18"
+                                        Foreground="Green"
+                                        IsVisible="{Binding IsMonthComplete}"
+                                        ToolTip.Tip="Month complete"
+                                        VerticalAlignment="Center" />
         </StackPanel>
 
         <!-- Loading indicator -->
@@ -42,105 +42,219 @@
                      IsVisible="{Binding IsLoading}"
                      VerticalAlignment="Bottom" />
 
-        <!-- Filter row -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="8,0,8,4">
-            <CheckBox Content="Show all months"
-                      IsChecked="{Binding ShowAllMonths}"
-                      VerticalAlignment="Center" />
+        <!-- ── Filter Panel ──────────────────────────────────────────── -->
+        <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" CornerRadius="4"
+                Margin="8,0,8,4" Padding="6,4">
+            <Grid RowDefinitions="Auto,Auto,Auto">
 
-            <!-- Month navigation -->
-            <StackPanel Orientation="Horizontal" Spacing="4">
-                <Button Content="◀" Command="{Binding GoToPreviousMonthCommand}" />
-                <Button Content="This month" Command="{Binding GoToThisMonthCommand}" />
-                <TextBlock Text="{Binding SelectedMonthLabel}"
-                           VerticalAlignment="Center"
-                           FontWeight="SemiBold"
-                           MinWidth="120"
-                           TextAlignment="Center" />
-                <Button Content="▶" Command="{Binding GoToNextMonthCommand}" />
-                <CheckBox Content="Include neighbouring months"
-                          IsChecked="{Binding IncludeNeighbouringMonths}"
-                          VerticalAlignment="Center" />
-                <CheckBox Content="Sync transaction and source document month"
-                          IsChecked="{Binding SyncTransactionAndSourceDocumentMonth}"
-                          VerticalAlignment="Center" />
-                <StackPanel Orientation="Horizontal"
-                            Spacing="4"
-                            IsVisible="{Binding UseSeparateSourceDocumentMonth}">
-                    <TextBlock Text="Docs:"
-                               VerticalAlignment="Center"
-                               Margin="8,0,0,0" />
-                    <Button Content="◀" Command="{Binding GoToSourceDocumentPreviousMonthCommand}" />
-                    <Button Content="This month" Command="{Binding GoToSourceDocumentThisMonthCommand}" />
-                    <TextBlock Text="{Binding SelectedSourceDocumentMonthLabel}"
-                               VerticalAlignment="Center"
-                               FontWeight="SemiBold"
-                               MinWidth="120"
-                               TextAlignment="Center" />
-                    <Button Content="▶" Command="{Binding GoToSourceDocumentNextMonthCommand}" />
-                    <Button Content="Sync with Transaction"
-                            Command="{Binding SyncSourceDocumentMonthWithTransactionCommand}" />
+                <!-- View scope selector -->
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,2">
+                    <TextBlock Text="View:" VerticalAlignment="Center" Foreground="Gray" FontSize="12" />
+                    <RadioButton GroupName="ViewScope" Content="Current month"
+                                 IsChecked="{Binding IsCurrentMonthScope}"
+                                 VerticalAlignment="Center" />
+                    <RadioButton GroupName="ViewScope" Content="Adjacent months"
+                                 IsChecked="{Binding IsAdjacentMonthsScope}"
+                                 VerticalAlignment="Center" />
+                    <RadioButton GroupName="ViewScope" Content="All months"
+                                 IsChecked="{Binding IsAllMonthsScope}"
+                                 VerticalAlignment="Center" />
                 </StackPanel>
-            </StackPanel>
-        </StackPanel>
 
-        <!-- Main content: available top, linked bottom -->
-        <Grid Grid.Row="2" RowDefinitions="*,*">
+                <!-- Transactions month (hidden in All months mode) -->
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4"
+                            IsVisible="{Binding IsMonthScopeVisible}">
+                    <TextBlock Text="Transactions:" VerticalAlignment="Center" Foreground="Gray"
+                               FontSize="12" MinWidth="82" />
+                    <Button Command="{Binding GoToPreviousMonthCommand}" Padding="4,2"
+                            ToolTip.Tip="Previous month">
+                        <materialIcons:MaterialIcon Kind="ChevronLeft" Width="14" Height="14" />
+                    </Button>
+                    <TextBlock Text="{Binding SelectedMonthLabel}"
+                               VerticalAlignment="Center" FontWeight="SemiBold"
+                               MinWidth="110" TextAlignment="Center" />
+                    <Button Command="{Binding GoToNextMonthCommand}" Padding="4,2"
+                            ToolTip.Tip="Next month">
+                        <materialIcons:MaterialIcon Kind="ChevronRight" Width="14" Height="14" />
+                    </Button>
+                    <Button Command="{Binding GoToThisMonthCommand}" Padding="4,2"
+                            ToolTip.Tip="Go to this month">
+                        <materialIcons:MaterialIcon Kind="CalendarToday" Width="14" Height="14" />
+                    </Button>
+                    <!-- Sync toggle: shows whether documents follow the same month -->
+                    <Button Command="{Binding ToggleSeparateDocumentMonthCommand}" Padding="4,2"
+                            ToolTip.Tip="Toggle separate document month">
+                        <Panel>
+                            <materialIcons:MaterialIcon Kind="Sync" Width="14" Height="14"
+                                                        IsVisible="{Binding SyncTransactionAndSourceDocumentMonth}" />
+                            <materialIcons:MaterialIcon Kind="SyncDisabled" Width="14" Height="14"
+                                                        IsVisible="{Binding SyncTransactionAndSourceDocumentMonth, Converter={x:Static BoolConverters.Not}}" />
+                        </Panel>
+                    </Button>
+                </StackPanel>
+
+                <!-- Documents month (visible only when sync is disabled) -->
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4"
+                            IsVisible="{Binding IsShowDocumentsMonthSelector}">
+                    <TextBlock Text="Documents:" VerticalAlignment="Center" Foreground="Gray"
+                               FontSize="12" MinWidth="82" />
+                    <Button Command="{Binding GoToSourceDocumentPreviousMonthCommand}" Padding="4,2"
+                            ToolTip.Tip="Previous month">
+                        <materialIcons:MaterialIcon Kind="ChevronLeft" Width="14" Height="14" />
+                    </Button>
+                    <TextBlock Text="{Binding SelectedSourceDocumentMonthLabel}"
+                               VerticalAlignment="Center" FontWeight="SemiBold"
+                               MinWidth="110" TextAlignment="Center" />
+                    <Button Command="{Binding GoToSourceDocumentNextMonthCommand}" Padding="4,2"
+                            ToolTip.Tip="Next month">
+                        <materialIcons:MaterialIcon Kind="ChevronRight" Width="14" Height="14" />
+                    </Button>
+                    <Button Command="{Binding GoToSourceDocumentThisMonthCommand}" Padding="4,2"
+                            ToolTip.Tip="Go to this month">
+                        <materialIcons:MaterialIcon Kind="CalendarToday" Width="14" Height="14" />
+                    </Button>
+                    <Button Command="{Binding SyncSourceDocumentMonthWithTransactionCommand}" Padding="4,2"
+                            ToolTip.Tip="Sync with transactions month">
+                        <materialIcons:MaterialIcon Kind="Sync" Width="14" Height="14" />
+                    </Button>
+                </StackPanel>
+
+            </Grid>
+        </Border>
+
+        <!-- ── Linking Panel (shown when both sides are selected) ─────── -->
+        <Border Grid.Row="2"
+                IsVisible="{Binding HasBothSelected}"
+                BorderBrush="SteelBlue" BorderThickness="2" CornerRadius="4"
+                Margin="8,0,8,4" Padding="8,6" Background="#0C4FA3">
+            <Grid ColumnDefinitions="*,Auto,*">
+
+                <!-- Selected transaction summary -->
+                <StackPanel Grid.Column="0" Spacing="2">
+                    <TextBlock Text="Transaction" Foreground="LightSteelBlue" FontSize="11" />
+                    <TextBlock Text="{Binding SelectedAvailableTransaction.TransactionDate}"
+                               FontWeight="SemiBold" Foreground="White" />
+                    <TextBlock Text="{Binding SelectedAvailableTransaction.Description}"
+                               TextTrimming="CharacterEllipsis" Foreground="White" />
+                    <TextBlock Text="{Binding SelectedAvailableTransaction.Amount, StringFormat='{}{0:N2}'}"
+                               Foreground="White" />
+                </StackPanel>
+
+                <!-- Link action (centre) -->
+                <Button Grid.Column="1"
+                        Command="{Binding LinkDocumentCommand}"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Margin="16,0"
+                        Padding="12,6">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <materialIcons:MaterialIcon Kind="LinkVariant" Width="18" Height="18" />
+                        <TextBlock Text="Link" VerticalAlignment="Center" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Button>
+
+                <!-- Selected document summary -->
+                <StackPanel Grid.Column="2" Spacing="2">
+                    <TextBlock Text="Source Document" Foreground="LightSteelBlue" FontSize="11" />
+                    <TextBlock Text="{Binding SelectedAvailableSourceDocument.FileNameDate}"
+                               FontWeight="SemiBold" Foreground="White" />
+                    <TextBlock Text="{Binding SelectedAvailableSourceDocument.Description}"
+                               TextTrimming="CharacterEllipsis" Foreground="White" />
+                    <TextBlock Text="{Binding SelectedAvailableSourceDocument.Amount, StringFormat='{}{0:N2}'}"
+                               Foreground="White" />
+                </StackPanel>
+
+            </Grid>
+        </Border>
+
+        <!-- ── Set Amount Panel ──────────────────────────────────────── -->
+        <Border Grid.Row="3"
+                IsVisible="{Binding IsSettingAmount}"
+                BorderBrush="SteelBlue" BorderThickness="1"
+                CornerRadius="4" Margin="8,0,8,4" Padding="8">
+            <StackPanel Spacing="6">
+                <TextBlock Text="{Binding DocumentBeingAmounted.Description,
+                                  StringFormat='Set amount for: {0}'}"
+                           FontWeight="SemiBold" />
+                <Grid ColumnDefinitions="*,*,Auto,Auto,Auto">
+                    <TextBox Grid.Column="0"
+                             Text="{Binding AmountInputText}"
+                             PlaceholderText="Amount…" />
+                    <TextBox Grid.Column="1"
+                             Text="{Binding CcyAmountInputText}"
+                             PlaceholderText="Currency amount…"
+                             Margin="4,0,0,0" />
+                    <ComboBox Grid.Column="2"
+                             ItemsSource="{Binding SupportedCurrencies}"
+                             SelectedItem="{Binding SelectedCurrency}"
+                             IsEnabled="{Binding CanSelectCurrency}"
+                             Margin="4,0,0,0" />
+                    <Button Grid.Column="3" Content="Confirm"
+                            Command="{Binding ConfirmSetAmountCommand}"
+                            Margin="4,0,0,0" />
+                    <Button Grid.Column="4" Content="Cancel"
+                            Command="{Binding CancelSetAmountCommand}"
+                            Margin="4,0,0,0" />
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- ── Main content ──────────────────────────────────────────── -->
+        <Grid Grid.Row="4" RowDefinitions="*,*">
 
             <!-- Top row: available transactions | available source documents -->
-            <Grid Grid.Row="0" ColumnDefinitions="*,*" Margin="8,8,8,4">
+            <Grid Grid.Row="0" ColumnDefinitions="*,*" Margin="8,4,8,4">
 
-                <!-- Available Transactions -->
-                <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Margin="0,0,4,0" CornerRadius="4">
+                <!-- ── Available Transactions ──────────────────── -->
+                <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1"
+                        Margin="0,0,4,0" CornerRadius="4">
                     <Grid RowDefinitions="Auto,*">
-                        <TextBlock Grid.Row="0" Text="Available Transactions" FontWeight="Bold" Margin="8,4" />
-                        <ListBox Grid.Row="1" ItemsSource="{Binding AvailableTransactions}"
+                        <TextBlock Grid.Row="0" Text="Available Transactions"
+                                   FontWeight="Bold" Margin="8,4" />
+                        <ListBox Grid.Row="1"
+                                 ItemsSource="{Binding AvailableTransactions}"
                                  SelectedItem="{Binding SelectedAvailableTransaction}">
+
+                            <!-- Context menu at list level (operates on selected item) -->
+                            <ListBox.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Mark as handled (no document)"
+                                              Command="{Binding MarkAsHandledWithoutDocumentCommand}"
+                                              CommandParameter="{Binding SelectedAvailableTransaction}" />
+                                    <MenuItem Header="Remove handled mark"
+                                              Command="{Binding UnmarkAsHandledWithoutDocumentCommand}"
+                                              CommandParameter="{Binding SelectedAvailableTransaction}" />
+                                </ContextMenu>
+                            </ListBox.ContextMenu>
+
                             <ListBox.ItemTemplate>
                                 <DataTemplate x:DataType="entities:Transaction">
-                                    <Grid RowDefinitions="Auto,Auto">
-                                        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto">
-                                            <TextBlock Grid.Column="0" Text="{Binding AccountingDate}"
-                                                       Foreground="Gray" Margin="0,0,4,0" />
-                                            <TextBlock Grid.Column="1" Text="{Binding TransactionDate}"
-                                                       Margin="0,0,8,0" />
-                                            <TextBlock Grid.Column="2" Text="{Binding Description}"
-                                                       TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Grid.Column="3" Text="{Binding Amount, StringFormat='{}{0:N2}'}"
-                                                       HorizontalAlignment="Right" Margin="8,0,0,0" />
-                                            <TextBlock Grid.Column="4"
-                                                       Text="🔗"
-                                                       Margin="8,0,0,0"
-                                                       IsVisible="{Binding IsLinked}" />
-                                            <TextBlock Grid.Column="5"
-                                                       Text="{Binding LinkedSourceDocumentCount}"
-                                                       Margin="4,0,0,0"
-                                                       IsVisible="{Binding HasMultipleLinkedSourceDocuments}" />
-                                            <!-- Handled-without-document badge -->
-                                            <Border Grid.Column="6"
-                                                    Background="DarkGreen"
-                                                    CornerRadius="3"
-                                                    Padding="4,1"
-                                                    Margin="6,0,0,0"
-                                                    IsVisible="{Binding IsHandledWithoutDocument}">
-                                                <TextBlock Text="✓ No doc needed"
-                                                           FontSize="10"
-                                                           Foreground="White" />
-                                            </Border>
-                                        </Grid>
-                                        <!-- Action buttons for transactions -->
-                                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="0,2,0,0">
-                                            <Button Content="Mark as handled (no doc)"
-                                                    Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).MarkAsHandledWithoutDocumentCommand}"
-                                                    CommandParameter="{Binding}"
-                                                    Padding="6,2" FontSize="11"
-                                                    IsVisible="{Binding IsHandledWithoutDocument, Converter={x:Static BoolConverters.Not}}" />
-                                            <Button Content="Remove handled mark"
-                                                    Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).UnmarkAsHandledWithoutDocumentCommand}"
-                                                    CommandParameter="{Binding}"
-                                                    Padding="6,2" FontSize="11"
-                                                    IsVisible="{Binding IsHandledWithoutDocument}" />
-                                        </StackPanel>
+                                    <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">
+                                        <TextBlock Grid.Column="0" Text="{Binding AccountingDate}"
+                                                   Foreground="Gray" Margin="0,0,4,0" />
+                                        <TextBlock Grid.Column="1" Text="{Binding TransactionDate}"
+                                                   Margin="0,0,8,0" />
+                                        <TextBlock Grid.Column="2" Text="{Binding Description}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="3"
+                                                   Text="{Binding Amount, StringFormat='{}{0:N2}'}"
+                                                   HorizontalAlignment="Right" Margin="8,0,0,0" />
+                                        <!-- Linked badge -->
+                                        <materialIcons:MaterialIcon Grid.Column="4"
+                                                                    Kind="Link"
+                                                                    Width="14" Height="14"
+                                                                    Foreground="Green"
+                                                                    Margin="6,0,0,0"
+                                                                    IsVisible="{Binding IsLinked}"
+                                                                    ToolTip.Tip="Linked" />
+                                        <!-- Handled-without-document badge -->
+                                        <materialIcons:MaterialIcon Grid.Column="5"
+                                                                    Kind="CheckCircleOutline"
+                                                                    Width="14" Height="14"
+                                                                    Foreground="Teal"
+                                                                    Margin="4,0,0,0"
+                                                                    IsVisible="{Binding IsHandledWithoutDocument}"
+                                                                    ToolTip.Tip="Handled without document" />
                                     </Grid>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
@@ -148,193 +262,190 @@
                     </Grid>
                 </Border>
 
-                <!-- Available Source Documents -->
-                <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1" Margin="4,0,0,0" CornerRadius="4">
-                    <Grid RowDefinitions="Auto,*,Auto">
-                        <TextBlock Grid.Row="0" Text="Available Source Documents" FontWeight="Bold" Margin="8,4" />
-                        <ListBox Grid.Row="1" ItemsSource="{Binding AvailableSourceDocuments}"
+                <!-- ── Available Source Documents ──────────────── -->
+                <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1"
+                        Margin="4,0,0,0" CornerRadius="4">
+                    <Grid RowDefinitions="Auto,*">
+                        <TextBlock Grid.Row="0" Text="Available Source Documents"
+                                   FontWeight="Bold" Margin="8,4" />
+                        <ListBox Grid.Row="1"
+                                 ItemsSource="{Binding AvailableSourceDocuments}"
                                  SelectedItem="{Binding SelectedAvailableSourceDocument}">
+
+                            <!-- Context menu at list level (operates on selected item) -->
+                            <ListBox.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Change amount"
+                                              Command="{Binding BeginSetAmountCommand}"
+                                              CommandParameter="{Binding SelectedAvailableSourceDocument}"
+                                              IsVisible="{Binding SelectedAvailableSourceDocument.HasAmount}" />
+                                    <MenuItem Header="Show in folder"
+                                              Command="{Binding ShowInExplorerCommand}"
+                                              CommandParameter="{Binding SelectedAvailableSourceDocument}" />
+                                    <Separator />
+                                    <MenuItem Header="Not annual"
+                                              Command="{Binding ClearAnnualTypeCommand}"
+                                              CommandParameter="{Binding SelectedAvailableSourceDocument}"
+                                              IsVisible="{Binding SelectedAvailableSourceDocument.CanClearAnnualType}" />
+                                    <MenuItem Header="Annual"
+                                              Command="{Binding MarkAsAnnualCommand}"
+                                              CommandParameter="{Binding SelectedAvailableSourceDocument}"
+                                              IsVisible="{Binding SelectedAvailableSourceDocument.CanMarkAsAnnual}" />
+                                    <MenuItem Header="Expired annual"
+                                              Command="{Binding MarkAsExpiredAnnualCommand}"
+                                              CommandParameter="{Binding SelectedAvailableSourceDocument}"
+                                              IsVisible="{Binding SelectedAvailableSourceDocument.CanMarkAsExpiredAnnual}" />
+                                    <Separator />
+                                    <MenuItem Header="Mark as Pending"
+                                              Command="{Binding MarkAsFutureTransactionCommand}"
+                                              CommandParameter="{Binding SelectedAvailableSourceDocument}"
+                                              IsVisible="{Binding SelectedAvailableSourceDocument.IsFutureTransaction, Converter={x:Static BoolConverters.Not}}" />
+                                    <MenuItem Header="Remove Pending"
+                                              Command="{Binding UnmarkAsFutureTransactionCommand}"
+                                              CommandParameter="{Binding SelectedAvailableSourceDocument}"
+                                              IsVisible="{Binding SelectedAvailableSourceDocument.IsFutureTransaction}" />
+                                </ContextMenu>
+                            </ListBox.ContextMenu>
+
                             <ListBox.ItemTemplate>
                                 <DataTemplate x:DataType="entities:SourceDocument">
                                     <Grid RowDefinitions="Auto,Auto">
                                         <!-- Main info row -->
-                                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
-                                            <TextBlock Grid.Column="0" Text="{Binding FileNameDate}" Margin="0,0,8,0" />
-                                            <TextBlock Grid.Column="1" Text="{Binding Description}" TextTrimming="CharacterEllipsis" />
+                                        <Grid Grid.Row="0"
+                                              ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                                            <TextBlock Grid.Column="0" Text="{Binding FileNameDate}"
+                                                       Margin="0,0,8,0" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Description}"
+                                                       TextTrimming="CharacterEllipsis" />
                                             <TextBlock Grid.Column="2"
                                                        Text="{Binding Amount, StringFormat='{}{0:N2}'}"
                                                        HorizontalAlignment="Right" Margin="8,0,0,0" />
                                             <TextBlock Grid.Column="3"
                                                        Text="{Binding CurrencyDisplay}"
-                                                       HorizontalAlignment="Right" Margin="8,0,0,0" />
-                                            <TextBlock Grid.Column="4"
-                                                       Text="🔗"
-                                                       Margin="8,0,0,0"
-                                                       IsVisible="{Binding IsLinked}" />
-                                            <TextBlock Grid.Column="5"
-                                                       Text="{Binding LinkedTransactionCount}"
-                                                       Margin="4,0,0,0"
-                                                       IsVisible="{Binding HasMultipleLinkedTransactions}" />
-                                            <!-- Pending badge for future transactions -->
-                                            <Border Grid.Column="6"
-                                                    Background="SteelBlue"
-                                                    CornerRadius="3"
-                                                    Padding="4,1"
-                                                    Margin="6,0,0,0"
-                                                    IsVisible="{Binding IsFutureTransaction}">
-                                                <TextBlock Text="Pending"
-                                                           FontSize="10"
-                                                           Foreground="White" />
-                                            </Border>
-                                            <!-- Status badge for non-Active documents -->
-                                            <Border Grid.Column="7"
-                                                    Background="Orange"
-                                                    CornerRadius="3"
-                                                    Padding="4,1"
-                                                    Margin="6,0,0,0"
-                                                    IsVisible="{Binding Status, Converter={x:Static vm:Converters.IsNotActive}}">
-                                                <TextBlock Text="{Binding Status}"
-                                                           FontSize="10"
-                                                           Foreground="White" />
-                                            </Border>
+                                                       Margin="4,0,0,0" />
+                                            <!-- Linked badge -->
+                                            <materialIcons:MaterialIcon Grid.Column="4"
+                                                                        Kind="Link"
+                                                                        Width="14" Height="14"
+                                                                        Foreground="Green"
+                                                                        Margin="6,0,0,0"
+                                                                        IsVisible="{Binding IsLinked}"
+                                                                        ToolTip.Tip="Linked" />
+                                            <!-- Pending badge -->
+                                            <materialIcons:MaterialIcon Grid.Column="5"
+                                                                        Kind="ClockOutline"
+                                                                        Width="14" Height="14"
+                                                                        Foreground="Orange"
+                                                                        Margin="4,0,0,0"
+                                                                        IsVisible="{Binding IsFutureTransaction}"
+                                                                        ToolTip.Tip="Pending" />
+                                            <!-- Non-Active status badge -->
+                                            <materialIcons:MaterialIcon Grid.Column="6"
+                                                                        Kind="AlertCircleOutline"
+                                                                        Width="14" Height="14"
+                                                                        Foreground="Orange"
+                                                                        Margin="4,0,0,0"
+                                                                        IsVisible="{Binding Status, Converter={x:Static vm:Converters.IsNotActive}}"
+                                                                        ToolTip.Tip="{Binding Status}" />
                                             <!-- Annual badge -->
-                                            <Border Grid.Column="8"
-                                                    Background="DarkOrange"
-                                                    CornerRadius="3"
-                                                    Padding="4,1"
-                                                    Margin="6,0,0,0"
-                                                    IsVisible="{Binding IsAnnual}">
-                                                <TextBlock Text="Annual"
-                                                           FontSize="10"
-                                                           Foreground="White" />
-                                            </Border>
-                                            <!-- ExpiredAnnual badge -->
-                                            <Border Grid.Column="9"
-                                                    Background="Gray"
-                                                    CornerRadius="3"
-                                                    Padding="4,1"
-                                                    Margin="6,0,0,0"
-                                                    IsVisible="{Binding IsExpiredAnnual}">
-                                                <TextBlock Text="Expired Annual"
-                                                           FontSize="10"
-                                                           Foreground="White" />
-                                            </Border>
-                                        </Grid>
-                                        <!-- Action buttons row -->
-                                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="0,2,0,0">
-                                            <Button Content="Open"
+                                            <materialIcons:MaterialIcon Grid.Column="7"
+                                                                        Kind="Repeat"
+                                                                        Width="14" Height="14"
+                                                                        Foreground="SteelBlue"
+                                                                        Margin="4,0,0,0"
+                                                                        IsVisible="{Binding IsAnnual}"
+                                                                        ToolTip.Tip="Annual" />
+                                            <!-- Expired Annual badge -->
+                                            <materialIcons:MaterialIcon Grid.Column="8"
+                                                                        Kind="CalendarRemove"
+                                                                        Width="14" Height="14"
+                                                                        Foreground="Gray"
+                                                                        Margin="4,0,0,0"
+                                                                        IsVisible="{Binding IsExpiredAnnual}"
+                                                                        ToolTip.Tip="Expired annual" />
+                                            <!-- Open button (inline, icon-only, always visible) -->
+                                            <Button Grid.Column="9"
                                                     Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).OpenDocumentCommand}"
                                                     CommandParameter="{Binding}"
-                                                    Padding="6,2" FontSize="11" />
-                                            <Button Content="Show in Explorer"
-                                                    Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).ShowInExplorerCommand}"
-                                                    CommandParameter="{Binding}"
-                                                    Padding="6,2" FontSize="11" />
-                                            <Button Content="Set Amount"
-                                                    Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).BeginSetAmountCommand}"
-                                                    CommandParameter="{Binding}"
-                                                    Padding="6,2" FontSize="11" />
-                                            <Button Content="Mark as Pending"
-                                                    Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).MarkAsFutureTransactionCommand}"
-                                                    CommandParameter="{Binding}"
-                                                    Padding="6,2" FontSize="11"
-                                                    IsVisible="{Binding IsFutureTransaction, Converter={x:Static BoolConverters.Not}}" />
-                                            <Button Content="Remove Pending"
-                                                    Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).UnmarkAsFutureTransactionCommand}"
-                                                    CommandParameter="{Binding}"
-                                                    Padding="6,2" FontSize="11"
-                                                    IsVisible="{Binding IsFutureTransaction}" />
-                                            <Button Content="Mark Annual"
-                                                    Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).MarkAsAnnualCommand}"
-                                                    CommandParameter="{Binding}"
-                                                    Padding="6,2" FontSize="11"
-                                                    IsVisible="{Binding CanMarkAsAnnual}" />
-                                            <Button Content="Mark Expired Annual"
-                                                    Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).MarkAsExpiredAnnualCommand}"
-                                                    CommandParameter="{Binding}"
-                                                    Padding="6,2" FontSize="11"
-                                                    IsVisible="{Binding CanMarkAsExpiredAnnual}" />
-                                            <Button Content="Clear Annual"
-                                                    Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).ClearAnnualTypeCommand}"
-                                                    CommandParameter="{Binding}"
-                                                    Padding="6,2" FontSize="11"
-                                                    IsVisible="{Binding CanClearAnnualType}" />
-                                        </StackPanel>
+                                                    Padding="4,1" Margin="6,0,0,0"
+                                                    ToolTip.Tip="Open">
+                                                <materialIcons:MaterialIcon Kind="OpenInNew"
+                                                                            Width="14" Height="14" />
+                                            </Button>
+                                        </Grid>
+
+                                        <!-- Inline Set Amount (only when document has no amount yet) -->
+                                        <Button Grid.Row="1"
+                                                Content="Set Amount"
+                                                Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).BeginSetAmountCommand}"
+                                                CommandParameter="{Binding}"
+                                                Padding="6,2" FontSize="11"
+                                                Margin="0,2,0,0"
+                                                IsVisible="{Binding HasNoAmount}" />
                                     </Grid>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
-                        <!-- Inline Set Amount panel -->
-                        <Border Grid.Row="2"
-                                IsVisible="{Binding IsSettingAmount}"
-                                BorderBrush="SteelBlue" BorderThickness="1"
-                                CornerRadius="4" Margin="4" Padding="8">
-                            <StackPanel Spacing="6">
-                                <TextBlock Text="{Binding DocumentBeingAmounted.Description,
-                                                  StringFormat='Set amount for: {0}'}"
-                                           FontWeight="SemiBold" />
-                                <Grid ColumnDefinitions="*,*,Auto,Auto,*">
-                                    <TextBox Grid.Column="0"
-                                             Text="{Binding AmountInputText}"
-                                             PlaceholderText="Enter amount…" />
-                                    <TextBox Grid.Column="1"
-                                             Text="{Binding CcyAmountInputText}"
-                                             PlaceholderText="Enter currency amount…" 
-                                             Margin="4,0,0,0" />
-                                    <ComboBox Grid.Column="2"
-                                             ItemsSource="{Binding SupportedCurrencies}"
-                                             SelectedItem="{Binding SelectedCurrency}"
-                                             IsEnabled="{Binding CanSelectCurrency}"
-                                             Margin="4,0,0,0" />
-                                    <Button Grid.Column="3" Content="Confirm"
-                                            Command="{Binding ConfirmSetAmountCommand}"
-                                            Margin="4,0,0,0" />
-                                    <Button Grid.Column="4" Content="Cancel"
-                                            Command="{Binding CancelSetAmountCommand}"
-                                            Margin="4,0,0,0" />
-                                </Grid>
-                            </StackPanel>
-                        </Border>
                     </Grid>
                 </Border>
 
             </Grid>
 
-            <!-- Bottom row: Linked pairs side by side -->
-            <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" Margin="8,4,8,8" CornerRadius="4">
+            <!-- Bottom row: Linked pairs -->
+            <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1"
+                    Margin="8,4,8,8" CornerRadius="4">
                 <Grid RowDefinitions="Auto,*">
-                    <TextBlock Grid.Row="0" Text="Linked Pairs" FontWeight="Bold" Margin="8,4" />
+                    <TextBlock Grid.Row="0" Text="Linked Pairs"
+                               FontWeight="Bold" Margin="8,4" />
                     <ListBox Grid.Row="1" ItemsSource="{Binding LinkedTransactionGroups}">
                         <ListBox.ItemTemplate>
                             <DataTemplate x:DataType="vm:LinkedTransactionGroup">
-                                <StackPanel Spacing="6" Margin="0,0,0,8">
+                                <StackPanel Spacing="4" Margin="0,0,0,6">
                                     <Grid ColumnDefinitions="Auto,Auto,*,Auto">
-                                        <TextBlock Grid.Column="0" Text="{Binding Transaction.AccountingDate}" Foreground="Gray" Margin="0,0,4,0" />
-                                        <TextBlock Grid.Column="1" Text="{Binding Transaction.TransactionDate}" Margin="0,0,8,0" />
-                                        <TextBlock Grid.Column="2" Text="{Binding Transaction.Description}" TextTrimming="CharacterEllipsis" />
-                                        <TextBlock Grid.Column="3" Text="{Binding Transaction.Amount, StringFormat='{}{0:N2}'}" />
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding Transaction.AccountingDate}"
+                                                   Foreground="Gray" Margin="0,0,4,0" />
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding Transaction.TransactionDate}"
+                                                   Margin="0,0,8,0" />
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding Transaction.Description}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="3"
+                                                   Text="{Binding Transaction.Amount, StringFormat='{}{0:N2}'}" />
                                     </Grid>
                                     <ItemsControl ItemsSource="{Binding LinkedDocuments}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate x:DataType="vm:LinkedPair">
-                                                <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto,Auto" Margin="24,0,0,0">
+                                                <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto"
+                                                      Margin="24,0,0,0">
                                                     <TextBlock Grid.Column="0" Text="↳" Foreground="Gray" />
-                                                    <TextBlock Grid.Column="1" Text="{Binding SourceDocument.FileNameDate}" Margin="8,0,8,0" />
-                                                    <TextBlock Grid.Column="2" Text="{Binding SourceDocument.Description}" TextTrimming="CharacterEllipsis" />
-                                                    <TextBlock Grid.Column="3" Text="{Binding SourceDocument.Amount, StringFormat='{}{0:N2}'}" Margin="8,0,0,0" />
-                                                    <TextBlock Grid.Column="4" Text="{Binding SourceDocument.CurrencyDisplay}" Margin="8,0,0,0" />
-                                                    <Button Grid.Column="5" Content="Open"
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding SourceDocument.FileNameDate}"
+                                                               Margin="8,0,8,0" />
+                                                    <TextBlock Grid.Column="2"
+                                                               Text="{Binding SourceDocument.Description}"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Grid.Column="3"
+                                                               Text="{Binding SourceDocument.Amount, StringFormat='{}{0:N2}'}"
+                                                               Margin="8,0,0,0" />
+                                                    <TextBlock Grid.Column="4"
+                                                               Text="{Binding SourceDocument.CurrencyDisplay}"
+                                                               Margin="4,0,0,0" />
+                                                    <Button Grid.Column="5" Padding="4,2" Margin="8,0,0,0"
                                                             Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).OpenDocumentCommand}"
                                                             CommandParameter="{Binding SourceDocument}"
-                                                            Margin="8,0,0,0" />
-                                                    <Button Grid.Column="6" Content="Show in Explorer"
-                                                            Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).ShowInExplorerCommand}"
-                                                            CommandParameter="{Binding SourceDocument}"
-                                                            Margin="8,0,0,0" />
-                                                    <Button Grid.Column="7" Content="Unlink"
+                                                            ToolTip.Tip="Open">
+                                                        <materialIcons:MaterialIcon Kind="OpenInNew"
+                                                                                    Width="14" Height="14" />
+                                                    </Button>
+                                                    <Button Grid.Column="6" Padding="4,2" Margin="4,0,0,0"
                                                             Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).UnlinkDocumentCommand}"
                                                             CommandParameter="{Binding}"
-                                                            Margin="8,0,0,0" />
+                                                            ToolTip.Tip="Unlink">
+                                                        <materialIcons:MaterialIcon Kind="LinkOff"
+                                                                                    Width="14" Height="14" />
+                                                    </Button>
                                                 </Grid>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
