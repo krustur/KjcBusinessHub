@@ -267,7 +267,7 @@
                 </Border>
 
                 <Border Grid.Column="1" Classes="sectionCard">
-                    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="12">
+                    <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12">
                         <StackPanel Grid.Row="0" Spacing="4">
                             <TextBlock Text="Source documents to review" Classes="sectionTitle" />
                             <TextBlock Text="Open, annotate, and classify documents before linking them."
@@ -282,7 +282,38 @@
                                        TextWrapping="Wrap" />
                         </Border>
 
-                        <ListBox Grid.Row="2"
+                        <Border Grid.Row="2"
+                                Classes="subtleCard"
+                                IsVisible="{Binding IsSettingAmount}">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="{Binding DocumentBeingAmounted.Description, StringFormat='{}Set amount for: {0}'}"
+                                           FontWeight="SemiBold"
+                                           TextWrapping="Wrap" />
+                                <Grid ColumnDefinitions="*,*,Auto,Auto,Auto" ColumnSpacing="8">
+                                    <TextBox Grid.Column="0"
+                                             Text="{Binding AmountInputText}"
+                                             PlaceholderText="Amount" />
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding CcyAmountInputText}"
+                                             PlaceholderText="Currency amount" />
+                                    <ComboBox Grid.Column="2"
+                                              ItemsSource="{Binding SupportedCurrencies}"
+                                              SelectedItem="{Binding SelectedCurrency}"
+                                              IsEnabled="{Binding CanSelectCurrency}"
+                                              Width="110" />
+                                    <Button Grid.Column="3"
+                                            Content="Save"
+                                            Command="{Binding ConfirmSetAmountCommand}"
+                                            Classes="primaryAction" />
+                                    <Button Grid.Column="4"
+                                            Content="Cancel"
+                                            Command="{Binding CancelSetAmountCommand}"
+                                            Classes="ghostAction" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <ListBox Grid.Row="3"
                                  ItemsSource="{Binding AvailableSourceDocuments}"
                                  SelectedItem="{Binding SelectedAvailableSourceDocument}"
                                  IsVisible="{Binding HasAvailableSourceDocuments}">
@@ -372,37 +403,6 @@
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
-
-                        <Border Grid.Row="3"
-                                Classes="subtleCard"
-                                IsVisible="{Binding IsSettingAmount}">
-                            <StackPanel Spacing="10">
-                                <TextBlock Text="{Binding DocumentBeingAmounted.Description, StringFormat='{}Set amount for: {0}'}"
-                                           FontWeight="SemiBold"
-                                           TextWrapping="Wrap" />
-                                <Grid ColumnDefinitions="*,*,Auto,Auto,Auto" ColumnSpacing="8">
-                                    <TextBox Grid.Column="0"
-                                             Text="{Binding AmountInputText}"
-                                             PlaceholderText="Amount" />
-                                    <TextBox Grid.Column="1"
-                                             Text="{Binding CcyAmountInputText}"
-                                             PlaceholderText="Currency amount" />
-                                    <ComboBox Grid.Column="2"
-                                              ItemsSource="{Binding SupportedCurrencies}"
-                                              SelectedItem="{Binding SelectedCurrency}"
-                                              IsEnabled="{Binding CanSelectCurrency}"
-                                              Width="110" />
-                                    <Button Grid.Column="3"
-                                            Content="Save"
-                                            Command="{Binding ConfirmSetAmountCommand}"
-                                            Classes="primaryAction" />
-                                    <Button Grid.Column="4"
-                                            Content="Cancel"
-                                            Command="{Binding CancelSetAmountCommand}"
-                                            Classes="ghostAction" />
-                                </Grid>
-                            </StackPanel>
-                        </Border>
                     </Grid>
                 </Border>
             </Grid>
