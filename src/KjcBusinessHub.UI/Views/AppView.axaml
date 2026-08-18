@@ -233,7 +233,7 @@
                                                            FontWeight="SemiBold" />
                                             </Grid>
 
-                                            <WrapPanel Orientation="Horizontal" Spacing="8">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
                                                 <Border Classes="badge badgeInfo" IsVisible="{Binding IsLinked}">
                                                     <TextBlock Text="Linked" Classes="badgeText" />
                                                 </Border>
@@ -244,7 +244,7 @@
                                                 <Border Classes="badge badgeSuccess" IsVisible="{Binding IsHandledWithoutDocument}">
                                                     <TextBlock Text="Handled without document" Classes="badgeText" />
                                                 </Border>
-                                            </WrapPanel>
+                                            </StackPanel>
 
                                             <StackPanel Orientation="Horizontal" Spacing="8">
                                                 <Button Content="Mark handled"
@@ -306,7 +306,7 @@
                                                            Classes="sectionCaption" />
                                             </Grid>
 
-                                            <WrapPanel Orientation="Horizontal" Spacing="8">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
                                                 <Border Classes="badge badgeInfo" IsVisible="{Binding IsLinked}">
                                                     <TextBlock Text="Linked" Classes="badgeText" />
                                                 </Border>
@@ -326,9 +326,9 @@
                                                 <Border Classes="badge badgeMuted" IsVisible="{Binding IsExpiredAnnual}">
                                                     <TextBlock Text="Expired annual" Classes="badgeText" />
                                                 </Border>
-                                            </WrapPanel>
+                                            </StackPanel>
 
-                                            <WrapPanel Orientation="Horizontal" Spacing="8">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
                                                 <Button Content="Open"
                                                         Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).OpenDocumentCommand}"
                                                         CommandParameter="{Binding}"
@@ -366,7 +366,7 @@
                                                         CommandParameter="{Binding}"
                                                         Classes="ghostAction"
                                                         IsVisible="{Binding CanClearAnnualType}" />
-                                            </WrapPanel>
+                                            </StackPanel>
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>
@@ -448,7 +448,7 @@
                                         <ItemsControl ItemsSource="{Binding LinkedDocuments}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="vm:LinkedPair">
-                                                    <Border BorderBrush="#D8E1EE" BorderThickness="0,1,0,0" Padding="0,10,0,0">
+                                                    <Border BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,10,0,0">
                                                         <StackPanel Spacing="8" Margin="18,0,0,0">
                                                             <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
                                                                 <TextBlock Grid.Column="0"
@@ -464,7 +464,7 @@
                                                                            Text="{Binding SourceDocument.CurrencyDisplay}"
                                                                            Classes="sectionCaption" />
                                                             </Grid>
-                                                            <WrapPanel Orientation="Horizontal" Spacing="8">
+                                                            <StackPanel Orientation="Horizontal" Spacing="8">
                                                                 <Button Content="Open"
                                                                         Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).OpenDocumentCommand}"
                                                                         CommandParameter="{Binding SourceDocument}"
@@ -477,7 +477,7 @@
                                                                         Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).UnlinkDocumentCommand}"
                                                                         CommandParameter="{Binding}"
                                                                         Classes="ghostAction" />
-                                                            </WrapPanel>
+                                                            </StackPanel>
                                                         </StackPanel>
                                                     </Border>
                                                 </DataTemplate>

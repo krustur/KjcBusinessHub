@@ -115,6 +115,11 @@ public partial class AppViewModel : ViewModelBase
 
     public bool IsMonthNavigationEnabled => SelectedViewScope != MonthViewScope.AllMonths;
     public MonthViewScope SelectedViewScope => SelectedViewScopeOption.Scope;
+    public FilterMode FilterMode
+    {
+        get => SelectedViewScope == MonthViewScope.AllMonths ? FilterMode.SeeAll : FilterMode.SeeMonth;
+        set => SelectedViewScopeOption = value == FilterMode.SeeAll ? ViewScopeOptions[2] : ViewScopeOptions[0];
+    }
 
     public bool SyncTransactionAndSourceDocumentMonth
     {
@@ -304,24 +309,13 @@ public partial class AppViewModel : ViewModelBase
 
     partial void OnSelectedViewScopeOptionChanged(ViewScopeOption value)
     {
+        OnPropertyChanged(nameof(FilterMode));
         OnPropertyChanged(nameof(SelectedViewScope));
         _ = RefreshAsync();
     }
 
     partial void OnUseSeparateSourceDocumentMonthChanged(bool value) =>
         _ = RefreshAsync();
-
-    partial void OnSelectedAvailableTransactionChanged(Transaction? value)
-    {
-        OnPropertyChanged(nameof(SelectedTransactionSummary));
-        OnPropertyChanged(nameof(LinkingHint));
-    }
-
-    partial void OnSelectedAvailableSourceDocumentChanged(SourceDocument? value)
-    {
-        OnPropertyChanged(nameof(SelectedSourceDocumentSummary));
-        OnPropertyChanged(nameof(LinkingHint));
-    }
 
     // --- Linking commands ---
 
@@ -773,6 +767,12 @@ public enum MonthViewScope
     CurrentMonth,
     AdjacentMonths,
     AllMonths,
+}
+
+public enum FilterMode
+{
+    SeeAll,
+    SeeMonth,
 }
 
 public enum StatusTone
