@@ -9,6 +9,8 @@ This document establishes UI/UX standards and component guidelines for KjcBusine
 - **Clarity over cleverness:** Labels, buttons, and messages should be plain and unambiguous.
 - **Progressive disclosure:** Show only what the user needs at each step. Reveal advanced options on demand.
 - **Feedback for every action:** Every user action must produce visible feedback (success, error, or loading state).
+- **Power-user first:** Keep instructive or explanatory text to an absolute minimum. Assume the user knows the domain.
+- **Tight layouts:** Lists and tables should be compact — not spacious SaaS-style, but with enough padding to remain readable. Aim for dense information density with clear row separation.
 
 ---
 
@@ -45,7 +47,76 @@ This document establishes UI/UX standards and component guidelines for KjcBusine
 
 ---
 
-## Buttons
+## Icons
+
+- Use **one icon family** throughout the entire application (e.g., Lucide, Heroicons, or whatever is bundled with the chosen component library). Do not mix families.
+- Icon usage by area:
+
+| Area            | Guideline                                                        |
+|-----------------|------------------------------------------------------------------|
+| Navigation      | Icon + text label always                                         |
+| Status badges   | Icon only — no text in the badge; tooltip shows label on hover   |
+| Linking actions | Icon + text label (linking is a core workflow)                   |
+| File actions    | Icon only where meaning is obvious (Open, Show in folder)        |
+| Alerts/warnings | Consistent warning / info icons from the same family             |
+
+- Retire all emoji-like characters, raw Unicode arrows, and ad-hoc checkmarks. Every symbol must come from the chosen icon family.
+
+---
+
+## Month Filtering
+
+- Present month-filtering as a small, labeled **Filter Panel** — not as scattered checkboxes or buttons.
+- The panel exposes:
+  1. **View scope** — single-choice: `Current month` | `Adjacent months` | `All months`
+  2. **Transactions month** — always visible month selector
+  3. **Documents month** — visible only when sync is disabled (scope is not "All months")
+- The sync / independent-month toggle is implicit in whether a Documents month selector appears; do not show it as a separate control.
+
+---
+
+## Status Badges
+
+All statuses must use **one shared badge component** with no text inside the badge. The status label is shown as a **tooltip on hover**.
+
+### Status → Icon & Color mapping
+
+| Status                    | Icon (example)      | Color token      |
+|---------------------------|---------------------|------------------|
+| Linked                    | link / chain        | Green            |
+| Unlinked                  | unlink / broken chain | Red            |
+| Pending                   | clock               | Orange           |
+| Annual                    | repeat / calendar loop | Blue          |
+| Expired annual            | calendar-x          | Gray             |
+| Handled without document  | check-circle        | Teal             |
+| Month complete            | check-square        | Green (bold)     |
+
+Rules:
+- Do not use text, numbers, or emoji inside badges.
+- Do not introduce new colors outside the defined color tokens.
+- Every badge must have an `aria-label` equal to the status label text for accessibility.
+
+---
+
+## Context Menus
+
+- Each row in a data list exposes a **context menu** (right-click or a `⋮` button at the row end) for low-frequency actions.
+- Inline actions (high frequency or stateful) remain directly on the row.
+- Transaction row context menu: `Mark as handled (no document)`
+- SourceDocument row context menu: `Change amount` (when amount is already set), `Show in folder`, annual sub-menu (`Not annual` / `Annual` / `Expired annual`)
+- SourceDocument inline action: `Set amount` — shown inline on the row only when neither `Amount` nor `CcyAmount` is set.
+
+---
+
+## Linking Panel
+
+- When the user has a transaction selected **and** a document selected, display a **Linking Panel** that shows both items side-by-side with a prominent `Link ↔` action.
+- The panel is hidden (or collapsed) when neither or only one side is selected.
+- No instructional text is needed inside the panel — the layout itself communicates the workflow.
+
+---
+
+
 
 | Variant  | Use case                                          |
 |----------|---------------------------------------------------|
@@ -77,11 +148,13 @@ This document establishes UI/UX standards and component guidelines for KjcBusine
 
 ## Status Badges
 
-| Status               | Color  |
-|----------------------|--------|
-| Reconciled           | Green  |
-| PartiallyReconciled  | Orange |
-| Unreconciled         | Red    |
+See the [Status Badges](#status-badges) section above for the canonical status → icon → color mapping. The old table below is superseded.
+
+~~| Status               | Color  |~~
+~~|----------------------|--------|~~
+~~| Reconciled           | Green  |~~
+~~| PartiallyReconciled  | Orange |~~
+~~| Unreconciled         | Red    |~~
 
 ---
 
