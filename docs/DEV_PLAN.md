@@ -128,6 +128,17 @@ This document tracks the development progress of KjcBusinessHub.
 - [ ] Monthly to-do list with reminders
 - [ ] Hints / links to common invoice sources
 
+### UX Plan — In-Context Editing
+
+_Adopted pattern: inline editing inside list items (see docs/UX_REVIEW.md for full rationale)._
+
+- [x] Set Amount form rendered inline inside the source-document list item that triggered the action
+  - [x] Action buttons hidden while the item is in edit mode
+  - [x] `AreReferenceEqual` / `AreReferenceNotEqual` multi-value converters drive per-row visibility
+- [ ] Auto-focus the Amount field when the inline form opens
+- [ ] Auto-cancel inline editing when the user selects a different source document
+- [ ] Scroll the active list item into view (`BringIntoView`) when inline editing opens
+
 ---
 
 ## Phase 9 — Data Safety & Maintenance
