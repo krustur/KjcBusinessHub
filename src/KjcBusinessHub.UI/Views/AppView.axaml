@@ -248,17 +248,17 @@
                                                     Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).MarkAsAnnualCommand}"
                                                     CommandParameter="{Binding}"
                                                     Padding="6,2" FontSize="11"
-                                                    IsVisible="{Binding AnnualType, Converter={x:Static vm:Converters.IsNotAnnualType}}" />
+                                                    IsVisible="{Binding CanMarkAsAnnual}" />
                                             <Button Content="Mark Old Annual"
                                                     Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).MarkAsOldAnnualCommand}"
                                                     CommandParameter="{Binding}"
                                                     Padding="6,2" FontSize="11"
-                                                    IsVisible="{Binding AnnualType, Converter={x:Static vm:Converters.IsNotAnnualType}}" />
+                                                    IsVisible="{Binding CanMarkAsOldAnnual}" />
                                             <Button Content="Clear Annual"
                                                     Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).ClearAnnualTypeCommand}"
                                                     CommandParameter="{Binding}"
                                                     Padding="6,2" FontSize="11"
-                                                    IsVisible="{Binding AnnualType, Converter={x:Static vm:Converters.HasAnnualType}}" />
+                                                    IsVisible="{Binding CanClearAnnualType}" />
                                         </StackPanel>
                                     </Grid>
                                 </DataTemplate>

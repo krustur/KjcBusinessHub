@@ -503,43 +503,29 @@ public partial class AppViewModel : ViewModelBase
     [RelayCommand]
     private async Task MarkAsAnnualAsync(SourceDocument doc)
     {
-        try
-        {
-            doc.AnnualType = SourceDocumentAnnualType.Annual;
-            doc.UpdatedAt = DateTimeOffset.UtcNow;
-            await _sourceDocumentRepository.UpdateAsync(doc);
-            await _sourceDocumentRepository.SaveChangesAsync();
-            await RefreshAsync();
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"Error marking document as annual: {ex.Message}";
-        }
+        await SetAnnualTypeAsync(doc, SourceDocumentAnnualType.Annual, "marking document as annual");
     }
 
     [RelayCommand]
     private async Task MarkAsOldAnnualAsync(SourceDocument doc)
     {
-        try
-        {
-            doc.AnnualType = SourceDocumentAnnualType.OldAnnual;
-            doc.UpdatedAt = DateTimeOffset.UtcNow;
-            await _sourceDocumentRepository.UpdateAsync(doc);
-            await _sourceDocumentRepository.SaveChangesAsync();
-            await RefreshAsync();
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"Error marking document as old annual: {ex.Message}";
-        }
+        await SetAnnualTypeAsync(doc, SourceDocumentAnnualType.OldAnnual, "marking document as old annual");
     }
 
     [RelayCommand]
     private async Task ClearAnnualTypeAsync(SourceDocument doc)
     {
+        await SetAnnualTypeAsync(doc, SourceDocumentAnnualType.NotAnnual, "clearing annual type");
+    }
+
+    private async Task SetAnnualTypeAsync(SourceDocument doc, SourceDocumentAnnualType annualType, string actionDescription)
+    {
+        if (!doc.CanTransitionAnnualTypeTo(annualType))
+            return;
+
         try
         {
-            doc.AnnualType = SourceDocumentAnnualType.NotAnnual;
+            doc.AnnualType = annualType;
             doc.UpdatedAt = DateTimeOffset.UtcNow;
             await _sourceDocumentRepository.UpdateAsync(doc);
             await _sourceDocumentRepository.SaveChangesAsync();
@@ -547,7 +533,7 @@ public partial class AppViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Error clearing annual type: {ex.Message}";
+            StatusMessage = $"Error {actionDescription}: {ex.Message}";
         }
     }
 

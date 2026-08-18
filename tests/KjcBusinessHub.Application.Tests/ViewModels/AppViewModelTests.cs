@@ -198,7 +198,82 @@ public class AppViewModelTests
         await _sourceDocumentRepository.Received(1).UpdateAsync(futureDoc);
     }
 
-    private static SourceDocument MakeActiveDoc(Guid id, DateOnly fileNameDate, bool isFuture) =>
+    [Fact]
+    public async Task Not_annual_documents_can_be_marked_annual_but_not_old_annual()
+    {
+        var doc = MakeActiveDoc(Guid.NewGuid(), new DateOnly(2026, 8, 1), isFuture: false);
+        var sut = CreateSubject();
+
+        Assert.True(doc.CanMarkAsAnnual);
+        Assert.False(doc.CanMarkAsOldAnnual);
+        Assert.False(doc.CanClearAnnualType);
+
+        await sut.MarkAsOldAnnualCommand.ExecuteAsync(doc);
+
+        Assert.Equal(SourceDocumentAnnualType.NotAnnual, doc.AnnualType);
+        await _sourceDocumentRepository.DidNotReceive().UpdateAsync(doc);
+
+        await sut.MarkAsAnnualCommand.ExecuteAsync(doc);
+
+        Assert.Equal(SourceDocumentAnnualType.Annual, doc.AnnualType);
+        await _sourceDocumentRepository.Received(1).UpdateAsync(doc);
+    }
+
+    [Fact]
+    public async Task Annual_documents_can_be_cleared_or_marked_old_annual()
+    {
+        var doc = MakeActiveDoc(
+            Guid.NewGuid(),
+            new DateOnly(2026, 8, 1),
+            isFuture: false,
+            annualType: SourceDocumentAnnualType.Annual);
+        var sut = CreateSubject();
+
+        Assert.False(doc.CanMarkAsAnnual);
+        Assert.True(doc.CanMarkAsOldAnnual);
+        Assert.True(doc.CanClearAnnualType);
+
+        await sut.MarkAsOldAnnualCommand.ExecuteAsync(doc);
+
+        Assert.Equal(SourceDocumentAnnualType.OldAnnual, doc.AnnualType);
+
+        await sut.ClearAnnualTypeCommand.ExecuteAsync(doc);
+
+        Assert.Equal(SourceDocumentAnnualType.NotAnnual, doc.AnnualType);
+        await _sourceDocumentRepository.Received(2).UpdateAsync(doc);
+    }
+
+    [Fact]
+    public async Task Old_annual_documents_can_be_marked_annual_or_cleared()
+    {
+        var doc = MakeActiveDoc(
+            Guid.NewGuid(),
+            new DateOnly(2026, 8, 1),
+            isFuture: false,
+            annualType: SourceDocumentAnnualType.OldAnnual);
+        var sut = CreateSubject();
+
+        Assert.True(doc.CanMarkAsAnnual);
+        Assert.False(doc.CanMarkAsOldAnnual);
+        Assert.True(doc.CanClearAnnualType);
+
+        await sut.MarkAsAnnualCommand.ExecuteAsync(doc);
+
+        Assert.Equal(SourceDocumentAnnualType.Annual, doc.AnnualType);
+
+        doc.AnnualType = SourceDocumentAnnualType.OldAnnual;
+
+        await sut.ClearAnnualTypeCommand.ExecuteAsync(doc);
+
+        Assert.Equal(SourceDocumentAnnualType.NotAnnual, doc.AnnualType);
+        await _sourceDocumentRepository.Received(2).UpdateAsync(doc);
+    }
+
+    private static SourceDocument MakeActiveDoc(
+        Guid id,
+        DateOnly fileNameDate,
+        bool isFuture,
+        SourceDocumentAnnualType annualType = SourceDocumentAnnualType.NotAnnual) =>
         new()
         {
             Id = id,
@@ -209,6 +284,7 @@ public class AppViewModelTests
             Amount = 100m,
             Status = SourceDocumentStatus.Active,
             IsFutureTransaction = isFuture,
+            AnnualType = annualType,
             FileCreatedDate = DateTimeOffset.UtcNow,
             FileModifiedDate = DateTimeOffset.UtcNow,
             CreatedAt = DateTimeOffset.UtcNow,
