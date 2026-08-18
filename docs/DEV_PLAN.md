@@ -4,6 +4,59 @@ This document tracks the development progress of KjcBusinessHub.
 
 ---
 
+## Next Priority — UX Improvements
+
+### 1. Month Filtering Panel
+
+- [ ] Replace the current mix of "Show all months", "Include neighbouring months", and sync controls with a single compact, labeled **Filter Panel**
+  - [ ] Add a **View scope** selector with three options: `Current month` / `Adjacent months` / `All months`
+  - [ ] Show **Transactions month** selector (always visible)
+  - [ ] Show **Documents month** selector only when sync is disabled
+- [ ] Remove the old individual controls once the panel is in place
+
+### 2. Unified Status Badge System
+
+- [ ] Define a single badge component used for all statuses across the app
+  - Statuses to cover: `Linked`, `Unlinked`, `Pending`, `Annual`, `Expired annual`, `Handled without document`, `Month complete`
+  - [ ] No text inside badges — icon only
+  - [ ] Show status label as tooltip on hover
+  - [ ] One color scale mapped to all statuses (see UI_GUIDELINES.md)
+  - [ ] One icon per status drawn from the chosen icon family
+- [ ] Replace all existing ad-hoc badges, colored text, and emoji with the new badge component
+
+### 3. Consistent Icon Set
+
+- [ ] Choose one icon family for the entire application (e.g., Lucide, Heroicons, or the icon set bundled with the component library)
+- [ ] Audit all current symbols: arrows, checkmarks, emoji-like characters, and mixed text icons
+- [ ] Replace every icon with the chosen family
+  - Navigation icons
+  - Linking / unlinking icons
+  - Status icons
+  - File action icons (open, show in folder)
+  - Alert / warning icons
+- [ ] Keep text labels on important buttons; use icon-only for controls where meaning is unambiguous
+
+### 4. Context Menus per Row
+
+- [ ] **Transaction row** — context menu with:
+  - [ ] Mark as handled (no document)
+- [ ] **SourceDocument row** — context menu with:
+  - [ ] Change amount (only when `Amount` or `CcyAmount` is already set)
+  - [ ] Show in folder
+  - [ ] Annual submenu: `Not annual` / `Annual` / `Expired annual`
+- [ ] **SourceDocument row** — inline (direct) action:
+  - [ ] Set amount — rendered inline in the row when the document has neither `Amount` nor `CcyAmount`
+- [ ] Remove any toolbar or standalone buttons that have been fully moved to the context menu
+
+### 5. Explicit Linking Panel
+
+- [ ] Add a **Linking Panel / Summary Area** that shows the currently selected transaction and currently selected document side-by-side
+- [ ] Display the "Link ↔" action prominently inside this panel
+- [ ] Panel is hidden (or collapsed) when nothing is selected on either side
+- [ ] Panel makes the "selected transaction + selected document → link" workflow self-evident without instructional text
+
+---
+
 ## MVP Priority — Next Features
 
 - [x] Make month-based workflow the default reconciliation mode
