@@ -462,6 +462,81 @@ public partial class AppViewModel : ViewModelBase
         TransactionHandledCount == TransactionTotalCount &&
         SourceDocumentHandledCount == SourceDocumentTotalCount;
 
+    // --- Mark Transaction as handled without a linked document ---
+
+    [RelayCommand]
+    private async Task MarkAsHandledWithoutDocumentAsync(Transaction tx)
+    {
+        try
+        {
+            tx.IsHandledWithoutDocument = true;
+            tx.UpdatedAt = DateTimeOffset.UtcNow;
+            await _transactionRepository.UpdateAsync(tx);
+            await _transactionRepository.SaveChangesAsync();
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error marking transaction as handled: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task UnmarkAsHandledWithoutDocumentAsync(Transaction tx)
+    {
+        try
+        {
+            tx.IsHandledWithoutDocument = false;
+            tx.UpdatedAt = DateTimeOffset.UtcNow;
+            await _transactionRepository.UpdateAsync(tx);
+            await _transactionRepository.SaveChangesAsync();
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error removing handled mark from transaction: {ex.Message}";
+        }
+    }
+
+    // --- Set SourceDocument annual classification ---
+
+    [RelayCommand]
+    private async Task MarkAsAnnualAsync(SourceDocument doc)
+    {
+        await SetAnnualTypeAsync(doc, SourceDocumentAnnualType.Annual, "marking document as annual");
+    }
+
+    [RelayCommand]
+    private async Task MarkAsExpiredAnnualAsync(SourceDocument doc)
+    {
+        await SetAnnualTypeAsync(doc, SourceDocumentAnnualType.ExpiredAnnual, "marking document as expired annual");
+    }
+
+    [RelayCommand]
+    private async Task ClearAnnualTypeAsync(SourceDocument doc)
+    {
+        await SetAnnualTypeAsync(doc, SourceDocumentAnnualType.NotAnnual, "clearing annual type");
+    }
+
+    private async Task SetAnnualTypeAsync(SourceDocument doc, SourceDocumentAnnualType annualType, string actionDescription)
+    {
+        if (!doc.CanTransitionAnnualTypeTo(annualType))
+            return;
+
+        try
+        {
+            doc.AnnualType = annualType;
+            doc.UpdatedAt = DateTimeOffset.UtcNow;
+            await _sourceDocumentRepository.UpdateAsync(doc);
+            await _sourceDocumentRepository.SaveChangesAsync();
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error {actionDescription}: {ex.Message}";
+        }
+    }
+
     // --- Mark as Future Transaction (UC-0306 / UC-0307) ---
 
     [RelayCommand]
@@ -557,7 +632,7 @@ public partial class AppViewModel : ViewModelBase
 
         // Monthly coverage counts — future-marked documents are excluded from SourceDocument totals
         TransactionTotalCount = monthFilteredTransactions.Count;
-        TransactionHandledCount = monthFilteredTransactions.Count(t => t.IsLinked);
+        TransactionHandledCount = monthFilteredTransactions.Count(t => t.IsHandled);
 
         var coverageDocs = filteredDocs.Where(d => !d.IsFutureTransaction).ToList();
         SourceDocumentTotalCount = coverageDocs.Count;
@@ -598,7 +673,10 @@ public partial class AppViewModel : ViewModelBase
 
         var selectedYear = UseSeparateSourceDocumentMonth ? SelectedSourceDocumentYear : SelectedYear;
         var selectedMonth = UseSeparateSourceDocumentMonth ? SelectedSourceDocumentMonth : SelectedMonth;
-        return docs.Where(d => d.IsFutureTransaction || IsInMonthRange(d.FileNameDate, selectedYear, selectedMonth));
+        return docs.Where(d =>
+            d.IsFutureTransaction ||
+            d.IsAnnual ||
+            IsInMonthRange(d.FileNameDate, selectedYear, selectedMonth));
     }
 
     private bool IsInMonthRange(DateOnly date, int selectedYear, int selectedMonth)

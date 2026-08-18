@@ -31,4 +31,27 @@ public class SourceDocument
     public bool HasMultipleLinkedTransactions => LinkedTransactionCount > 1;
 
     public bool IsFutureTransaction { get; set; } = false;
+
+    public SourceDocumentAnnualType AnnualType { get; set; } = SourceDocumentAnnualType.NotAnnual;
+
+    public bool IsAnnual => AnnualType == SourceDocumentAnnualType.Annual;
+
+    public bool IsExpiredAnnual => AnnualType == SourceDocumentAnnualType.ExpiredAnnual;
+
+    public bool CanMarkAsAnnual => CanTransitionAnnualTypeTo(SourceDocumentAnnualType.Annual);
+
+    public bool CanMarkAsExpiredAnnual => CanTransitionAnnualTypeTo(SourceDocumentAnnualType.ExpiredAnnual);
+
+    public bool CanClearAnnualType => CanTransitionAnnualTypeTo(SourceDocumentAnnualType.NotAnnual);
+
+    public bool CanTransitionAnnualTypeTo(SourceDocumentAnnualType target) =>
+        (AnnualType, target) switch
+        {
+            (SourceDocumentAnnualType.NotAnnual, SourceDocumentAnnualType.Annual) => true,
+            (SourceDocumentAnnualType.Annual, SourceDocumentAnnualType.NotAnnual) => true,
+            (SourceDocumentAnnualType.Annual, SourceDocumentAnnualType.ExpiredAnnual) => true,
+            (SourceDocumentAnnualType.ExpiredAnnual, SourceDocumentAnnualType.Annual) => true,
+            (SourceDocumentAnnualType.ExpiredAnnual, SourceDocumentAnnualType.NotAnnual) => true,
+            _ => false,
+        };
 }
