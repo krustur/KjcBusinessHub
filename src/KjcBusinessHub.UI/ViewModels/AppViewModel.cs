@@ -89,11 +89,13 @@ public partial class AppViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedMonthLabel))]
+    [NotifyPropertyChangedFor(nameof(SelectedTransactionMonthOption))]
     [NotifyCanExecuteChangedFor(nameof(SyncSourceDocumentMonthWithTransactionCommand))]
     public partial int SelectedYear { get; set; } = DateOnly.FromDateTime(DateTime.Today).Year;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedMonthLabel))]
+    [NotifyPropertyChangedFor(nameof(SelectedTransactionMonthOption))]
     [NotifyCanExecuteChangedFor(nameof(SyncSourceDocumentMonthWithTransactionCommand))]
     public partial int SelectedMonth { get; set; } = DateOnly.FromDateTime(DateTime.Today).Month;
 
@@ -106,13 +108,45 @@ public partial class AppViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedSourceDocumentMonthLabel))]
+    [NotifyPropertyChangedFor(nameof(SelectedSourceDocumentMonthOption))]
     [NotifyCanExecuteChangedFor(nameof(SyncSourceDocumentMonthWithTransactionCommand))]
     public partial int SelectedSourceDocumentYear { get; set; } = DateOnly.FromDateTime(DateTime.Today).Year;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedSourceDocumentMonthLabel))]
+    [NotifyPropertyChangedFor(nameof(SelectedSourceDocumentMonthOption))]
     [NotifyCanExecuteChangedFor(nameof(SyncSourceDocumentMonthWithTransactionCommand))]
     public partial int SelectedSourceDocumentMonth { get; set; } = DateOnly.FromDateTime(DateTime.Today).Month;
+
+    // Available month dropdowns
+    public ObservableCollection<MonthOption> AvailableTransactionMonths { get; } = [];
+    public ObservableCollection<MonthOption> AvailableSourceDocumentMonths { get; } = [];
+
+    public MonthOption? SelectedTransactionMonthOption
+    {
+        get => AvailableTransactionMonths.FirstOrDefault(m => m.Date.Year == SelectedYear && m.Date.Month == SelectedMonth);
+        set
+        {
+            if (value is null) return;
+            if (SelectedYear == value.Date.Year && SelectedMonth == value.Date.Month) return;
+            SelectedYear = value.Date.Year;
+            SelectedMonth = value.Date.Month;
+            _ = RefreshAsync();
+        }
+    }
+
+    public MonthOption? SelectedSourceDocumentMonthOption
+    {
+        get => AvailableSourceDocumentMonths.FirstOrDefault(m => m.Date.Year == SelectedSourceDocumentYear && m.Date.Month == SelectedSourceDocumentMonth);
+        set
+        {
+            if (value is null) return;
+            if (SelectedSourceDocumentYear == value.Date.Year && SelectedSourceDocumentMonth == value.Date.Month) return;
+            SelectedSourceDocumentYear = value.Date.Year;
+            SelectedSourceDocumentMonth = value.Date.Month;
+            _ = RefreshAsync();
+        }
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SyncTransactionAndSourceDocumentMonth))]
@@ -709,6 +743,41 @@ public partial class AppViewModel : ViewModelBase
         var coverageDocs = filteredDocs.Where(d => !d.IsFutureTransaction).ToList();
         SourceDocumentTotalCount = coverageDocs.Count;
         SourceDocumentHandledCount = coverageDocs.Count(d => d.IsLinked);
+
+        // Populate month dropdowns
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var upperBound = today.AddMonths(1);
+        upperBound = new DateOnly(upperBound.Year, upperBound.Month, 1);
+
+        var txMin = allTransactions.Select(t => t.TransactionDate).DefaultIfEmpty(today).Min();
+        var txLower = new DateOnly(txMin.Year, txMin.Month, 1);
+        RebuildMonthOptions(AvailableTransactionMonths, txLower, upperBound);
+        OnPropertyChanged(nameof(SelectedTransactionMonthOption));
+
+        var docMin = allDocs.Select(d => d.FileNameDate).DefaultIfEmpty(today).Min();
+        var docLower = new DateOnly(docMin.Year, docMin.Month, 1);
+        RebuildMonthOptions(AvailableSourceDocumentMonths, docLower, upperBound);
+        OnPropertyChanged(nameof(SelectedSourceDocumentMonthOption));
+    }
+
+    private static void RebuildMonthOptions(ObservableCollection<MonthOption> collection, DateOnly from, DateOnly to)
+    {
+        var cursor = from;
+        var newOptions = new List<MonthOption>();
+        while (cursor <= to)
+        {
+            newOptions.Add(new MonthOption(cursor));
+            cursor = cursor.AddMonths(1);
+        }
+
+        // Only rebuild if content changed to avoid unnecessary UI churn.
+        if (collection.Count == newOptions.Count &&
+            collection.Zip(newOptions).All(pair => pair.First.Date == pair.Second.Date))
+            return;
+
+        collection.Clear();
+        foreach (var opt in newOptions)
+            collection.Add(opt);
     }
 
     private bool TryParseOptionalAmount(string input, string fieldName, out decimal? value)
@@ -786,3 +855,8 @@ public sealed record LinkedPair(Transaction Transaction, SourceDocument SourceDo
 public sealed record LinkedTransactionGroup(
     Transaction Transaction,
     IReadOnlyList<LinkedPair> LinkedDocuments);
+
+public sealed record MonthOption(DateOnly Date)
+{
+    public override string ToString() => Date.ToString("MMMM yyyy");
+}
