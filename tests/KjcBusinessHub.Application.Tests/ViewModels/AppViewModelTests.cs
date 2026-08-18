@@ -246,27 +246,33 @@ public class AppViewModelTests
     [Fact]
     public async Task Expired_annual_documents_can_be_marked_annual_or_cleared()
     {
-        var doc = MakeActiveDoc(
+        var annualDoc = MakeActiveDoc(
+            Guid.NewGuid(),
+            new DateOnly(2026, 8, 1),
+            isFuture: false,
+            annualType: SourceDocumentAnnualType.ExpiredAnnual);
+        var clearDoc = MakeActiveDoc(
             Guid.NewGuid(),
             new DateOnly(2026, 8, 1),
             isFuture: false,
             annualType: SourceDocumentAnnualType.ExpiredAnnual);
         var sut = CreateSubject();
 
-        Assert.True(doc.CanMarkAsAnnual);
-        Assert.False(doc.CanMarkAsExpiredAnnual);
-        Assert.True(doc.CanClearAnnualType);
+        Assert.True(annualDoc.CanMarkAsAnnual);
+        Assert.False(annualDoc.CanMarkAsExpiredAnnual);
+        Assert.True(annualDoc.CanClearAnnualType);
 
-        await sut.MarkAsAnnualCommand.ExecuteAsync(doc);
+        await sut.MarkAsAnnualCommand.ExecuteAsync(annualDoc);
 
-        Assert.Equal(SourceDocumentAnnualType.Annual, doc.AnnualType);
+        Assert.Equal(SourceDocumentAnnualType.Annual, annualDoc.AnnualType);
 
-        doc.AnnualType = SourceDocumentAnnualType.ExpiredAnnual;
+        Assert.True(clearDoc.CanClearAnnualType);
 
-        await sut.ClearAnnualTypeCommand.ExecuteAsync(doc);
+        await sut.ClearAnnualTypeCommand.ExecuteAsync(clearDoc);
 
-        Assert.Equal(SourceDocumentAnnualType.NotAnnual, doc.AnnualType);
-        await _sourceDocumentRepository.Received(2).UpdateAsync(doc);
+        Assert.Equal(SourceDocumentAnnualType.NotAnnual, clearDoc.AnnualType);
+        await _sourceDocumentRepository.Received(1).UpdateAsync(annualDoc);
+        await _sourceDocumentRepository.Received(1).UpdateAsync(clearDoc);
     }
 
     private static SourceDocument MakeActiveDoc(
