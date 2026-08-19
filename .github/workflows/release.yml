@@ -1,0 +1,118 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (semver, e.g. 1.3.0)'
+        required: true
+        type: string
+      channel:
+        description: 'Update channel'
+        required: true
+        default: stable
+        type: choice
+        options:
+          - stable
+          - prerelease
+      prerelease:
+        description: 'Publish as prerelease'
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  package-and-release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+      DOTNET_NOLOGO: 1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore KjcBusinessHub.slnx
+
+      - name: Test
+        run: dotnet test KjcBusinessHub.slnx --configuration Release --no-restore
+
+      - name: Publish app
+        run: |
+          dotnet publish src/KjcBusinessHub.UI/KjcBusinessHub.UI.csproj \
+            --configuration Release \
+            --runtime win-x64 \
+            --self-contained true \
+            -p:PublishSingleFile=false \
+            -p:PublishTrimmed=false \
+            --output out/publish
+
+      - name: Install Velopack CLI
+        run: dotnet tool install --global vpk --version 1.2.0
+
+      - name: Resolve release metadata
+        id: meta
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $version = "${{ inputs.version }}"
+            $channel = "${{ inputs.channel }}"
+            $isPre = [System.Convert]::ToBoolean("${{ inputs.prerelease }}")
+          } else {
+            $tag = "${{ github.ref_name }}"
+            $version = $tag.TrimStart('v')
+            $isPre = $version -match '-'
+            $channel = if ($isPre) { 'prerelease' } else { 'stable' }
+          }
+
+          $tagName = "v$version"
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "channel=$channel" >> $env:GITHUB_OUTPUT
+          "is_pre=$isPre" >> $env:GITHUB_OUTPUT
+          "tag_name=$tagName" >> $env:GITHUB_OUTPUT
+
+      - name: Pack release with Velopack
+        shell: pwsh
+        run: |
+          vpk pack `
+            --packId KjcBusinessHub `
+            --packVersion ${{ steps.meta.outputs.version }} `
+            --packDir out/publish `
+            --mainExe KjcBusinessHub.UI.exe `
+            --runtime win-x64 `
+            --channel ${{ steps.meta.outputs.channel }} `
+            --packAuthors "krustur" `
+            --packTitle "KJC Business Hub" `
+            --icon src/KjcBusinessHub.UI/Assets/installer/installer-icon-256.png `
+            --outputDir out/releases
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: velopack-packages-${{ steps.meta.outputs.tag_name }}-${{ steps.meta.outputs.channel }}
+          path: out/releases
+
+      - name: Publish release assets to GitHub
+        shell: pwsh
+        run: |
+          $pre = if ("${{ steps.meta.outputs.is_pre }}" -eq "True") { "true" } else { "false" }
+          vpk upload github `
+            --outputDir out/releases `
+            --repoUrl https://github.com/${{ github.repository }} `
+            --token ${{ secrets.GITHUB_TOKEN }} `
+            --channel ${{ steps.meta.outputs.channel }} `
+            --tag ${{ steps.meta.outputs.tag_name }} `
+            --releaseName "KJC Business Hub ${{ steps.meta.outputs.tag_name }}" `
+            --publish true `
+            --pre $pre `
+            --merge true

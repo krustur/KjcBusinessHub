@@ -6,16 +6,13 @@ namespace KjcBusinessHub.Infrastructure.Settings;
 
 public class SettingsService : ISettingsService
 {
-    private static readonly string SettingsFilePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "KjcBusinessHub",
-        "settings.json");
-
     private readonly ILogger<SettingsService> _logger;
+    private readonly string _settingsFilePath;
     private AppSettings _settings;
 
-    public SettingsService(ILogger<SettingsService> logger)
+    public SettingsService(string settingsFilePath, ILogger<SettingsService> logger)
     {
+        _settingsFilePath = settingsFilePath;
         _logger = logger;
         _settings = Load();
     }
@@ -33,29 +30,35 @@ public class SettingsService : ISettingsService
         !string.IsNullOrWhiteSpace(_settings.SourceDocumentFolder) &&
         Directory.Exists(_settings.SourceDocumentFolder);
 
+    public bool CloseToSystemTray
+    {
+        get => _settings.CloseToSystemTray;
+        set => _settings.CloseToSystemTray = value;
+    }
+
     public void Save()
     {
-        var dir = Path.GetDirectoryName(SettingsFilePath)!;
+        var dir = Path.GetDirectoryName(_settingsFilePath)!;
         Directory.CreateDirectory(dir);
         var json = JsonSerializer.Serialize(_settings, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(SettingsFilePath, json);
+        File.WriteAllText(_settingsFilePath, json);
     }
 
     private AppSettings Load()
     {
-        if (!File.Exists(SettingsFilePath))
+        if (!File.Exists(_settingsFilePath))
         {
             return new AppSettings();
         }
 
         try
         {
-            var json = File.ReadAllText(SettingsFilePath);
+            var json = File.ReadAllText(_settingsFilePath);
             return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to read settings from '{SettingsFilePath}'. Fix or delete the file and restart the application.", SettingsFilePath);
+            _logger.LogError(ex, "Failed to read settings from '{SettingsFilePath}'. Fix or delete the file and restart the application.", _settingsFilePath);
             throw;
         }
     }
@@ -63,5 +66,6 @@ public class SettingsService : ISettingsService
     private sealed class AppSettings
     {
         public string? SourceDocumentFolder { get; set; }
+        public bool CloseToSystemTray { get; set; }
     }
 }

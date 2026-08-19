@@ -21,6 +21,9 @@
                    Foreground="Red"
                    IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
+        <CheckBox Content="Close to system tray when clicking Close"
+                  IsChecked="{Binding CloseToSystemTray}" />
+
         <StackPanel Orientation="Horizontal" Spacing="8">
             <Button Content="Save" Command="{Binding SaveCommand}" Classes="accent" />
             <Button Content="Go to App"

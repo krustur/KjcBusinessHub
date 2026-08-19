@@ -1,119 +1,108 @@
 # Development Guide
 
-This document provides setup, build, and run instructions for KjcBusinessHub.
+This document provides setup, build, run, and release instructions for KjcBusinessHub.
 
 ---
 
 ## Prerequisites
 
-| Tool             | Minimum Version | Notes                              |
-|------------------|-----------------|------------------------------------|
-| .NET SDK         | 8.0             | https://dotnet.microsoft.com       |
-| Git              | 2.x             |                                    |
+| Tool | Minimum Version |
+|---|---|
+| .NET SDK | 10.0 |
+| Git | 2.x |
 
 ---
 
-## Getting Started
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/krustur/KjcBusinessHub.git
-cd KjcBusinessHub
-```
-
-### 2. Restore dependencies
+## Build and test
 
 ```bash
 dotnet restore
-```
-
-### 3. Configure the application
-
-Copy the example settings file and fill in your local values:
-
-```bash
-cp src/KjcBusinessHub.Web/appsettings.Development.example.json \
-   src/KjcBusinessHub.Web/appsettings.Development.json
-```
-
-Edit `appsettings.Development.json`:
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Data Source=kjcbusinesshub.db"
-  }
-}
-```
-
-> _For SQLite (default development setup), no extra server is needed._
-
-### 4. Apply database migrations
-
-```bash
-dotnet ef database update \
-  --project src/KjcBusinessHub.Infrastructure \
-  --startup-project src/KjcBusinessHub.Web
-```
-
-### 5. Run the application
-
-```bash
-dotnet run --project src/KjcBusinessHub.Web
-```
-
-The app will be available at `https://localhost:5001` (or the port shown in the console).
-
----
-
-## Running Tests
-
-```bash
-dotnet test
-```
-
-To run tests for a specific project:
-
-```bash
-dotnet test tests/KjcBusinessHub.Application.Tests
+dotnet build KjcBusinessHub.slnx
+dotnet test KjcBusinessHub.slnx
 ```
 
 ---
 
-## Project Scripts
+## Runtime modes
 
-> _Placeholder: Add any build scripts or Makefile targets here._
+The desktop app supports two explicit runtime modes.
 
----
+### Production mode (default)
 
-## Code Style
+Storage root:
 
-- Follow the **.editorconfig** in the repository root.
-- Run `dotnet format` before committing to auto-fix formatting issues.
+- `%LOCALAPPDATA%/KjcBusinessHub`
+
+Files:
+
+- `kjcbusinesshub.db`
+- `settings.json`
+- `logs/kjcbusinesshub-*.log`
+
+### Development mode
+
+Storage root:
+
+- `%LOCALAPPDATA%/KjcBusinessHub.Dev`
+
+Files:
+
+- `kjcbusinesshub.dev.db`
+- `settings.dev.json`
+- `logs/kjcbusinesshub-*.log`
+
+Enable development mode with either:
 
 ```bash
-dotnet format
+dotnet run --project src/KjcBusinessHub.UI -- --mode=development
+```
+
+or:
+
+```bash
+KJCBH_RUNTIME_MODE=development dotnet run --project src/KjcBusinessHub.UI
 ```
 
 ---
 
-## Branching Strategy
+## Tray + close behavior
 
-| Branch       | Purpose                                  |
-|--------------|------------------------------------------|
-| `main`       | Stable, production-ready code            |
-| `feature/*`  | New features (branch from `main`)        |
-| `fix/*`      | Bug fixes                                |
-| `chore/*`    | Non-functional changes (docs, CI, etc.)  |
-
----
-
-## Pull Requests
-
-- Reference the related GitHub Issue in the PR description.
-- Ensure all tests pass before requesting review.
-- Follow the PR template if one exists in `.github/`.
+- Tray icon is created on startup and removed on app shutdown.
+- Tray menu includes:
+  - `Settings`
+  - `Close to system tray` (persisted checkbox)
+  - `Check for updates`
+  - `Quit`
+- Window close behavior:
+  - If `Close to system tray` is enabled, close hides the app to tray.
+  - If disabled, close triggers quit confirmation.
+- Quit actions always prompt: **"Are you sure you want to quit KJC Business Hub?"**
 
 ---
 
+## Auto-updates (Velopack)
+
+- Velopack bootstrap runs at app startup.
+- Production installs check GitHub Releases for updates.
+- When an update is found, the package is downloaded and the app restarts to apply it.
+- Optional channel override: `KJCBH_UPDATE_CHANNEL=prerelease`.
+
+---
+
+## Release process
+
+A release workflow is provided in `.github/workflows/release.yml`.
+
+Supported triggers:
+
+- Push tags: `v*.*.*` (stable)
+- Manual workflow dispatch with version + channel
+
+Workflow behavior:
+
+- Build publish output (`win-x64`)
+- Package with Velopack (`vpk pack`)
+- Upload artifacts
+- Create GitHub release and attach Velopack packages
+
+Use `stable` or `prerelease` channels to control release visibility.
