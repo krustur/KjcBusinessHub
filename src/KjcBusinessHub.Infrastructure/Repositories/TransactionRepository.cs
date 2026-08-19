@@ -1,4 +1,5 @@
 using KjcBusinessHub.Application.Entities;
+using KjcBusinessHub.Application.Enums;
 using KjcBusinessHub.Application.Interfaces;
 using KjcBusinessHub.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -18,25 +19,25 @@ public class TransactionRepository(AppDbContext db) : ITransactionRepository
             .SingleOrDefaultAsync(t => t.Id == id, cancellationToken);
 
     public async Task<bool> ExactMatchExistsAsync(
-        DateOnly accountingDate, DateOnly transactionDate, string description,
-        decimal amount, decimal balance, CancellationToken cancellationToken = default)
+        DateOnly accountingDate, DateOnly transactionDate, TransactionType transactionType, string description,
+        decimal amount, CancellationToken cancellationToken = default)
         => await db.Transactions.AnyAsync(
             t => t.AccountingDate == accountingDate &&
                  t.TransactionDate == transactionDate &&
+                 t.TransactionType == transactionType &&
                  t.Description == description &&
-                 t.Amount == amount &&
-                 t.Balance == balance,
+                 t.Amount == amount,
             cancellationToken);
 
     public async Task<Transaction?> FindExactMatchAsync(
-        DateOnly accountingDate, DateOnly transactionDate, string description,
-        decimal amount, decimal balance, CancellationToken cancellationToken = default)
+        DateOnly accountingDate, DateOnly transactionDate, TransactionType transactionType, string description,
+        decimal amount, CancellationToken cancellationToken = default)
         => await db.Transactions.SingleOrDefaultAsync(
             t => t.AccountingDate == accountingDate &&
                  t.TransactionDate == transactionDate &&
+                 t.TransactionType == transactionType &&
                  t.Description == description &&
-                 t.Amount == amount &&
-                 t.Balance == balance,
+                 t.Amount == amount,
             cancellationToken);
 
     public async Task AddAsync(Transaction transaction, CancellationToken cancellationToken = default)

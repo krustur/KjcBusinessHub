@@ -28,6 +28,9 @@ public partial class AppViewModel : ViewModelBase
     public ObservableCollection<Transaction> AvailableTransactions { get; } = [];
     public ObservableCollection<SourceDocument> AvailableSourceDocuments { get; } = [];
     public ObservableCollection<LinkedTransactionGroup> LinkedTransactionGroups { get; } = [];
+    public ObservableCollection<TransactionImportParseError> TransactionImportErrorRows { get; } = [];
+    public ObservableCollection<TransactionImportPreviewTransaction> NewTransactionImports { get; } = [];
+    public ObservableCollection<TransactionImportPreviewTransaction> DuplicateTransactionImports { get; } = [];
     public IReadOnlyList<SourceDocumentCurrency> SupportedCurrencies { get; } =
         Enum.GetValues<SourceDocumentCurrency>();
 
@@ -36,6 +39,27 @@ public partial class AppViewModel : ViewModelBase
 
     [ObservableProperty]
     public partial string? StatusMessage { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsTransactionImportOpen { get; set; }
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ImportTransactionsCommand))]
+    public partial string TransactionImportText { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanImportTransactions))]
+    [NotifyCanExecuteChangedFor(nameof(ImportTransactionsCommand))]
+    public partial bool HasAcknowledgedTransactionImportErrors { get; set; }
+
+    [ObservableProperty]
+    public partial string? TransactionImportSummary { get; set; }
+
+    public bool HasTransactionImportErrors => TransactionImportErrorRows.Count > 0;
+
+    public bool CanImportTransactions =>
+        NewTransactionImports.Count > 0 &&
+        (!HasTransactionImportErrors || HasAcknowledgedTransactionImportErrors);
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LinkDocumentCommand))]
@@ -272,11 +296,10 @@ public partial class AppViewModel : ViewModelBase
     public async Task InitialiseAsync()
     {
         IsLoading = true;
-        StatusMessage = "Importing data…";
+        StatusMessage = "Loading data…";
         try
         {
             var folder = _settings.SourceDocumentFolder!;
-            await _transactionImportService.ImportAsync(folder);
             await _sourceDocumentImportService.ImportAsync(folder);
             _fileWatcherService.Start();
             await RefreshAsync();
@@ -381,6 +404,54 @@ public partial class AppViewModel : ViewModelBase
 
     partial void OnUseSeparateSourceDocumentMonthChanged(bool value) =>
         _ = RefreshAsync();
+
+    partial void OnTransactionImportTextChanged(string value)
+    {
+        _ = PreviewTransactionImportAsync(value);
+    }
+
+    [RelayCommand]
+    private void OpenTransactionImport()
+    {
+        IsTransactionImportOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseTransactionImport()
+    {
+        IsTransactionImportOpen = false;
+        TransactionImportText = string.Empty;
+        HasAcknowledgedTransactionImportErrors = false;
+        TransactionImportSummary = null;
+        ClearTransactionImportPreview();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanImportTransactions))]
+    private async Task ImportTransactionsAsync()
+    {
+        try
+        {
+            var result = await _transactionImportService.ImportAsync(NewTransactionImports.ToList());
+
+            var status = $"Imported {result.ImportedCount} transaction(s).";
+            if (result.SkippedDuplicateCount > 0)
+            {
+                status += $" Skipped {result.SkippedDuplicateCount} duplicate transaction(s).";
+            }
+
+            StatusMessage = status;
+            IsTransactionImportOpen = false;
+            TransactionImportText = string.Empty;
+            HasAcknowledgedTransactionImportErrors = false;
+            TransactionImportSummary = null;
+            ClearTransactionImportPreview();
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error importing transactions: {ex.Message}";
+        }
+    }
 
     // --- Linking commands ---
 
@@ -801,6 +872,65 @@ public partial class AppViewModel : ViewModelBase
         StatusMessage = $"Invalid {fieldName}. Please enter a valid number.";
         value = null;
         return false;
+    }
+
+    private async Task PreviewTransactionImportAsync(string pastedText)
+    {
+        if (string.IsNullOrWhiteSpace(pastedText))
+        {
+            HasAcknowledgedTransactionImportErrors = false;
+            TransactionImportSummary = null;
+            ClearTransactionImportPreview();
+            return;
+        }
+
+        try
+        {
+            var preview = await _transactionImportService.PreviewImportAsync(pastedText);
+
+            TransactionImportErrorRows.Clear();
+            foreach (var error in preview.ErrorRows)
+            {
+                TransactionImportErrorRows.Add(error);
+            }
+
+            NewTransactionImports.Clear();
+            foreach (var transaction in preview.NewTransactions)
+            {
+                NewTransactionImports.Add(transaction);
+            }
+
+            DuplicateTransactionImports.Clear();
+            foreach (var transaction in preview.DuplicateTransactions)
+            {
+                DuplicateTransactionImports.Add(transaction);
+            }
+
+            if (preview.ErrorRows.Count > 0)
+            {
+                HasAcknowledgedTransactionImportErrors = false;
+            }
+
+            TransactionImportSummary =
+                $"{preview.NewTransactions.Count} new, {preview.DuplicateTransactions.Count} duplicate, {preview.ErrorRows.Count} error row(s).";
+            OnPropertyChanged(nameof(HasTransactionImportErrors));
+            OnPropertyChanged(nameof(CanImportTransactions));
+            ImportTransactionsCommand.NotifyCanExecuteChanged();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error previewing transactions: {ex.Message}";
+        }
+    }
+
+    private void ClearTransactionImportPreview()
+    {
+        TransactionImportErrorRows.Clear();
+        NewTransactionImports.Clear();
+        DuplicateTransactionImports.Clear();
+        OnPropertyChanged(nameof(HasTransactionImportErrors));
+        OnPropertyChanged(nameof(CanImportTransactions));
+        ImportTransactionsCommand.NotifyCanExecuteChanged();
     }
 
     private IEnumerable<Transaction> ApplyTransactionMonthFilter(IEnumerable<Transaction> transactions)

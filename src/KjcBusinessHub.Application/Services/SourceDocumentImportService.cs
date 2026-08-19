@@ -11,6 +11,8 @@ public partial class SourceDocumentImportService(
     ISourceDocumentRepository repository,
     ILogger<SourceDocumentImportService> logger)
 {
+    private const string LegacyTransactionsFileName = "Consulting-Transactions.txt";
+
     [GeneratedRegex(@"^\d{4}-\d{2}$", RegexOptions.Compiled)]
     private static partial Regex MonthFolderPattern();
 
@@ -52,7 +54,7 @@ public partial class SourceDocumentImportService(
         foreach (var filePath in Directory.GetFiles(sourceDocumentFolder))
         {
             var fileName = Path.GetFileName(filePath);
-            if (string.Equals(fileName, TransactionImportService.TransactionsFileName, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(fileName, LegacyTransactionsFileName, StringComparison.OrdinalIgnoreCase))
             {
                 logger.LogDebug("Ignoring Transactions file: {FileName}.", fileName);
                 continue;
