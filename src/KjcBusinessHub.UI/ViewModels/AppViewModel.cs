@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -423,6 +424,22 @@ public partial class AppViewModel : ViewModelBase
         var current = GetEffectiveSourceDocumentMonth().AddMonths(1);
         ApplySourceDocumentMonth(current);
         await RefreshAsync();
+    }
+
+    [RelayCommand]
+    private void ShowSourceDocumentMonthInExplorer()
+    {
+        try
+        {
+            var folder = Path.Combine(
+                _settings.SourceDocumentFolder!,
+                GetEffectiveSourceDocumentMonth().ToString("yyyy-MM", CultureInfo.InvariantCulture));
+            _fileSystemService.ShowInExplorer(folder);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Could not show folder in file manager: {ex.Message}";
+        }
     }
 
     private bool CanSyncSourceDocumentMonthWithTransaction() =>
@@ -867,7 +884,8 @@ public partial class AppViewModel : ViewModelBase
             .ToList();
 
         var filteredDocs = ApplyDocumentMonthFilter(visibleDocs)
-            .OrderBy(d => d.IsLinked)
+            .OrderBy(d => GetSourceDocumentSortRank(d))
+            .ThenBy(d => d.IsLinked)
             .ThenBy(d => d.FileNameDate)
             .ThenBy(d => d.Description)
             .ToList();
@@ -1065,6 +1083,13 @@ public partial class AppViewModel : ViewModelBase
         UseSeparateSourceDocumentMonth
             ? new DateOnly(SelectedSourceDocumentYear, SelectedSourceDocumentMonth, 1)
             : new DateOnly(SelectedYear, SelectedMonth, 1);
+
+    private static int GetSourceDocumentSortRank(SourceDocument doc) =>
+        doc.IsFutureTransaction
+            ? 0
+            : doc.IsAnnual || doc.IsExpiredAnnual
+                ? 1
+                : 2;
 
     private void SetSourceDocumentMonth(DateOnly month)
     {
