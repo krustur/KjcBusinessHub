@@ -7,6 +7,7 @@ using KjcBusinessHub.Application.Services;
 using KjcBusinessHub.Infrastructure;
 using KjcBusinessHub.UI.ViewModels;
 using KjcBusinessHub.UI.Views;
+using KjcBusinessHub.Application.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
@@ -25,9 +26,8 @@ public partial class App : AvalApp
 
     public override void OnFrameworkInitializationCompleted()
     {
-        var appDataDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "KjcBusinessHub");
+        var runtime = Program.RuntimeProfile;
+        var appDataDir = runtime.StorageRoot;
         Directory.CreateDirectory(appDataDir);
 
         // Rolling file: one file per day, keep 7 days
@@ -46,19 +46,23 @@ public partial class App : AvalApp
         var services = new ServiceCollection();
 
         // Use a fixed SQLite path in local app data
-        var dbPath = Path.Combine(appDataDir, "kjcbusinesshub.db");
+        var dbPath = runtime.DatabasePath;
+        var settingsPath = runtime.SettingsPath;
 
-        services.AddInfrastructure($"Data Source={dbPath}");
+        services.AddInfrastructure($"Data Source={dbPath}", settingsPath);
         services.AddLogging(logging =>
         {
             logging.ClearProviders();
             logging.AddSerilog(dispose: true);
         });
 
+        services.AddSingleton(runtime);
+
         // Register view models
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<AppViewModel>();
         services.AddTransient<MainWindowViewModel>();
+        services.AddSingleton<UpdateService>();
 
         _serviceProvider = services.BuildServiceProvider();
 
@@ -69,8 +73,23 @@ public partial class App : AvalApp
         {
             desktop.MainWindow = new MainWindow
             {
-                DataContext = _serviceProvider.GetRequiredService<MainWindowViewModel>(),
+                DataContext = _serviceProvider.GetRequiredService<MainWindowViewModel>()
             };
+
+            var mainWindow = (MainWindow)desktop.MainWindow;
+            if (runtime.IsDevelopment)
+            {
+                mainWindow.Title = string.IsNullOrWhiteSpace(mainWindow.Title)
+                    ? "KJC Business Hub (Development)"
+                    : $"{mainWindow.Title} (Development)";
+            }
+
+            mainWindow.Configure(
+                _serviceProvider.GetRequiredService<MainWindowViewModel>(),
+                _serviceProvider.GetRequiredService<ISettingsService>(),
+                _serviceProvider.GetRequiredService<UpdateService>());
+
+            _ = _serviceProvider.GetRequiredService<UpdateService>().CheckAndApplyUpdatesInBackgroundAsync();
 
             desktop.Exit += (_, _) =>
             {

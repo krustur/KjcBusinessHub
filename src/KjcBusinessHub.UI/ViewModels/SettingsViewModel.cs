@@ -19,12 +19,16 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     public partial bool CanNavigate { get; set; }
 
+    [ObservableProperty]
+    public partial bool CloseToSystemTray { get; set; }
+
     public Action? NavigateToApp { get; set; }
 
     public SettingsViewModel(ISettingsService settings)
     {
         _settings = settings;
         SourceDocumentFolder = settings.SourceDocumentFolder ?? string.Empty;
+        CloseToSystemTray = settings.CloseToSystemTray;
         CanNavigate = settings.IsConfigured;
     }
 
@@ -46,6 +50,7 @@ public partial class SettingsViewModel : ViewModelBase
         }
 
         _settings.SourceDocumentFolder = SourceDocumentFolder;
+        _settings.CloseToSystemTray = CloseToSystemTray;
         _settings.Save();
         CanNavigate = true;
     }

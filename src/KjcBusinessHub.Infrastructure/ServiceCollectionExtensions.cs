@@ -12,7 +12,10 @@ namespace KjcBusinessHub.Infrastructure;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString)
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        string connectionString,
+        string settingsFilePath)
     {
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlite(connectionString));
@@ -20,7 +23,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<ISourceDocumentRepository, SourceDocumentRepository>();
         services.AddTransient<SourceDocumentValidator>();
-        services.AddSingleton<ISettingsService, SettingsService>();
+        services.AddSingleton<ISettingsService>(serviceProvider =>
+            new SettingsService(
+                settingsFilePath,
+                serviceProvider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<SettingsService>>()));
         services.AddSingleton<IFileSystemService, FileSystemService>();
         services.AddTransient<TransactionImportService>();
         services.AddTransient<SourceDocumentImportService>();
