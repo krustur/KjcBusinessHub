@@ -1,7 +1,6 @@
 using System;
 using System.ComponentModel;
 using Avalonia.Controls;
-using Avalonia.VisualTree;
 using KjcBusinessHub.UI.ViewModels;
 
 namespace KjcBusinessHub.UI.Views;
@@ -73,7 +72,7 @@ public partial class AppView : UserControl
         _transactionImportWindow.Closing += OnTransactionImportWindowClosing;
         _transactionImportWindow.Closed += OnTransactionImportWindowClosed;
 
-        if (GetVisualRoot() is Window owner)
+        if (TopLevel.GetTopLevel(this) is Window owner)
         {
             _transactionImportWindow.Show(owner);
         }
