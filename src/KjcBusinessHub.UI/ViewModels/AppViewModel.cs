@@ -141,17 +141,14 @@ public partial class AppViewModel : ViewModelBase
     {
         get
         {
-            var year = UseSeparateSourceDocumentMonth ? SelectedSourceDocumentYear : SelectedYear;
-            var month = UseSeparateSourceDocumentMonth ? SelectedSourceDocumentMonth : SelectedMonth;
-            return AvailableSourceDocumentMonths.FirstOrDefault(m => m.Date.Year == year && m.Date.Month == month);
+            var selected = GetEffectiveSourceDocumentMonth();
+            return AvailableSourceDocumentMonths.FirstOrDefault(
+                m => m.Date.Year == selected.Year && m.Date.Month == selected.Month);
         }
         set
         {
             if (value is null) return;
-            if (SelectedSourceDocumentYear == value.Date.Year && SelectedSourceDocumentMonth == value.Date.Month) return;
-            SelectedSourceDocumentYear = value.Date.Year;
-            SelectedSourceDocumentMonth = value.Date.Month;
-            _ = RefreshAsync();
+            SetSourceDocumentMonth(value.Date);
         }
     }
 
@@ -345,26 +342,23 @@ public partial class AppViewModel : ViewModelBase
     private async Task GoToSourceDocumentThisMonthAsync()
     {
         var today = DateOnly.FromDateTime(DateTime.Today);
-        SelectedSourceDocumentYear = today.Year;
-        SelectedSourceDocumentMonth = today.Month;
+        ApplySourceDocumentMonth(today);
         await RefreshAsync();
     }
 
     [RelayCommand]
     private async Task GoToSourceDocumentPreviousMonthAsync()
     {
-        var current = new DateOnly(SelectedSourceDocumentYear, SelectedSourceDocumentMonth, 1).AddMonths(-1);
-        SelectedSourceDocumentYear = current.Year;
-        SelectedSourceDocumentMonth = current.Month;
+        var current = GetEffectiveSourceDocumentMonth().AddMonths(-1);
+        ApplySourceDocumentMonth(current);
         await RefreshAsync();
     }
 
     [RelayCommand]
     private async Task GoToSourceDocumentNextMonthAsync()
     {
-        var current = new DateOnly(SelectedSourceDocumentYear, SelectedSourceDocumentMonth, 1).AddMonths(1);
-        SelectedSourceDocumentYear = current.Year;
-        SelectedSourceDocumentMonth = current.Month;
+        var current = GetEffectiveSourceDocumentMonth().AddMonths(1);
+        ApplySourceDocumentMonth(current);
         await RefreshAsync();
     }
 
@@ -844,6 +838,27 @@ public partial class AppViewModel : ViewModelBase
         }
 
         return date.Year == selectedYear && date.Month == selectedMonth;
+    }
+
+    private DateOnly GetEffectiveSourceDocumentMonth() =>
+        UseSeparateSourceDocumentMonth
+            ? new DateOnly(SelectedSourceDocumentYear, SelectedSourceDocumentMonth, 1)
+            : new DateOnly(SelectedYear, SelectedMonth, 1);
+
+    private void SetSourceDocumentMonth(DateOnly month)
+    {
+        if (GetEffectiveSourceDocumentMonth() == month)
+            return;
+
+        ApplySourceDocumentMonth(month);
+        _ = RefreshAsync();
+    }
+
+    private void ApplySourceDocumentMonth(DateOnly month)
+    {
+        SelectedSourceDocumentYear = month.Year;
+        SelectedSourceDocumentMonth = month.Month;
+        UseSeparateSourceDocumentMonth = month.Year != SelectedYear || month.Month != SelectedMonth;
     }
 }
 

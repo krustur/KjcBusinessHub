@@ -67,6 +67,36 @@ public class AppViewModelTests
     }
 
     [Fact]
+    public void Selecting_a_different_source_document_month_switches_to_separate_month_mode()
+    {
+        var sut = CreateSubject();
+        sut.SelectedYear = 2026;
+        sut.SelectedMonth = 8;
+
+        sut.SelectedSourceDocumentMonthOption = new MonthOption(new DateOnly(2026, 7, 1));
+
+        Assert.True(sut.UseSeparateSourceDocumentMonth);
+        Assert.Equal(2026, sut.SelectedSourceDocumentYear);
+        Assert.Equal(7, sut.SelectedSourceDocumentMonth);
+    }
+
+    [Fact]
+    public void Selecting_the_transaction_month_for_source_documents_reenables_sync()
+    {
+        var sut = CreateSubject();
+        sut.SelectedYear = 2026;
+        sut.SelectedMonth = 8;
+        sut.SyncTransactionAndSourceDocumentMonth = false;
+        sut.SelectedSourceDocumentYear = 2026;
+        sut.SelectedSourceDocumentMonth = 7;
+
+        sut.SelectedSourceDocumentMonthOption = new MonthOption(new DateOnly(2026, 8, 1));
+
+        Assert.False(sut.UseSeparateSourceDocumentMonth);
+        Assert.Equal(new DateOnly(2026, 8, 1), sut.SelectedSourceDocumentMonthOption!.Date);
+    }
+
+    [Fact]
     public async Task Future_marked_documents_are_excluded_from_source_document_coverage_totals()
     {
         var month = new DateOnly(2026, 8, 1);
