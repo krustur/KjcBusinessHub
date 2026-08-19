@@ -342,6 +342,12 @@
                             <CheckBox Content="Sync"
                                       IsChecked="{Binding SyncTransactionAndSourceDocumentMonth}"
                                       VerticalAlignment="Center" />
+                            <Button Command="{Binding ShowSourceDocumentMonthInExplorerCommand}"
+                                    Padding="6,4"
+                                    VerticalAlignment="Center"
+                                    ToolTip.Tip="Show in folder">
+                                <materialIcons:MaterialIcon Kind="FolderOpen" Width="20" Height="20" />
+                            </Button>
                         </StackPanel>
 
                         <ListBox Grid.Row="2"

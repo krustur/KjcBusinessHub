@@ -25,18 +25,35 @@ public class FileSystemService : IFileSystemService
 
     public void ShowInExplorer(string fullPath)
     {
+        if (Directory.Exists(fullPath))
+        {
+            OpenDirectory(fullPath);
+            return;
+        }
+
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             Process.Start("explorer.exe", $"/select,\"{fullPath}\"");
         }
+        else
+        {
+            var directory = Path.GetDirectoryName(fullPath) ?? fullPath;
+            OpenDirectory(directory);
+        }
+    }
+
+    private static void OpenDirectory(string directory)
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            Process.Start("explorer.exe", $"\"{directory}\"");
+        }
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
-            Process.Start("open", $"-R \"{fullPath}\"");
+            Process.Start("open", directory);
         }
         else
         {
-            // Linux: open the containing directory
-            var directory = Path.GetDirectoryName(fullPath) ?? fullPath;
             Process.Start(new ProcessStartInfo
             {
                 FileName = "xdg-open",

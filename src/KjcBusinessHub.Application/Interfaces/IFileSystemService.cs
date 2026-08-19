@@ -8,6 +8,6 @@ public interface IFileSystemService
     /// <summary>Opens a file using the default OS application.</summary>
     void OpenFile(string fullPath);
 
-    /// <summary>Opens the file explorer and highlights the specified file.</summary>
+    /// <summary>Opens the file explorer and highlights the specified file, or opens the directory when a directory path is provided.</summary>
     void ShowInExplorer(string fullPath);
 }

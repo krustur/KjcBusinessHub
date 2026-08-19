@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using KjcBusinessHub.Application.Entities;
@@ -154,6 +155,62 @@ public class AppViewModelTests
 
         Assert.Single(sut.AvailableSourceDocuments);
         Assert.True(sut.AvailableSourceDocuments[0].IsFutureTransaction);
+    }
+
+    [Fact]
+    public void Show_source_document_month_in_folder_uses_the_effective_month_folder()
+    {
+        _settings.SourceDocumentFolder.Returns("/source-documents");
+
+        var sut = CreateSubject();
+        sut.SelectedYear = 2025;
+        sut.SelectedMonth = 10;
+
+        sut.ShowSourceDocumentMonthInExplorerCommand.Execute(null);
+
+        _fileSystemService.Received(1).ShowInExplorer(Path.Combine("/source-documents", "2025-10"));
+    }
+
+    [Fact]
+    public async Task Available_source_documents_sort_pending_then_annual_before_other_documents()
+    {
+        var selectedMonth = new DateOnly(2026, 8, 1);
+        var pendingDoc = MakeActiveDoc(Guid.NewGuid(), new DateOnly(2026, 7, 1), isFuture: true);
+        pendingDoc.Description = "Pending";
+
+        var annualDoc = MakeActiveDoc(
+            Guid.NewGuid(),
+            new DateOnly(2026, 6, 1),
+            isFuture: false,
+            annualType: SourceDocumentAnnualType.Annual);
+        annualDoc.Description = "Annual";
+        annualDoc.Transactions.Add(new Transaction
+        {
+            Id = Guid.NewGuid(),
+            AccountingDate = selectedMonth,
+            TransactionDate = selectedMonth,
+            TransactionType = TransactionType.Payment,
+            Amount = 100m,
+            Description = "Linked",
+            Status = TransactionStatus.Active,
+            CreatedAt = DateTimeOffset.UtcNow,
+        });
+
+        var regularDoc = MakeActiveDoc(Guid.NewGuid(), selectedMonth, isFuture: false);
+        regularDoc.Description = "Regular";
+
+        _sourceDocumentRepository.GetAllAsync().Returns(
+            Task.FromResult<IReadOnlyList<SourceDocument>>([regularDoc, annualDoc, pendingDoc]));
+
+        var sut = CreateSubject();
+        sut.SelectedYear = 2026;
+        sut.SelectedMonth = 8;
+        sut.FilterMode = FilterMode.SeeMonth;
+        await sut.RefreshCommand.ExecuteAsync(null);
+
+        Assert.Equal(
+            ["Pending", "Annual", "Regular"],
+            sut.AvailableSourceDocuments.Select(doc => doc.Description).ToArray());
     }
 
     [Fact]
