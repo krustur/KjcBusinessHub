@@ -38,6 +38,11 @@ public partial class AppViewModel : ViewModelBase
     public partial bool IsLoading { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasStatusMessage))]
+    [NotifyPropertyChangedFor(nameof(HasStatusOrMonthComplete))]
+    [NotifyPropertyChangedFor(nameof(IsStatusError))]
+    [NotifyPropertyChangedFor(nameof(TopBarStatusText))]
+    [NotifyPropertyChangedFor(nameof(TopBarStatusForeground))]
     public partial string? StatusMessage { get; set; }
 
     [ObservableProperty]
@@ -61,6 +66,34 @@ public partial class AppViewModel : ViewModelBase
         (NewTransactionImports.Count > 0 || DuplicateTransactionImports.Any(transaction => transaction.KeepTransaction)) &&
         DuplicateTransactionImports.All(transaction => transaction.HasDecision) &&
         (!HasTransactionImportErrors || HasAcknowledgedTransactionImportErrors);
+
+    public bool HasStatusMessage => !string.IsNullOrWhiteSpace(StatusMessage);
+
+    public bool HasStatusOrMonthComplete => HasStatusMessage || IsMonthComplete;
+
+    public bool IsStatusError =>
+        !string.IsNullOrWhiteSpace(StatusMessage) &&
+        (StatusMessage.Contains("error", StringComparison.OrdinalIgnoreCase) ||
+         StatusMessage.Contains("could not", StringComparison.OrdinalIgnoreCase) ||
+         StatusMessage.Contains("invalid", StringComparison.OrdinalIgnoreCase));
+
+    public string TopBarStatusText =>
+        HasStatusMessage
+            ? StatusMessage!
+            : IsMonthComplete
+                ? "Month complete"
+                : string.Empty;
+
+    public string TopBarStatusForeground =>
+        IsStatusError
+            ? "Red"
+            : IsMonthComplete
+                ? "Green"
+                : "Gray";
+
+    public string TopBarBackground => IsMonthComplete ? "#DFF4E0" : "#EEF5FC";
+
+    public string TopBarBorderBrush => IsMonthComplete ? "Green" : "Gray";
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LinkDocumentCommand))]
@@ -266,6 +299,12 @@ public partial class AppViewModel : ViewModelBase
     private void ToggleSeparateDocumentMonth()
     {
         SyncTransactionAndSourceDocumentMonth = !SyncTransactionAndSourceDocumentMonth;
+    }
+
+    [RelayCommand]
+    private void DismissStatusMessage()
+    {
+        StatusMessage = null;
     }
 
     public string SelectedMonthLabel =>
@@ -629,18 +668,38 @@ public partial class AppViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsMonthComplete))]
+    [NotifyPropertyChangedFor(nameof(TopBarBackground))]
+    [NotifyPropertyChangedFor(nameof(TopBarBorderBrush))]
+    [NotifyPropertyChangedFor(nameof(HasStatusOrMonthComplete))]
+    [NotifyPropertyChangedFor(nameof(TopBarStatusText))]
+    [NotifyPropertyChangedFor(nameof(TopBarStatusForeground))]
     public partial int TransactionTotalCount { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsMonthComplete))]
+    [NotifyPropertyChangedFor(nameof(TopBarBackground))]
+    [NotifyPropertyChangedFor(nameof(TopBarBorderBrush))]
+    [NotifyPropertyChangedFor(nameof(HasStatusOrMonthComplete))]
+    [NotifyPropertyChangedFor(nameof(TopBarStatusText))]
+    [NotifyPropertyChangedFor(nameof(TopBarStatusForeground))]
     public partial int TransactionHandledCount { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsMonthComplete))]
+    [NotifyPropertyChangedFor(nameof(TopBarBackground))]
+    [NotifyPropertyChangedFor(nameof(TopBarBorderBrush))]
+    [NotifyPropertyChangedFor(nameof(HasStatusOrMonthComplete))]
+    [NotifyPropertyChangedFor(nameof(TopBarStatusText))]
+    [NotifyPropertyChangedFor(nameof(TopBarStatusForeground))]
     public partial int SourceDocumentTotalCount { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsMonthComplete))]
+    [NotifyPropertyChangedFor(nameof(TopBarBackground))]
+    [NotifyPropertyChangedFor(nameof(TopBarBorderBrush))]
+    [NotifyPropertyChangedFor(nameof(HasStatusOrMonthComplete))]
+    [NotifyPropertyChangedFor(nameof(TopBarStatusText))]
+    [NotifyPropertyChangedFor(nameof(TopBarStatusForeground))]
     public partial int SourceDocumentHandledCount { get; set; }
 
     public bool IsMonthComplete =>
@@ -1020,7 +1079,11 @@ public partial class AppViewModel : ViewModelBase
     {
         SelectedSourceDocumentYear = month.Year;
         SelectedSourceDocumentMonth = month.Month;
-        UseSeparateSourceDocumentMonth = month.Year != SelectedYear || month.Month != SelectedMonth;
+        var matchesTransactionMonth = month.Year == SelectedYear && month.Month == SelectedMonth;
+        if (!matchesTransactionMonth)
+        {
+            UseSeparateSourceDocumentMonth = true;
+        }
     }
 }
 

@@ -82,7 +82,7 @@ public class AppViewModelTests
     }
 
     [Fact]
-    public void Selecting_the_transaction_month_for_source_documents_reenables_sync()
+    public void Selecting_the_transaction_month_for_source_documents_keeps_separate_mode_until_sync_is_explicitly_enabled()
     {
         var sut = CreateSubject();
         sut.SelectedYear = 2026;
@@ -93,7 +93,8 @@ public class AppViewModelTests
 
         sut.SelectedSourceDocumentMonthOption = new MonthOption(new DateOnly(2026, 8, 1));
 
-        Assert.False(sut.UseSeparateSourceDocumentMonth);
+        Assert.True(sut.UseSeparateSourceDocumentMonth);
+        Assert.False(sut.SyncTransactionAndSourceDocumentMonth);
         Assert.Equal(new DateOnly(2026, 8, 1), sut.SelectedSourceDocumentMonthOption!.Date);
     }
 
