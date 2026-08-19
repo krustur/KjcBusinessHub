@@ -4,6 +4,47 @@ This document tracks the development progress of KjcBusinessHub.
 
 ---
 
+## Next Priority — Transaction Import Redesign
+
+### 1. Transaction model and persistence
+
+- [ ] Remove `Balance` from the `Transaction` entity, EF configuration, repositories, migrations, and any dependent tests
+- [ ] Add `TransactionType` to the domain model, persistence model, and database schema
+- [ ] Define the English `TransactionType` enum values and map them from the Swedish import labels
+- [ ] Update transaction duplicate matching to use `AccountingDate`, `TransactionDate`, `TransactionType`, `Description`, and `Amount`
+
+### 2. Replace file-based transaction import
+
+- [ ] Remove the transaction file import from application startup
+- [ ] Remove the transaction file watcher while keeping source document import and source document watching intact
+- [ ] Replace file-based transaction import services/contracts with an explicit pasted-text import use case
+- [ ] Introduce import result models for `Error rows`, `New Transactions`, and `Duplicate Transactions`
+
+### 3. Build the transaction import UI flow
+
+- [ ] Add a user-visible action to open Transaction import from the main UI
+- [ ] Add a split import surface with pasted input in the top area and structured parse results in the bottom area
+- [ ] Reparse input whenever the text changes
+- [ ] Highlight parse errors and require explicit acknowledgement before enabling import
+- [ ] Allow importing all `New Transactions` in one explicit confirmation step
+
+### 4. Parsing, validation, and import behavior
+
+- [ ] Implement parsing for the new quoted semicolon-separated format: `AccountingDate`, `TransactionDate`, `TransactionType`, `Description`, `Amount`
+- [ ] Support Swedish-formatted decimal amounts and Swedish `TransactionType` labels
+- [ ] Preserve input order in the preview and import results
+- [ ] Ensure duplicate rows are shown to the user but not imported
+- [ ] Ensure invalid rows remain visible as raw error items with line numbers
+
+### 5. Tests and documentation
+
+- [ ] Replace existing transaction import tests with coverage for the new parser, duplicate detection, and manual import flow
+- [ ] Update view-model/UI tests for the new import action, preview state, acknowledgement rule, and import confirmation
+- [ ] Update repository tests affected by the schema change from `Balance` to `TransactionType`
+- [ ] Update requirement documents (`USE_CASES.md`, `Transactions-Import.md`, `DOMAIN.md`, `DATABASE.md`) to reflect the redesign
+
+---
+
 ## Next Priority — UX Improvements
 
 ### 1. Month Filtering Panel

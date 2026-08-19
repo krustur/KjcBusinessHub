@@ -17,9 +17,7 @@ This document describes use cases for the KjcBusinessHub application.
 - The user are expected to configure a SourceDocumentFolder
 - When a SourceDocumentFolder has been configured:
     1. The user should be able to navigate to the Main view
-    1. UC-0101 should be activated
     1. UC-0102 should be activated
-    1. UC-0103 should be activated
     1. UC-0104 should be activated
 
 ### UC-0002 App Subsequent starts
@@ -31,22 +29,33 @@ This document describes use cases for the KjcBusinessHub application.
 **Acceptance Criteria:**
 
 - The user enters the App in the Main view. 
-- UC-0101 should be activated
 - UC-0102 should be activated
-- UC-0103 should be activated
 - UC-0104 should be activated
 
-## File watcher (01)
+## Import & file watcher (01)
 
-### UC-0101 Transaction file import
+### UC-0101 Import Transactions
 
 **Pre-Conditions:**
 
-- The application must have a configured SourceDocumentFolder
+- The application is in the Main view
 
 **Acceptance Criteria:**
 
-- The application reads the Consulting Transactions file located in the SourceDocumentFolder and parses it's content according to: [Transactions-Import.md](Transactions-Import.md)
+- The user can explicitly activate a Transaction import action from the UI
+- A split Transaction import window opens in the current window or as a modal
+- The top area contains a text area where the user pastes Transaction rows
+- Whenever the pasted text changes, the application reparses the full input according to: [Transactions-Import.md](Transactions-Import.md)
+- The lower area shows three result groups in a structured way:
+  1. Error rows that could not be parsed, including line number and original row text
+  2. New Transactions that can be imported
+  3. Duplicate Transactions that already exist in the application and will not be imported
+- Parsed Transactions are not persisted until the user explicitly confirms import
+- If there are any Error rows, the user must acknowledge that before import is enabled
+- When the user confirms import, all New Transactions are added to the application
+- Duplicate Transactions are never imported
+- The import uses the following column order: `AccountingDate`, `TransactionDate`, `TransactionType`, `Description`, `Amount`
+- The imported `TransactionType` value uses Swedish labels in the pasted text and is mapped to the application's English enum values
 
 ### UC-0102 Source document file import
 
@@ -57,17 +66,6 @@ This document describes use cases for the KjcBusinessHub application.
 **Acceptance Criteria:**
 
 - The application scans the SourceDocumentFolder for Source Documents according to: [SourceDocument-import.md](SourceDocument-import.md)
-
-### UC-0103 Transaction file watcher
-
-**Pre-Conditions:**
-
-- The application must have a configured SourceDocumentFolder
-- _UC-0101 Transaction file import_ should be finished
-
-**Acceptance Criteria:**
-
-- The app should watch for changes to the Consulting Transactions file located in the SourceDocumentFolder and when a change occurs it should parse it's content according to:[Transactions-Import.md](Transactions-Import.md)
 
 ### UC-0104 Source document file watcher
 
@@ -102,6 +100,7 @@ The user should see a view of all available Transactions top left and all availa
   - Transactions: handled count vs total count
   - SourceDocuments: handled count vs total count (SourceDocuments with `IsFutureTransaction == true` are excluded from these totals)
   - A clear `Month complete` indicator when both counts are fully handled
+- Transaction rows and linked summaries must display `AccountingDate`, `TransactionDate`, `TransactionType`, `Description`, and `Amount`
 
 ### UC-0202 Mark transaction as handled without SourceDocument
 

@@ -39,9 +39,9 @@ KjcBusinessHub/
 ```csharp
 public class TransactionService(ITransactionRepository repository)
 {
-    public async Task<ImportResult> ImportAsync(Stream fileStream, string fileName)
+    public async Task<ImportResult> PreviewImportAsync(string pastedText)
     {
-        // Parses file, deduplicates, persists via ITransactionRepository
+        // Parses pasted text, classifies rows, and prepares import results
     }
 }
 ```

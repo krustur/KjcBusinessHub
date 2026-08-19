@@ -14,8 +14,8 @@ Represents a single entry on a bank statement.
 | Id              | Guid        | Unique identifier                       |
 | AccountingDate  | DateOnly    | The date a transaction is recorded      |
 | TransactionDate | DateOnly    | Date the transaction occurred           |
+| TransactionType | enum        | Classified transaction type             |
 | Amount          | decimal     | Positive = credit, Negative = debit     |
-| Balance         | decimal     | Balance after this Transaction occured  |
 | Description     | string      | Bank-provided transaction description   |
 | Status          | enum        | `Active`, `RemovedFromFile`, `Removed`  |
 | SourceDocuments | List\<SourceDocument\> | Linked source documents      |
@@ -65,6 +65,19 @@ RemovedFromFile     // Removed from the Transactions file
 Removed             // Confirmed Removed by the User
 ```
 
+### TransactionType
+```
+Transfer            // Imported from "Överföring"
+CardPurchase        // Imported from "Kortköp"
+BankgiroDeposit     // Imported from "BG-insättning"
+DirectDebit         // Imported from "Autogiro"
+Payment             // Imported from "Betalning"
+Deposit             // Imported from "Insättning"
+AnnualFee           // Imported from "Årsavgift"
+TaxRefund           // Imported from "Skatteåterbäring"
+CashDeposit         // Imported from "Kontantinsättning"
+```
+
 ### SourceDocumentStatus
 ```
 New                 // Newly found SourceDocument missing both Amount and CcyAmount
@@ -93,6 +106,8 @@ ExpiredAnnual       // Yearly document from earlier period, kept for reference
 ## Business Rules
 
 - A `SourceDocument` may be linked to multiple `Transaction` entries.
+- Transactions are imported manually from pasted text; they are not discovered from a watched file.
+- Transaction duplicate detection uses `AccountingDate`, `TransactionDate`, `TransactionType`, `Description`, and `Amount`.
 - Currency conversion is out of scope; `Ccy` and `CcyAmount` are informational values shown to the user.
 - `Annual` SourceDocuments are always visible in the Available SourceDocuments list, independent of selected month.
 - `Annual` and `ExpiredAnnual` SourceDocuments must be visually flagged in the UI.
