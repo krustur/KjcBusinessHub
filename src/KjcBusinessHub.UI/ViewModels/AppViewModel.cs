@@ -758,12 +758,15 @@ public partial class AppViewModel : ViewModelBase
 
         var txMin = allTransactions.Select(t => t.TransactionDate).DefaultIfEmpty(today).Min();
         var txLower = new DateOnly(txMin.Year, txMin.Month, 1);
-        RebuildMonthOptions(AvailableTransactionMonths, txLower, upperBound);
-        OnPropertyChanged(nameof(SelectedTransactionMonthOption));
 
         var docMin = allDocs.Select(d => d.FileNameDate).DefaultIfEmpty(today).Min();
         var docLower = new DateOnly(docMin.Year, docMin.Month, 1);
-        RebuildMonthOptions(AvailableSourceDocumentMonths, docLower, upperBound);
+
+        var sharedLower = txLower < docLower ? txLower : docLower;
+        RebuildMonthOptions(AvailableTransactionMonths, sharedLower, upperBound);
+        OnPropertyChanged(nameof(SelectedTransactionMonthOption));
+
+        RebuildMonthOptions(AvailableSourceDocumentMonths, sharedLower, upperBound);
         OnPropertyChanged(nameof(SelectedSourceDocumentMonthOption));
     }
 

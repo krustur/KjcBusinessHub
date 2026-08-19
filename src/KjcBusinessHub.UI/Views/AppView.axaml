@@ -15,7 +15,7 @@
         <!-- ── Toolbar ────────────────────────────────────────────────── -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="8,8,8,4">
             <Button Command="{Binding RefreshCommand}" Padding="6,4" ToolTip.Tip="Refresh">
-                <materialIcons:MaterialIcon Kind="Refresh" Width="30" Height="30" />
+                <materialIcons:MaterialIcon Kind="Refresh" Width="27" Height="27" />
             </Button>
             <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" Foreground="Gray" />
             <Separator />
@@ -30,7 +30,7 @@
                 </TextBlock.Text>
             </TextBlock>
             <materialIcons:MaterialIcon Kind="CheckboxMarked"
-                                        Width="33" Height="33"
+                                        Width="30" Height="30"
                                         Foreground="Green"
                                         IsVisible="{Binding IsMonthComplete}"
                                         ToolTip.Tip="Month complete"
@@ -97,7 +97,7 @@
                         Background="#1A6AB0"
                         Foreground="White">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <materialIcons:MaterialIcon Kind="LinkVariant" Width="30" Height="30" />
+                        <materialIcons:MaterialIcon Kind="LinkVariant" Width="27" Height="27" />
                         <TextBlock Text="Link" VerticalAlignment="Center" FontWeight="SemiBold" />
                     </StackPanel>
                 </Button>
@@ -177,7 +177,7 @@
                                     Margin="8,0,8,4">
                             <Button Command="{Binding GoToPreviousMonthCommand}" Padding="8,6"
                                     ToolTip.Tip="Previous month">
-                                <materialIcons:MaterialIcon Kind="ChevronLeft" Width="27" Height="27" />
+                                <materialIcons:MaterialIcon Kind="ChevronLeft" Width="24" Height="24" />
                             </Button>
                             <ComboBox ItemsSource="{Binding AvailableTransactionMonths}"
                                       SelectedItem="{Binding SelectedTransactionMonthOption}"
@@ -185,11 +185,11 @@
                                       VerticalAlignment="Center" />
                             <Button Command="{Binding GoToNextMonthCommand}" Padding="8,6"
                                     ToolTip.Tip="Next month">
-                                <materialIcons:MaterialIcon Kind="ChevronRight" Width="27" Height="27" />
+                                <materialIcons:MaterialIcon Kind="ChevronRight" Width="24" Height="24" />
                             </Button>
                             <Button Command="{Binding GoToThisMonthCommand}" Padding="8,6"
                                     ToolTip.Tip="Go to this month">
-                                <materialIcons:MaterialIcon Kind="Crosshairs" Width="27" Height="27" />
+                                <materialIcons:MaterialIcon Kind="Crosshairs" Width="24" Height="24" />
                             </Button>
                         </StackPanel>
 
@@ -205,7 +205,7 @@
                                               CommandParameter="{Binding SelectedAvailableTransaction}"
                                               IsVisible="{Binding SelectedAvailableTransaction.CanMarkAsHandledWithoutDocument}">
                                         <MenuItem.Icon>
-                                            <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="24" Height="24" Foreground="Teal" />
+                                            <materialIcons:MaterialIcon Kind="CheckCircleOutline" Width="22" Height="22" Foreground="Teal" />
                                         </MenuItem.Icon>
                                     </MenuItem>
                                     <MenuItem Header="Remove handled mark"
@@ -213,7 +213,7 @@
                                               CommandParameter="{Binding SelectedAvailableTransaction}"
                                               IsVisible="{Binding SelectedAvailableTransaction.CanRemoveHandledMark}">
                                         <MenuItem.Icon>
-                                            <materialIcons:MaterialIcon Kind="CloseCircleOutline" Width="24" Height="24" Foreground="Gray" />
+                                            <materialIcons:MaterialIcon Kind="CloseCircleOutline" Width="22" Height="22" Foreground="Gray" />
                                         </MenuItem.Icon>
                                     </MenuItem>
                                 </ContextMenu>
@@ -234,7 +234,7 @@
                                         <!-- Linked badge -->
                                         <materialIcons:MaterialIcon Grid.Column="4"
                                                                     Kind="Link"
-                                                                    Width="27" Height="27"
+                                                                    Width="24" Height="24"
                                                                     Foreground="Green"
                                                                     Margin="6,0,0,0"
                                                                     IsVisible="{Binding IsLinked}"
@@ -242,7 +242,7 @@
                                         <!-- Handled-without-document badge -->
                                         <materialIcons:MaterialIcon Grid.Column="5"
                                                                     Kind="CheckCircleOutline"
-                                                                    Width="27" Height="27"
+                                                                    Width="24" Height="24"
                                                                     Foreground="Teal"
                                                                     Margin="4,0,0,0"
                                                                     IsVisible="{Binding IsHandledWithoutDocument}"
@@ -268,7 +268,7 @@
                             <Button Command="{Binding GoToSourceDocumentPreviousMonthCommand}" Padding="8,6"
                                     IsEnabled="{Binding UseSeparateSourceDocumentMonth}"
                                     ToolTip.Tip="Previous month">
-                                <materialIcons:MaterialIcon Kind="ChevronLeft" Width="27" Height="27" />
+                                <materialIcons:MaterialIcon Kind="ChevronLeft" Width="24" Height="24" />
                             </Button>
                             <ComboBox ItemsSource="{Binding AvailableSourceDocumentMonths}"
                                       SelectedItem="{Binding SelectedSourceDocumentMonthOption}"
@@ -278,24 +278,20 @@
                             <Button Command="{Binding GoToSourceDocumentNextMonthCommand}" Padding="8,6"
                                     IsEnabled="{Binding UseSeparateSourceDocumentMonth}"
                                     ToolTip.Tip="Next month">
-                                <materialIcons:MaterialIcon Kind="ChevronRight" Width="27" Height="27" />
+                                <materialIcons:MaterialIcon Kind="ChevronRight" Width="24" Height="24" />
                             </Button>
                             <Button Command="{Binding GoToSourceDocumentThisMonthCommand}" Padding="8,6"
                                     IsEnabled="{Binding UseSeparateSourceDocumentMonth}"
                                     ToolTip.Tip="Go to this month">
-                                <materialIcons:MaterialIcon Kind="Crosshairs" Width="27" Height="27" />
-                            </Button>
-                            <Button Command="{Binding SyncSourceDocumentMonthWithTransactionCommand}" Padding="8,6"
-                                    ToolTip.Tip="Sync with transactions month">
-                                <materialIcons:MaterialIcon Kind="Sync" Width="27" Height="27" />
+                                <materialIcons:MaterialIcon Kind="Crosshairs" Width="24" Height="24" />
                             </Button>
                             <!-- Sync toggle: shows whether documents follow the same month -->
                             <Button Command="{Binding ToggleSeparateDocumentMonthCommand}" Padding="8,6"
                                     ToolTip.Tip="Toggle separate document month">
                                 <Panel>
-                                    <materialIcons:MaterialIcon Kind="Sync" Width="27" Height="27"
+                                    <materialIcons:MaterialIcon Kind="Sync" Width="24" Height="24"
                                                                 IsVisible="{Binding SyncTransactionAndSourceDocumentMonth}" />
-                                    <materialIcons:MaterialIcon Kind="SyncDisabled" Width="27" Height="27"
+                                    <materialIcons:MaterialIcon Kind="SyncDisabled" Width="24" Height="24"
                                                                 IsVisible="{Binding SyncTransactionAndSourceDocumentMonth, Converter={x:Static BoolConverters.Not}}" />
                                 </Panel>
                             </Button>
@@ -313,14 +309,14 @@
                                               CommandParameter="{Binding SelectedAvailableSourceDocument}"
                                               IsVisible="{Binding SelectedAvailableSourceDocument.HasAmount}">
                                         <MenuItem.Icon>
-                                            <materialIcons:MaterialIcon Kind="CurrencyUsd" Width="24" Height="24" />
+                                            <materialIcons:MaterialIcon Kind="CurrencyUsd" Width="22" Height="22" />
                                         </MenuItem.Icon>
                                     </MenuItem>
                                     <MenuItem Header="Show in folder"
                                               Command="{Binding ShowInExplorerCommand}"
                                               CommandParameter="{Binding SelectedAvailableSourceDocument}">
                                         <MenuItem.Icon>
-                                            <materialIcons:MaterialIcon Kind="FolderOpen" Width="24" Height="24" />
+                                            <materialIcons:MaterialIcon Kind="FolderOpen" Width="22" Height="22" />
                                         </MenuItem.Icon>
                                     </MenuItem>
                                     <Separator />
@@ -329,7 +325,7 @@
                                               CommandParameter="{Binding SelectedAvailableSourceDocument}"
                                               IsVisible="{Binding SelectedAvailableSourceDocument.CanClearAnnualType}">
                                         <MenuItem.Icon>
-                                            <materialIcons:MaterialIcon Kind="RepeatOff" Width="24" Height="24" Foreground="Gray" />
+                                            <materialIcons:MaterialIcon Kind="RepeatOff" Width="22" Height="22" Foreground="Gray" />
                                         </MenuItem.Icon>
                                     </MenuItem>
                                     <MenuItem Header="Annual"
@@ -337,7 +333,7 @@
                                               CommandParameter="{Binding SelectedAvailableSourceDocument}"
                                               IsVisible="{Binding SelectedAvailableSourceDocument.CanMarkAsAnnual}">
                                         <MenuItem.Icon>
-                                            <materialIcons:MaterialIcon Kind="Repeat" Width="24" Height="24" Foreground="SteelBlue" />
+                                            <materialIcons:MaterialIcon Kind="Repeat" Width="22" Height="22" Foreground="SteelBlue" />
                                         </MenuItem.Icon>
                                     </MenuItem>
                                     <MenuItem Header="Expired annual"
@@ -345,7 +341,7 @@
                                               CommandParameter="{Binding SelectedAvailableSourceDocument}"
                                               IsVisible="{Binding SelectedAvailableSourceDocument.CanMarkAsExpiredAnnual}">
                                         <MenuItem.Icon>
-                                            <materialIcons:MaterialIcon Kind="CalendarRemove" Width="24" Height="24" Foreground="Gray" />
+                                            <materialIcons:MaterialIcon Kind="CalendarRemove" Width="22" Height="22" Foreground="Gray" />
                                         </MenuItem.Icon>
                                     </MenuItem>
                                     <Separator />
@@ -354,7 +350,7 @@
                                               CommandParameter="{Binding SelectedAvailableSourceDocument}"
                                               IsVisible="{Binding SelectedAvailableSourceDocument.IsFutureTransaction, Converter={x:Static BoolConverters.Not}}">
                                         <MenuItem.Icon>
-                                            <materialIcons:MaterialIcon Kind="ClockOutline" Width="24" Height="24" Foreground="Orange" />
+                                            <materialIcons:MaterialIcon Kind="ClockOutline" Width="22" Height="22" Foreground="Orange" />
                                         </MenuItem.Icon>
                                     </MenuItem>
                                     <MenuItem Header="Remove Pending"
@@ -362,7 +358,7 @@
                                               CommandParameter="{Binding SelectedAvailableSourceDocument}"
                                               IsVisible="{Binding SelectedAvailableSourceDocument.IsFutureTransaction}">
                                         <MenuItem.Icon>
-                                            <materialIcons:MaterialIcon Kind="ClockRemoveOutline" Width="24" Height="24" Foreground="Gray" />
+                                            <materialIcons:MaterialIcon Kind="ClockRemoveOutline" Width="22" Height="22" Foreground="Gray" />
                                         </MenuItem.Icon>
                                     </MenuItem>
                                 </ContextMenu>
@@ -387,7 +383,7 @@
                                             <!-- Linked badge -->
                                             <materialIcons:MaterialIcon Grid.Column="4"
                                                                         Kind="Link"
-                                                                        Width="27" Height="27"
+                                                                        Width="24" Height="24"
                                                                         Foreground="Green"
                                                                         Margin="6,0,0,0"
                                                                         IsVisible="{Binding IsLinked}"
@@ -395,7 +391,7 @@
                                             <!-- Pending badge -->
                                             <materialIcons:MaterialIcon Grid.Column="5"
                                                                         Kind="ClockOutline"
-                                                                        Width="27" Height="27"
+                                                                        Width="24" Height="24"
                                                                         Foreground="Orange"
                                                                         Margin="4,0,0,0"
                                                                         IsVisible="{Binding IsFutureTransaction}"
@@ -403,7 +399,7 @@
                                             <!-- Non-Active status badge -->
                                             <materialIcons:MaterialIcon Grid.Column="6"
                                                                         Kind="AlertCircleOutline"
-                                                                        Width="27" Height="27"
+                                                                        Width="24" Height="24"
                                                                         Foreground="Orange"
                                                                         Margin="4,0,0,0"
                                                                         IsVisible="{Binding Status, Converter={x:Static vm:Converters.IsNotActive}}"
@@ -411,7 +407,7 @@
                                             <!-- Annual badge -->
                                             <materialIcons:MaterialIcon Grid.Column="7"
                                                                         Kind="Repeat"
-                                                                        Width="27" Height="27"
+                                                                        Width="24" Height="24"
                                                                         Foreground="SteelBlue"
                                                                         Margin="4,0,0,0"
                                                                         IsVisible="{Binding IsAnnual}"
@@ -419,7 +415,7 @@
                                             <!-- Expired Annual badge -->
                                             <materialIcons:MaterialIcon Grid.Column="8"
                                                                         Kind="CalendarRemove"
-                                                                        Width="27" Height="27"
+                                                                        Width="24" Height="24"
                                                                         Foreground="Gray"
                                                                         Margin="4,0,0,0"
                                                                         IsVisible="{Binding IsExpiredAnnual}"
@@ -431,7 +427,7 @@
                                                     Padding="4,2" Margin="6,0,0,0"
                                                     ToolTip.Tip="Open">
                                                 <materialIcons:MaterialIcon Kind="OpenInNew"
-                                                                            Width="27" Height="27" />
+                                                                            Width="24" Height="24" />
                                             </Button>
                                         </Grid>
 
@@ -498,14 +494,14 @@
                                                             CommandParameter="{Binding SourceDocument}"
                                                             ToolTip.Tip="Open">
                                                         <materialIcons:MaterialIcon Kind="OpenInNew"
-                                                                                    Width="27" Height="27" />
+                                                                                    Width="24" Height="24" />
                                                     </Button>
                                                     <Button Grid.Column="6" Padding="4,2" Margin="4,0,0,0"
                                                             Command="{Binding $parent[UserControl].((vm:AppViewModel)DataContext).UnlinkDocumentCommand}"
                                                             CommandParameter="{Binding}"
                                                             ToolTip.Tip="Unlink">
                                                         <materialIcons:MaterialIcon Kind="LinkOff"
-                                                                                    Width="27" Height="27" />
+                                                                                    Width="24" Height="24" />
                                                     </Button>
                                                 </Grid>
                                             </DataTemplate>
