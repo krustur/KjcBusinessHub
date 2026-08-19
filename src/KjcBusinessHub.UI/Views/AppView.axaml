@@ -275,25 +275,33 @@
                                    FontWeight="Bold" Margin="8,4" />
 
                         <!-- Documents month selector (above the list, always visible when in month scope) -->
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6"
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10"
                                     IsVisible="{Binding IsShowDocumentsMonthSelector}"
-                                    Margin="8,0,8,4">
-                            <Button Command="{Binding GoToSourceDocumentPreviousMonthCommand}" Padding="8,6"
-                                    ToolTip.Tip="Previous month">
-                                <materialIcons:MaterialIcon Kind="ChevronLeft" Width="24" Height="24" />
-                            </Button>
-                            <ComboBox ItemsSource="{Binding AvailableSourceDocumentMonths}"
-                                      SelectedItem="{Binding SelectedSourceDocumentMonthOption}"
-                                      MinWidth="150" FontSize="15" FontWeight="SemiBold"
+                                    Margin="8,0,8,4"
+                                    VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="6"
+                                        IsEnabled="{Binding UseSeparateSourceDocumentMonth}"
+                                        VerticalAlignment="Center">
+                                <Button Command="{Binding GoToSourceDocumentPreviousMonthCommand}" Padding="8,6"
+                                        ToolTip.Tip="Previous month">
+                                    <materialIcons:MaterialIcon Kind="ChevronLeft" Width="24" Height="24" />
+                                </Button>
+                                <ComboBox ItemsSource="{Binding AvailableSourceDocumentMonths}"
+                                          SelectedItem="{Binding SelectedSourceDocumentMonthOption}"
+                                          MinWidth="150" FontSize="15" FontWeight="SemiBold"
+                                          VerticalAlignment="Center" />
+                                <Button Command="{Binding GoToSourceDocumentNextMonthCommand}" Padding="8,6"
+                                        ToolTip.Tip="Next month">
+                                    <materialIcons:MaterialIcon Kind="ChevronRight" Width="24" Height="24" />
+                                </Button>
+                                <Button Command="{Binding GoToSourceDocumentThisMonthCommand}" Padding="8,6"
+                                        ToolTip.Tip="Go to this month">
+                                    <materialIcons:MaterialIcon Kind="Crosshairs" Width="24" Height="24" />
+                                </Button>
+                            </StackPanel>
+                            <CheckBox Content="Sync"
+                                      IsChecked="{Binding SyncTransactionAndSourceDocumentMonth}"
                                       VerticalAlignment="Center" />
-                            <Button Command="{Binding GoToSourceDocumentNextMonthCommand}" Padding="8,6"
-                                    ToolTip.Tip="Next month">
-                                <materialIcons:MaterialIcon Kind="ChevronRight" Width="24" Height="24" />
-                            </Button>
-                            <Button Command="{Binding GoToSourceDocumentThisMonthCommand}" Padding="8,6"
-                                    ToolTip.Tip="Go to this month">
-                                <materialIcons:MaterialIcon Kind="Crosshairs" Width="24" Height="24" />
-                            </Button>
                         </StackPanel>
 
                         <ListBox Grid.Row="2"
