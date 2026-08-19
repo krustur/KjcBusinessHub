@@ -30,6 +30,10 @@ public class SourceDocument
 
     public bool HasMultipleLinkedTransactions => LinkedTransactionCount > 1;
 
+    public bool HasAmount => Amount.HasValue || CcyAmount.HasValue;
+
+    public bool HasNoAmount => !HasAmount;
+
     public bool IsFutureTransaction { get; set; } = false;
 
     public SourceDocumentAnnualType AnnualType { get; set; } = SourceDocumentAnnualType.NotAnnual;

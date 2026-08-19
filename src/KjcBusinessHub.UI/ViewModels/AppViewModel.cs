@@ -39,11 +39,16 @@ public partial class AppViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LinkDocumentCommand))]
+    [NotifyPropertyChangedFor(nameof(HasBothSelected))]
     public partial Transaction? SelectedAvailableTransaction { get; set; }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LinkDocumentCommand))]
+    [NotifyPropertyChangedFor(nameof(HasBothSelected))]
     public partial SourceDocument? SelectedAvailableSourceDocument { get; set; }
+
+    public bool HasBothSelected =>
+        SelectedAvailableTransaction is not null && SelectedAvailableSourceDocument is not null;
 
     // --- Set Amount inline editing ---
 
@@ -66,54 +71,151 @@ public partial class AppViewModel : ViewModelBase
 
     // --- Filter state ---
 
+    // All VM mutations happen on the Avalonia UI thread, so a simple bool
+    // flag is sufficient to suppress re-entrant refreshes.
+    private bool _suppressRefresh;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSeeMonthMode))]
     [NotifyPropertyChangedFor(nameof(IsSeeAllMode))]
     [NotifyPropertyChangedFor(nameof(ShowAllMonths))]
+    [NotifyPropertyChangedFor(nameof(ViewScope))]
+    [NotifyPropertyChangedFor(nameof(IsCurrentMonthScope))]
+    [NotifyPropertyChangedFor(nameof(IsAdjacentMonthsScope))]
+    [NotifyPropertyChangedFor(nameof(IsAllMonthsScope))]
+    [NotifyPropertyChangedFor(nameof(IsMonthScopeVisible))]
+    [NotifyPropertyChangedFor(nameof(IsShowDocumentsMonthSelector))]
     public partial FilterMode FilterMode { get; set; } = FilterMode.SeeMonth;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedMonthLabel))]
+    [NotifyPropertyChangedFor(nameof(SelectedTransactionMonthOption))]
+    [NotifyPropertyChangedFor(nameof(SelectedSourceDocumentMonthOption))]
     [NotifyCanExecuteChangedFor(nameof(SyncSourceDocumentMonthWithTransactionCommand))]
     public partial int SelectedYear { get; set; } = DateOnly.FromDateTime(DateTime.Today).Year;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedMonthLabel))]
+    [NotifyPropertyChangedFor(nameof(SelectedTransactionMonthOption))]
+    [NotifyPropertyChangedFor(nameof(SelectedSourceDocumentMonthOption))]
     [NotifyCanExecuteChangedFor(nameof(SyncSourceDocumentMonthWithTransactionCommand))]
     public partial int SelectedMonth { get; set; } = DateOnly.FromDateTime(DateTime.Today).Month;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ViewScope))]
+    [NotifyPropertyChangedFor(nameof(IsCurrentMonthScope))]
+    [NotifyPropertyChangedFor(nameof(IsAdjacentMonthsScope))]
+    [NotifyPropertyChangedFor(nameof(IsShowDocumentsMonthSelector))]
     public partial bool IncludeNeighbouringMonths { get; set; } = false;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedSourceDocumentMonthLabel))]
+    [NotifyPropertyChangedFor(nameof(SelectedSourceDocumentMonthOption))]
     [NotifyCanExecuteChangedFor(nameof(SyncSourceDocumentMonthWithTransactionCommand))]
     public partial int SelectedSourceDocumentYear { get; set; } = DateOnly.FromDateTime(DateTime.Today).Year;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedSourceDocumentMonthLabel))]
+    [NotifyPropertyChangedFor(nameof(SelectedSourceDocumentMonthOption))]
     [NotifyCanExecuteChangedFor(nameof(SyncSourceDocumentMonthWithTransactionCommand))]
     public partial int SelectedSourceDocumentMonth { get; set; } = DateOnly.FromDateTime(DateTime.Today).Month;
 
+    // Available month dropdowns
+    public ObservableCollection<MonthOption> AvailableTransactionMonths { get; } = [];
+    public ObservableCollection<MonthOption> AvailableSourceDocumentMonths { get; } = [];
+
+    public MonthOption? SelectedTransactionMonthOption
+    {
+        get => AvailableTransactionMonths.FirstOrDefault(m => m.Date.Year == SelectedYear && m.Date.Month == SelectedMonth);
+        set
+        {
+            if (value is null) return;
+            if (SelectedYear == value.Date.Year && SelectedMonth == value.Date.Month) return;
+            SelectedYear = value.Date.Year;
+            SelectedMonth = value.Date.Month;
+            _ = RefreshAsync();
+        }
+    }
+
+    public MonthOption? SelectedSourceDocumentMonthOption
+    {
+        get
+        {
+            var selected = GetEffectiveSourceDocumentMonth();
+            return AvailableSourceDocumentMonths.FirstOrDefault(
+                m => m.Date.Year == selected.Year && m.Date.Month == selected.Month);
+        }
+        set
+        {
+            if (value is null) return;
+            SetSourceDocumentMonth(value.Date);
+        }
+    }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SyncTransactionAndSourceDocumentMonth))]
+    [NotifyPropertyChangedFor(nameof(IsShowDocumentsMonthSelector))]
     [NotifyCanExecuteChangedFor(nameof(SyncSourceDocumentMonthWithTransactionCommand))]
     public partial bool UseSeparateSourceDocumentMonth { get; set; } = false;
 
     public bool IsSeeAllMode => FilterMode == FilterMode.SeeAll;
     public bool IsSeeMonthMode => FilterMode == FilterMode.SeeMonth;
+
+    // --- View scope (collapses FilterMode + IncludeNeighbouringMonths into a single enum) ---
+
+    public ViewScope ViewScope
+    {
+        get => FilterMode switch
+        {
+            FilterMode.SeeAll => ViewScope.AllMonths,
+            FilterMode.SeeMonth when IncludeNeighbouringMonths => ViewScope.AdjacentMonths,
+            _ => ViewScope.CurrentMonth,
+        };
+        set
+        {
+            var (newMode, newInclude) = value switch
+            {
+                ViewScope.AllMonths => (FilterMode.SeeAll, false),
+                ViewScope.AdjacentMonths => (FilterMode.SeeMonth, true),
+                _ => (FilterMode.SeeMonth, false),
+            };
+
+            if (FilterMode == newMode && IncludeNeighbouringMonths == newInclude)
+                return;
+
+            _suppressRefresh = true;
+            FilterMode = newMode;
+            IncludeNeighbouringMonths = newInclude;
+            _suppressRefresh = false;
+            _ = RefreshAsync();
+        }
+    }
+
+    public bool IsCurrentMonthScope
+    {
+        get => ViewScope == ViewScope.CurrentMonth;
+        set { if (value) ViewScope = ViewScope.CurrentMonth; }
+    }
+
+    public bool IsAdjacentMonthsScope
+    {
+        get => ViewScope == ViewScope.AdjacentMonths;
+        set { if (value) ViewScope = ViewScope.AdjacentMonths; }
+    }
+
+    public bool IsAllMonthsScope
+    {
+        get => ViewScope == ViewScope.AllMonths;
+        set { if (value) ViewScope = ViewScope.AllMonths; }
+    }
+
+    public bool IsMonthScopeVisible => ViewScope != ViewScope.AllMonths;
+    public bool IsShowDocumentsMonthSelector => IsMonthScopeVisible;
+
     public bool ShowAllMonths
     {
         get => FilterMode == FilterMode.SeeAll;
-        set
-        {
-            var nextMode = value ? FilterMode.SeeAll : FilterMode.SeeMonth;
-            if (FilterMode == nextMode)
-                return;
-
-            FilterMode = nextMode;
-            _ = RefreshAsync();
-        }
+        set => ViewScope = value ? ViewScope.AllMonths : ViewScope.CurrentMonth;
     }
 
     public bool SyncTransactionAndSourceDocumentMonth
@@ -133,6 +235,12 @@ public partial class AppViewModel : ViewModelBase
 
             UseSeparateSourceDocumentMonth = useSeparateMonth;
         }
+    }
+
+    [RelayCommand]
+    private void ToggleSeparateDocumentMonth()
+    {
+        SyncTransactionAndSourceDocumentMonth = !SyncTransactionAndSourceDocumentMonth;
     }
 
     public string SelectedMonthLabel =>
@@ -234,26 +342,23 @@ public partial class AppViewModel : ViewModelBase
     private async Task GoToSourceDocumentThisMonthAsync()
     {
         var today = DateOnly.FromDateTime(DateTime.Today);
-        SelectedSourceDocumentYear = today.Year;
-        SelectedSourceDocumentMonth = today.Month;
+        ApplySourceDocumentMonth(today);
         await RefreshAsync();
     }
 
     [RelayCommand]
     private async Task GoToSourceDocumentPreviousMonthAsync()
     {
-        var current = new DateOnly(SelectedSourceDocumentYear, SelectedSourceDocumentMonth, 1).AddMonths(-1);
-        SelectedSourceDocumentYear = current.Year;
-        SelectedSourceDocumentMonth = current.Month;
+        var current = GetEffectiveSourceDocumentMonth().AddMonths(-1);
+        ApplySourceDocumentMonth(current);
         await RefreshAsync();
     }
 
     [RelayCommand]
     private async Task GoToSourceDocumentNextMonthAsync()
     {
-        var current = new DateOnly(SelectedSourceDocumentYear, SelectedSourceDocumentMonth, 1).AddMonths(1);
-        SelectedSourceDocumentYear = current.Year;
-        SelectedSourceDocumentMonth = current.Month;
+        var current = GetEffectiveSourceDocumentMonth().AddMonths(1);
+        ApplySourceDocumentMonth(current);
         await RefreshAsync();
     }
 
@@ -269,8 +374,10 @@ public partial class AppViewModel : ViewModelBase
         await RefreshAsync();
     }
 
-    partial void OnIncludeNeighbouringMonthsChanged(bool value) =>
-        _ = RefreshAsync();
+    partial void OnIncludeNeighbouringMonthsChanged(bool value)
+    {
+        if (!_suppressRefresh) _ = RefreshAsync();
+    }
 
     partial void OnUseSeparateSourceDocumentMonthChanged(bool value) =>
         _ = RefreshAsync();
@@ -637,6 +744,44 @@ public partial class AppViewModel : ViewModelBase
         var coverageDocs = filteredDocs.Where(d => !d.IsFutureTransaction).ToList();
         SourceDocumentTotalCount = coverageDocs.Count;
         SourceDocumentHandledCount = coverageDocs.Count(d => d.IsLinked);
+
+        // Populate month dropdowns
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var upperBound = today.AddMonths(1);
+        upperBound = new DateOnly(upperBound.Year, upperBound.Month, 1);
+
+        var txMin = allTransactions.Select(t => t.TransactionDate).DefaultIfEmpty(today).Min();
+        var txLower = new DateOnly(txMin.Year, txMin.Month, 1);
+
+        var docMin = allDocs.Select(d => d.FileNameDate).DefaultIfEmpty(today).Min();
+        var docLower = new DateOnly(docMin.Year, docMin.Month, 1);
+
+        var sharedLower = txLower < docLower ? txLower : docLower;
+        RebuildMonthOptions(AvailableTransactionMonths, sharedLower, upperBound);
+        OnPropertyChanged(nameof(SelectedTransactionMonthOption));
+
+        RebuildMonthOptions(AvailableSourceDocumentMonths, sharedLower, upperBound);
+        OnPropertyChanged(nameof(SelectedSourceDocumentMonthOption));
+    }
+
+    private static void RebuildMonthOptions(ObservableCollection<MonthOption> collection, DateOnly from, DateOnly to)
+    {
+        var cursor = from;
+        var newOptions = new List<MonthOption>();
+        while (cursor <= to)
+        {
+            newOptions.Add(new MonthOption(cursor));
+            cursor = cursor.AddMonths(1);
+        }
+
+        // Only rebuild if content changed to avoid unnecessary UI churn.
+        if (collection.Count == newOptions.Count &&
+            collection.Zip(newOptions).All(pair => pair.First.Date == pair.Second.Date))
+            return;
+
+        collection.Clear();
+        foreach (var opt in newOptions)
+            collection.Add(opt);
     }
 
     private bool TryParseOptionalAmount(string input, string fieldName, out decimal? value)
@@ -694,6 +839,34 @@ public partial class AppViewModel : ViewModelBase
 
         return date.Year == selectedYear && date.Month == selectedMonth;
     }
+
+    private DateOnly GetEffectiveSourceDocumentMonth() =>
+        UseSeparateSourceDocumentMonth
+            ? new DateOnly(SelectedSourceDocumentYear, SelectedSourceDocumentMonth, 1)
+            : new DateOnly(SelectedYear, SelectedMonth, 1);
+
+    private void SetSourceDocumentMonth(DateOnly month)
+    {
+        if (GetEffectiveSourceDocumentMonth() == month)
+            return;
+
+        ApplySourceDocumentMonth(month);
+        _ = RefreshAsync();
+    }
+
+    private void ApplySourceDocumentMonth(DateOnly month)
+    {
+        SelectedSourceDocumentYear = month.Year;
+        SelectedSourceDocumentMonth = month.Month;
+        UseSeparateSourceDocumentMonth = month.Year != SelectedYear || month.Month != SelectedMonth;
+    }
+}
+
+public enum ViewScope
+{
+    CurrentMonth,
+    AdjacentMonths,
+    AllMonths,
 }
 
 public enum FilterMode
@@ -707,3 +880,8 @@ public sealed record LinkedPair(Transaction Transaction, SourceDocument SourceDo
 public sealed record LinkedTransactionGroup(
     Transaction Transaction,
     IReadOnlyList<LinkedPair> LinkedDocuments);
+
+public sealed record MonthOption(DateOnly Date)
+{
+    public override string ToString() => Date.ToString("MMMM yyyy");
+}
