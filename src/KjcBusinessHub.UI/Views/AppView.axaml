@@ -191,16 +191,6 @@
                                     ToolTip.Tip="Go to this month">
                                 <materialIcons:MaterialIcon Kind="Crosshairs" Width="27" Height="27" />
                             </Button>
-                            <!-- Sync toggle: shows whether documents follow the same month -->
-                            <Button Command="{Binding ToggleSeparateDocumentMonthCommand}" Padding="8,6"
-                                    ToolTip.Tip="Toggle separate document month">
-                                <Panel>
-                                    <materialIcons:MaterialIcon Kind="Sync" Width="27" Height="27"
-                                                                IsVisible="{Binding SyncTransactionAndSourceDocumentMonth}" />
-                                    <materialIcons:MaterialIcon Kind="SyncDisabled" Width="27" Height="27"
-                                                                IsVisible="{Binding SyncTransactionAndSourceDocumentMonth, Converter={x:Static BoolConverters.Not}}" />
-                                </Panel>
-                            </Button>
                         </StackPanel>
 
                         <ListBox Grid.Row="2"
@@ -294,6 +284,16 @@
                             <Button Command="{Binding SyncSourceDocumentMonthWithTransactionCommand}" Padding="8,6"
                                     ToolTip.Tip="Sync with transactions month">
                                 <materialIcons:MaterialIcon Kind="Sync" Width="27" Height="27" />
+                            </Button>
+                            <!-- Sync toggle: shows whether documents follow the same month -->
+                            <Button Command="{Binding ToggleSeparateDocumentMonthCommand}" Padding="8,6"
+                                    ToolTip.Tip="Toggle separate document month">
+                                <Panel>
+                                    <materialIcons:MaterialIcon Kind="Sync" Width="27" Height="27"
+                                                                IsVisible="{Binding SyncTransactionAndSourceDocumentMonth}" />
+                                    <materialIcons:MaterialIcon Kind="SyncDisabled" Width="27" Height="27"
+                                                                IsVisible="{Binding SyncTransactionAndSourceDocumentMonth, Converter={x:Static BoolConverters.Not}}" />
+                                </Panel>
                             </Button>
                         </StackPanel>
 
