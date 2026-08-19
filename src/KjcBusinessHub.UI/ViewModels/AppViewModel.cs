@@ -90,12 +90,14 @@ public partial class AppViewModel : ViewModelBase
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedMonthLabel))]
     [NotifyPropertyChangedFor(nameof(SelectedTransactionMonthOption))]
+    [NotifyPropertyChangedFor(nameof(SelectedSourceDocumentMonthOption))]
     [NotifyCanExecuteChangedFor(nameof(SyncSourceDocumentMonthWithTransactionCommand))]
     public partial int SelectedYear { get; set; } = DateOnly.FromDateTime(DateTime.Today).Year;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedMonthLabel))]
     [NotifyPropertyChangedFor(nameof(SelectedTransactionMonthOption))]
+    [NotifyPropertyChangedFor(nameof(SelectedSourceDocumentMonthOption))]
     [NotifyCanExecuteChangedFor(nameof(SyncSourceDocumentMonthWithTransactionCommand))]
     public partial int SelectedMonth { get; set; } = DateOnly.FromDateTime(DateTime.Today).Month;
 
@@ -137,7 +139,12 @@ public partial class AppViewModel : ViewModelBase
 
     public MonthOption? SelectedSourceDocumentMonthOption
     {
-        get => AvailableSourceDocumentMonths.FirstOrDefault(m => m.Date.Year == SelectedSourceDocumentYear && m.Date.Month == SelectedSourceDocumentMonth);
+        get
+        {
+            var year = UseSeparateSourceDocumentMonth ? SelectedSourceDocumentYear : SelectedYear;
+            var month = UseSeparateSourceDocumentMonth ? SelectedSourceDocumentMonth : SelectedMonth;
+            return AvailableSourceDocumentMonths.FirstOrDefault(m => m.Date.Year == year && m.Date.Month == month);
+        }
         set
         {
             if (value is null) return;
@@ -206,7 +213,7 @@ public partial class AppViewModel : ViewModelBase
     }
 
     public bool IsMonthScopeVisible => ViewScope != ViewScope.AllMonths;
-    public bool IsShowDocumentsMonthSelector => IsMonthScopeVisible && UseSeparateSourceDocumentMonth;
+    public bool IsShowDocumentsMonthSelector => IsMonthScopeVisible;
 
     public bool ShowAllMonths
     {
