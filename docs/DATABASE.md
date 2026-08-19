@@ -27,8 +27,8 @@ This document describes the database schema, migrations strategy, and EF Core se
 | Id              | UNIQUEIDENTIFIER | PK, NOT NULL               |
 | AccountingDate  | DATE             | NOT NULL                   |
 | TransactionDate | DATE             | NOT NULL                   |
+| TransactionType | INT              | NOT NULL                   |
 | Amount          | DECIMAL(18,2)    | NOT NULL                   |
-| Balance         | DECIMAL(18,2)    | NOT NULL                   |
 | Description     | NVARCHAR(500)    | NOT NULL                   |
 | Status          | INT              | NOT NULL, default 0        |
 | CreatedAt       | DATETIMEOFFSET   | NOT NULL                   |

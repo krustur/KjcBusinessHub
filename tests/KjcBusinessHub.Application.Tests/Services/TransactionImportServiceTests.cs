@@ -1,14 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using KjcBusinessHub.Application.Entities;
 using KjcBusinessHub.Application.Enums;
 using KjcBusinessHub.Application.Interfaces;
 using KjcBusinessHub.Application.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
-using Xunit;
 
 namespace KjcBusinessHub.Application.Tests.Services;
 
@@ -24,136 +19,134 @@ public class TransactionImportServiceTests
     }
 
     [Fact]
-    public async Task First_import_adds_all_transactions()
+    public async Task PreviewImportAsync_parses_new_transactions()
     {
-        var lines = new[]
-        {
-            "2026-07-31\t2026-06-08\tClient payment\t5 000,00\t45 050,18",
-            "2026-07-31\t2026-07-01\tOffice supplies\t-499,00\t44 551,18",
-        };
-
         _repository.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<Transaction>>([]));
 
-        await _service.ProcessLinesAsync(lines);
+        var result = await _service.PreviewImportAsync(
+            """
+            "2026-08-16";"2026-08-16";"Överföring";"9060.42.850.51";"-82 000,00"
+            "2026-08-09";"2026-08-08";"Kortköp";"MAXI ICA STORMARKNAD U,OREBRO,SE";"-34,95"
+            """);
 
-        await _repository.Received(2).AddAsync(Arg.Any<Transaction>(), Arg.Any<CancellationToken>());
-        await _repository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        Assert.Empty(result.ErrorRows);
+        Assert.Empty(result.DuplicateTransactions);
+        Assert.Collection(
+            result.NewTransactions,
+            first =>
+            {
+                Assert.Equal(new DateOnly(2026, 8, 16), first.AccountingDate);
+                Assert.Equal(new DateOnly(2026, 8, 16), first.TransactionDate);
+                Assert.Equal(TransactionType.Transfer, first.TransactionType);
+                Assert.Equal("9060.42.850.51", first.Description);
+                Assert.Equal(-82000.00m, first.Amount);
+            },
+            second =>
+            {
+                Assert.Equal(TransactionType.CardPurchase, second.TransactionType);
+                Assert.Equal("MAXI ICA STORMARKNAD U,OREBRO,SE", second.Description);
+                Assert.Equal(-34.95m, second.Amount);
+            });
     }
 
     [Fact]
-    public async Task Duplicate_transaction_is_skipped()
+    public async Task PreviewImportAsync_classifies_existing_transactions_as_duplicates()
     {
-        var lines = new[]
-        {
-            "2026-07-31\t2026-06-08\tClient payment\t5 000,00\t45 050,18",
-        };
-
         var existing = new Transaction
         {
             Id = Guid.NewGuid(),
-            AccountingDate = new DateOnly(2026, 7, 31),
-            TransactionDate = new DateOnly(2026, 6, 8),
-            Description = "Client payment",
-            Amount = 5000m,
-            Balance = 45050.18m,
+            AccountingDate = new DateOnly(2026, 8, 16),
+            TransactionDate = new DateOnly(2026, 8, 16),
+            TransactionType = TransactionType.Transfer,
+            Description = "9060.42.850.51",
+            Amount = -82000.00m,
             Status = TransactionStatus.Active,
+            CreatedAt = DateTimeOffset.UtcNow,
         };
 
         _repository.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<Transaction>>([existing]));
 
-        await _service.ProcessLinesAsync(lines);
+        var result = await _service.PreviewImportAsync(
+            """
+            "2026-08-16";"2026-08-16";"Överföring";"9060.42.850.51";"-82 000,00"
+            "2026-08-09";"2026-08-08";"Kortköp";"MAXI ICA STORMARKNAD U,OREBRO,SE";"-34,95"
+            """);
 
-        await _repository.DidNotReceive().AddAsync(Arg.Any<Transaction>(), Arg.Any<CancellationToken>());
+        Assert.Single(result.NewTransactions);
+        Assert.Single(result.DuplicateTransactions);
+        Assert.Equal("Already exists in the app", result.DuplicateTransactions[0].DuplicateReason);
     }
 
     [Fact]
-    public async Task Transaction_removed_from_file_is_marked_RemovedFromFile()
+    public async Task PreviewImportAsync_returns_error_rows_for_invalid_lines()
     {
-        // No lines in file but one existing active transaction
-        var lines = Array.Empty<string>();
-
-        var existing = new Transaction
-        {
-            Id = Guid.NewGuid(),
-            AccountingDate = new DateOnly(2026, 7, 31),
-            TransactionDate = new DateOnly(2026, 6, 8),
-            Description = "Client payment",
-            Amount = 5000m,
-            Balance = 45050.18m,
-            Status = TransactionStatus.Active,
-        };
-
-        _repository.GetAllAsync(Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult<IReadOnlyList<Transaction>>([existing]));
-
-        await _service.ProcessLinesAsync(lines);
-
-        Assert.Equal(TransactionStatus.RemovedFromFile, existing.Status);
-        await _repository.Received(1).UpdateAsync(existing, Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Transaction_with_checkbox_prefix_is_parsed()
-    {
-        var lines = new[]
-        {
-            "[X] 2026-07-31\t2026-06-08\tClient payment\t5 000,00\t45 050,18",
-        };
-
         _repository.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<Transaction>>([]));
 
-        await _service.ProcessLinesAsync(lines);
+        var result = await _service.PreviewImportAsync(
+            """
+            not a valid transaction
+            "2026-08-09";"bad-date";"Kortköp";"MAXI ICA STORMARKNAD U,OREBRO,SE";"-34,95"
+            """);
 
-        await _repository.Received(1).AddAsync(
-            Arg.Is<Transaction>(t => t.Description == "Client payment" && t.Amount == 5000m),
+        Assert.Empty(result.NewTransactions);
+        Assert.Empty(result.DuplicateTransactions);
+        Assert.Equal(2, result.ErrorRows.Count);
+        Assert.Contains(result.ErrorRows, row => row.LineNumber == 1);
+        Assert.Contains(result.ErrorRows, row => row.LineNumber == 2);
+    }
+
+    [Fact]
+    public async Task PreviewImportAsync_marks_repeated_rows_in_same_input_as_duplicates()
+    {
+        _repository.GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<Transaction>>([]));
+
+        var result = await _service.PreviewImportAsync(
+            """
+            "2026-08-09";"2026-08-08";"Kortköp";"MAXI ICA STORMARKNAD U,OREBRO,SE";"-34,95"
+            "2026-08-09";"2026-08-08";"Kortköp";"MAXI ICA STORMARKNAD U,OREBRO,SE";"-34,95"
+            """);
+
+        Assert.Single(result.NewTransactions);
+        Assert.Single(result.DuplicateTransactions);
+        Assert.Equal("Duplicate row in pasted input", result.DuplicateTransactions[0].DuplicateReason);
+    }
+
+    [Fact]
+    public async Task ImportAsync_adds_all_selected_transactions_including_duplicates()
+    {
+        var previewTransactions = new[]
+        {
+            new TransactionImportPreviewTransaction(
+                1,
+                new DateOnly(2026, 8, 16),
+                new DateOnly(2026, 8, 16),
+                TransactionType.Transfer,
+                "Överföring",
+                "9060.42.850.51",
+                -82000.00m,
+                "Already exists in the app"),
+            new TransactionImportPreviewTransaction(
+                2,
+                new DateOnly(2026, 8, 9),
+                new DateOnly(2026, 8, 8),
+                TransactionType.CardPurchase,
+                "Kortköp",
+                "MAXI ICA STORMARKNAD U,OREBRO,SE",
+                -34.95m,
+                null),
+        };
+
+        var result = await _service.ImportAsync(previewTransactions);
+
+        Assert.Equal(2, result.ImportedCount);
+        Assert.Equal(1, result.DuplicateImportedCount);
+        await _repository.Received(2).AddAsync(
+            Arg.Any<Transaction>(),
             Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Comment_lines_are_skipped()
-    {
-        var lines = new[]
-        {
-            "# This is a comment",
-            "2026-07-31\t2026-06-08\tClient payment\t5 000,00\t45 050,18 # inline comment",
-        };
-
-        _repository.GetAllAsync(Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult<IReadOnlyList<Transaction>>([]));
-
-        await _service.ProcessLinesAsync(lines);
-
-        await _repository.Received(1).AddAsync(Arg.Any<Transaction>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task RemovedFromFile_transaction_is_reactivated_when_present_in_file_again()
-    {
-        var lines = new[]
-        {
-            "2026-07-31\t2026-06-08\tClient payment\t5 000,00\t45 050,18",
-        };
-
-        var existing = new Transaction
-        {
-            Id = Guid.NewGuid(),
-            AccountingDate = new DateOnly(2026, 7, 31),
-            TransactionDate = new DateOnly(2026, 6, 8),
-            Description = "Client payment",
-            Amount = 5000m,
-            Balance = 45050.18m,
-            Status = TransactionStatus.RemovedFromFile,
-        };
-
-        _repository.GetAllAsync(Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult<IReadOnlyList<Transaction>>([existing]));
-
-        await _service.ProcessLinesAsync(lines);
-
-        Assert.Equal(TransactionStatus.Active, existing.Status);
-        await _repository.Received(1).UpdateAsync(existing, Arg.Any<CancellationToken>());
+        await _repository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

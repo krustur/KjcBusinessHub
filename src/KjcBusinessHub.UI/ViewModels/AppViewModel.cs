@@ -28,6 +28,9 @@ public partial class AppViewModel : ViewModelBase
     public ObservableCollection<Transaction> AvailableTransactions { get; } = [];
     public ObservableCollection<SourceDocument> AvailableSourceDocuments { get; } = [];
     public ObservableCollection<LinkedTransactionGroup> LinkedTransactionGroups { get; } = [];
+    public ObservableCollection<TransactionImportParseError> TransactionImportErrorRows { get; } = [];
+    public ObservableCollection<TransactionImportPreviewTransaction> NewTransactionImports { get; } = [];
+    public ObservableCollection<DuplicateTransactionImportItem> DuplicateTransactionImports { get; } = [];
     public IReadOnlyList<SourceDocumentCurrency> SupportedCurrencies { get; } =
         Enum.GetValues<SourceDocumentCurrency>();
 
@@ -36,6 +39,28 @@ public partial class AppViewModel : ViewModelBase
 
     [ObservableProperty]
     public partial string? StatusMessage { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsTransactionImportOpen { get; set; }
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ImportTransactionsCommand))]
+    public partial string TransactionImportText { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanImportTransactions))]
+    [NotifyCanExecuteChangedFor(nameof(ImportTransactionsCommand))]
+    public partial bool HasAcknowledgedTransactionImportErrors { get; set; }
+
+    [ObservableProperty]
+    public partial string? TransactionImportSummary { get; set; }
+
+    public bool HasTransactionImportErrors => TransactionImportErrorRows.Count > 0;
+
+    public bool CanImportTransactions =>
+        (NewTransactionImports.Count > 0 || DuplicateTransactionImports.Any(transaction => transaction.KeepTransaction)) &&
+        DuplicateTransactionImports.All(transaction => transaction.HasDecision) &&
+        (!HasTransactionImportErrors || HasAcknowledgedTransactionImportErrors);
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LinkDocumentCommand))]
@@ -272,11 +297,10 @@ public partial class AppViewModel : ViewModelBase
     public async Task InitialiseAsync()
     {
         IsLoading = true;
-        StatusMessage = "Importing data…";
+        StatusMessage = "Loading data…";
         try
         {
             var folder = _settings.SourceDocumentFolder!;
-            await _transactionImportService.ImportAsync(folder);
             await _sourceDocumentImportService.ImportAsync(folder);
             _fileWatcherService.Start();
             await RefreshAsync();
@@ -381,6 +405,62 @@ public partial class AppViewModel : ViewModelBase
 
     partial void OnUseSeparateSourceDocumentMonthChanged(bool value) =>
         _ = RefreshAsync();
+
+    partial void OnTransactionImportTextChanged(string value)
+    {
+        _ = PreviewTransactionImportAsync(value);
+    }
+
+    [RelayCommand]
+    private void OpenTransactionImport()
+    {
+        IsTransactionImportOpen = true;
+        StatusMessage = null;
+    }
+
+    [RelayCommand]
+    private void CloseTransactionImport()
+    {
+        IsTransactionImportOpen = false;
+        TransactionImportText = string.Empty;
+        HasAcknowledgedTransactionImportErrors = false;
+        TransactionImportSummary = null;
+        ClearTransactionImportPreview();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanImportTransactions))]
+    private async Task ImportTransactionsAsync()
+    {
+        try
+        {
+            var keptDuplicateTransactions = DuplicateTransactionImports
+                .Where(transaction => transaction.KeepTransaction)
+                .Select(transaction => transaction.ToPreviewTransaction())
+                .ToList();
+            var transactionsToImport = NewTransactionImports
+                .Concat(keptDuplicateTransactions)
+                .ToList();
+            var result = await _transactionImportService.ImportAsync(transactionsToImport);
+
+            var status = $"Imported {result.ImportedCount} transaction(s).";
+            if (result.DuplicateImportedCount > 0)
+            {
+                status += $" Included {result.DuplicateImportedCount} user-approved duplicate transaction(s).";
+            }
+
+            StatusMessage = status;
+            IsTransactionImportOpen = false;
+            TransactionImportText = string.Empty;
+            HasAcknowledgedTransactionImportErrors = false;
+            TransactionImportSummary = null;
+            ClearTransactionImportPreview();
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error importing transactions: {ex.Message}";
+        }
+    }
 
     // --- Linking commands ---
 
@@ -803,6 +883,88 @@ public partial class AppViewModel : ViewModelBase
         return false;
     }
 
+    private async Task PreviewTransactionImportAsync(string pastedText)
+    {
+        if (string.IsNullOrWhiteSpace(pastedText))
+        {
+            HasAcknowledgedTransactionImportErrors = false;
+            TransactionImportSummary = null;
+            ClearTransactionImportPreview();
+            return;
+        }
+
+        try
+        {
+            var preview = await _transactionImportService.PreviewImportAsync(pastedText);
+
+            TransactionImportErrorRows.Clear();
+            foreach (var error in preview.ErrorRows)
+            {
+                TransactionImportErrorRows.Add(error);
+            }
+
+            NewTransactionImports.Clear();
+            foreach (var transaction in preview.NewTransactions)
+            {
+                NewTransactionImports.Add(transaction);
+            }
+
+            foreach (var duplicateTransaction in DuplicateTransactionImports)
+            {
+                duplicateTransaction.PropertyChanged -= OnDuplicateTransactionImportPropertyChanged;
+            }
+
+            DuplicateTransactionImports.Clear();
+            foreach (var duplicateTransaction in preview.DuplicateTransactions)
+            {
+                var duplicateItem = new DuplicateTransactionImportItem(duplicateTransaction);
+                duplicateItem.PropertyChanged += OnDuplicateTransactionImportPropertyChanged;
+                DuplicateTransactionImports.Add(duplicateItem);
+            }
+
+            if (preview.ErrorRows.Count > 0)
+            {
+                HasAcknowledgedTransactionImportErrors = false;
+            }
+
+            TransactionImportSummary =
+                $"{preview.NewTransactions.Count} new, {preview.DuplicateTransactions.Count} duplicate, {preview.ErrorRows.Count} error row(s).";
+            OnPropertyChanged(nameof(HasTransactionImportErrors));
+            OnPropertyChanged(nameof(CanImportTransactions));
+            ImportTransactionsCommand.NotifyCanExecuteChanged();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error previewing transactions: {ex.Message}";
+        }
+    }
+
+    private void ClearTransactionImportPreview()
+    {
+        foreach (var duplicateTransaction in DuplicateTransactionImports)
+        {
+            duplicateTransaction.PropertyChanged -= OnDuplicateTransactionImportPropertyChanged;
+        }
+
+        TransactionImportErrorRows.Clear();
+        NewTransactionImports.Clear();
+        DuplicateTransactionImports.Clear();
+        OnPropertyChanged(nameof(HasTransactionImportErrors));
+        OnPropertyChanged(nameof(CanImportTransactions));
+        ImportTransactionsCommand.NotifyCanExecuteChanged();
+    }
+
+    private void OnDuplicateTransactionImportPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(DuplicateTransactionImportItem.SelectedDecisionOption) or
+            nameof(DuplicateTransactionImportItem.HasDecision) or
+            nameof(DuplicateTransactionImportItem.KeepTransaction))
+        {
+            OnPropertyChanged(nameof(CanImportTransactions));
+            ImportTransactionsCommand.NotifyCanExecuteChanged();
+        }
+    }
+
     private IEnumerable<Transaction> ApplyTransactionMonthFilter(IEnumerable<Transaction> transactions)
     {
         if (FilterMode == FilterMode.SeeAll)
@@ -876,6 +1038,51 @@ public enum FilterMode
 }
 
 public sealed record LinkedPair(Transaction Transaction, SourceDocument SourceDocument);
+
+public enum DuplicateTransactionImportDecision
+{
+    Keep,
+    Reject,
+}
+
+public sealed record DuplicateTransactionImportDecisionOption(
+    DuplicateTransactionImportDecision Decision,
+    string Label);
+
+public partial class DuplicateTransactionImportItem : ObservableObject
+{
+    private static readonly IReadOnlyList<DuplicateTransactionImportDecisionOption> AvailableDecisionOptions =
+    [
+        new(DuplicateTransactionImportDecision.Keep, "Keep transaction"),
+        new(DuplicateTransactionImportDecision.Reject, "Reject transaction"),
+    ];
+
+    private readonly TransactionImportPreviewTransaction _previewTransaction;
+
+    public DuplicateTransactionImportItem(TransactionImportPreviewTransaction previewTransaction)
+    {
+        _previewTransaction = previewTransaction;
+    }
+
+    public int LineNumber => _previewTransaction.LineNumber;
+    public DateOnly AccountingDate => _previewTransaction.AccountingDate;
+    public DateOnly TransactionDate => _previewTransaction.TransactionDate;
+    public TransactionType TransactionType => _previewTransaction.TransactionType;
+    public string TransactionTypeDisplay => _previewTransaction.TransactionTypeDisplay;
+    public string Description => _previewTransaction.Description;
+    public decimal Amount => _previewTransaction.Amount;
+    public string? DuplicateReason => _previewTransaction.DuplicateReason;
+    public IReadOnlyList<DuplicateTransactionImportDecisionOption> DecisionOptions => AvailableDecisionOptions;
+    public bool HasDecision => SelectedDecisionOption is not null;
+    public bool KeepTransaction => SelectedDecisionOption?.Decision == DuplicateTransactionImportDecision.Keep;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasDecision))]
+    [NotifyPropertyChangedFor(nameof(KeepTransaction))]
+    public partial DuplicateTransactionImportDecisionOption? SelectedDecisionOption { get; set; }
+
+    public TransactionImportPreviewTransaction ToPreviewTransaction() => _previewTransaction;
+}
 
 public sealed record LinkedTransactionGroup(
     Transaction Transaction,

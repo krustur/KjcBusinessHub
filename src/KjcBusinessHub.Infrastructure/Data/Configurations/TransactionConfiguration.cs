@@ -14,8 +14,7 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
             .HasColumnType("decimal(18,2)")
             .IsRequired();
 
-        builder.Property(t => t.Balance)
-            .HasColumnType("decimal(18,2)")
+        builder.Property(t => t.TransactionType)
             .IsRequired();
 
         builder.Property(t => t.Description)
@@ -32,6 +31,7 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         builder.Ignore(t => t.IsLinked);
         builder.Ignore(t => t.HasMultipleLinkedSourceDocuments);
         builder.Ignore(t => t.IsHandled);
+        builder.Ignore(t => t.TransactionTypeDisplay);
 
         builder.Property(t => t.IsHandledWithoutDocument)
             .IsRequired()

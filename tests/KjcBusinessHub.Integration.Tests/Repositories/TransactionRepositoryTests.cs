@@ -29,8 +29,8 @@ public class TransactionRepositoryTests : IDisposable
             Id = Guid.NewGuid(),
             AccountingDate = new DateOnly(2026, 7, 31),
             TransactionDate = new DateOnly(2026, 7, 1),
+            TransactionType = TransactionType.Payment,
             Amount = 1234.56m,
-            Balance = 5000m,
             Description = "Test",
             Status = TransactionStatus.Active,
             CreatedAt = DateTimeOffset.UtcNow,
@@ -53,8 +53,8 @@ public class TransactionRepositoryTests : IDisposable
             Id = Guid.NewGuid(),
             AccountingDate = new DateOnly(2026, 7, 31),
             TransactionDate = new DateOnly(2026, 7, 1),
+            TransactionType = TransactionType.Payment,
             Amount = 1234.56m,
-            Balance = 5000m,
             Description = "Test",
             Status = TransactionStatus.Active,
             CreatedAt = DateTimeOffset.UtcNow,
@@ -66,9 +66,9 @@ public class TransactionRepositoryTests : IDisposable
         var exists = await _repository.ExactMatchExistsAsync(
             new DateOnly(2026, 7, 31),
             new DateOnly(2026, 7, 1),
+            TransactionType.Payment,
             "Test",
-            1234.56m,
-            5000m);
+            1234.56m);
 
         Assert.True(exists);
     }
@@ -79,9 +79,9 @@ public class TransactionRepositoryTests : IDisposable
         var exists = await _repository.ExactMatchExistsAsync(
             new DateOnly(2026, 7, 31),
             new DateOnly(2026, 7, 1),
+            TransactionType.Payment,
             "NonExistent",
-            1234.56m,
-            5000m);
+            1234.56m);
 
         Assert.False(exists);
     }
@@ -94,8 +94,8 @@ public class TransactionRepositoryTests : IDisposable
             Id = Guid.NewGuid(),
             AccountingDate = new DateOnly(2026, 7, 31),
             TransactionDate = new DateOnly(2026, 7, 1),
+            TransactionType = TransactionType.Payment,
             Amount = 100m,
-            Balance = 1000m,
             Description = "Test",
             Status = TransactionStatus.Active,
             CreatedAt = DateTimeOffset.UtcNow,
@@ -133,8 +133,8 @@ public class TransactionRepositoryTests : IDisposable
             Id = Guid.NewGuid(),
             AccountingDate = new DateOnly(2026, 7, 31),
             TransactionDate = new DateOnly(2026, 7, 1),
+            TransactionType = TransactionType.Payment,
             Amount = 40m,
-            Balance = 1000m,
             Description = "First",
             Status = TransactionStatus.Active,
             CreatedAt = DateTimeOffset.UtcNow,
@@ -144,8 +144,8 @@ public class TransactionRepositoryTests : IDisposable
             Id = Guid.NewGuid(),
             AccountingDate = new DateOnly(2026, 7, 31),
             TransactionDate = new DateOnly(2026, 7, 2),
+            TransactionType = TransactionType.CardPurchase,
             Amount = 60m,
-            Balance = 940m,
             Description = "Second",
             Status = TransactionStatus.Active,
             CreatedAt = DateTimeOffset.UtcNow,

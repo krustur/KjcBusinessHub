@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using KjcBusinessHub.Application.Entities;
 using KjcBusinessHub.Application.Enums;
@@ -202,8 +203,8 @@ public class AppViewModelTests
             Id = Guid.NewGuid(),
             AccountingDate = month,
             TransactionDate = month,
+            TransactionType = TransactionType.Payment,
             Amount = 100m,
-            Balance = 0m,
             Description = "Test",
             Status = TransactionStatus.Active,
             CreatedAt = DateTimeOffset.UtcNow,
@@ -305,6 +306,136 @@ public class AppViewModelTests
         await _sourceDocumentRepository.Received(1).UpdateAsync(clearDoc);
     }
 
+    [Fact]
+    public async Task Transaction_import_preview_updates_new_duplicate_and_error_groups()
+    {
+        var existing = new Transaction
+        {
+            Id = Guid.NewGuid(),
+            AccountingDate = new DateOnly(2026, 8, 16),
+            TransactionDate = new DateOnly(2026, 8, 16),
+            TransactionType = TransactionType.Transfer,
+            Amount = -82000.00m,
+            Description = "9060.42.850.51",
+            Status = TransactionStatus.Active,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        _transactionRepository.GetAllAsync().Returns(Task.FromResult<IReadOnlyList<Transaction>>([existing]));
+
+        var sut = CreateSubject();
+        sut.OpenTransactionImportCommand.Execute(null);
+        sut.TransactionImportText =
+            """
+            "2026-08-16";"2026-08-16";"Överföring";"9060.42.850.51";"-82 000,00"
+            "2026-08-09";"2026-08-08";"Kortköp";"MAXI ICA STORMARKNAD U,OREBRO,SE";"-34,95"
+            invalid row
+            """;
+
+        await Task.Delay(50);
+
+        Assert.Single(sut.NewTransactionImports);
+        Assert.Single(sut.DuplicateTransactionImports);
+        Assert.Single(sut.TransactionImportErrorRows);
+        Assert.True(sut.HasTransactionImportErrors);
+    }
+
+    [Fact]
+    public async Task Transaction_import_requires_error_acknowledgement_before_import()
+    {
+        var sut = CreateSubject();
+        sut.OpenTransactionImportCommand.Execute(null);
+        sut.TransactionImportText =
+            """
+            "2026-08-09";"2026-08-08";"Kortköp";"MAXI ICA STORMARKNAD U,OREBRO,SE";"-34,95"
+            invalid row
+            """;
+
+        await Task.Delay(50);
+
+        Assert.False(sut.ImportTransactionsCommand.CanExecute(null));
+
+        sut.HasAcknowledgedTransactionImportErrors = true;
+
+        Assert.True(sut.ImportTransactionsCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task Transaction_import_requires_explicit_duplicate_decisions_before_import()
+    {
+        var existing = new Transaction
+        {
+            Id = Guid.NewGuid(),
+            AccountingDate = new DateOnly(2026, 8, 16),
+            TransactionDate = new DateOnly(2026, 8, 16),
+            TransactionType = TransactionType.Transfer,
+            Amount = -82000.00m,
+            Description = "9060.42.850.51",
+            Status = TransactionStatus.Active,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        _transactionRepository.GetAllAsync().Returns(Task.FromResult<IReadOnlyList<Transaction>>([existing]));
+
+        var sut = CreateSubject();
+        sut.OpenTransactionImportCommand.Execute(null);
+        sut.TransactionImportText =
+            """
+            "2026-08-16";"2026-08-16";"Överföring";"9060.42.850.51";"-82 000,00"
+            "2026-08-09";"2026-08-08";"Kortköp";"MAXI ICA STORMARKNAD U,OREBRO,SE";"-34,95"
+            """;
+
+        await Task.Delay(50);
+
+        Assert.False(sut.ImportTransactionsCommand.CanExecute(null));
+
+        sut.DuplicateTransactionImports[0].SelectedDecisionOption =
+            sut.DuplicateTransactionImports[0].DecisionOptions[1];
+
+        Assert.True(sut.ImportTransactionsCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task Import_transactions_command_imports_selected_duplicates_and_closes_window()
+    {
+        var existing = new Transaction
+        {
+            Id = Guid.NewGuid(),
+            AccountingDate = new DateOnly(2026, 8, 16),
+            TransactionDate = new DateOnly(2026, 8, 16),
+            TransactionType = TransactionType.Transfer,
+            Amount = -82000.00m,
+            Description = "9060.42.850.51",
+            Status = TransactionStatus.Active,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        _transactionRepository.GetAllAsync().Returns(Task.FromResult<IReadOnlyList<Transaction>>([existing]));
+
+        var sut = CreateSubject();
+        sut.OpenTransactionImportCommand.Execute(null);
+        sut.TransactionImportText =
+            """
+            "2026-08-16";"2026-08-16";"Överföring";"9060.42.850.51";"-82 000,00"
+            """;
+
+        await Task.Delay(50);
+        sut.DuplicateTransactionImports[0].SelectedDecisionOption =
+            sut.DuplicateTransactionImports[0].DecisionOptions[0];
+
+        await sut.ImportTransactionsCommand.ExecuteAsync(null);
+
+        await _transactionRepository.Received(1).AddAsync(
+            Arg.Is<Transaction>(transaction =>
+                transaction.TransactionType == TransactionType.Transfer &&
+                transaction.Description == "9060.42.850.51" &&
+                transaction.Amount == -82000.00m));
+        await _transactionRepository.Received(1).SaveChangesAsync();
+        Assert.False(sut.IsTransactionImportOpen);
+        Assert.Empty(sut.NewTransactionImports);
+        Assert.Empty(sut.DuplicateTransactionImports);
+    }
+
     private static SourceDocument MakeActiveDoc(
         Guid id,
         DateOnly fileNameDate,
@@ -335,7 +466,6 @@ public class AppViewModelTests
             _sourceDocumentRepository,
             NullLogger<SourceDocumentImportService>.Instance);
         var fileWatcherService = new FileWatcherService(
-            transactionImportService,
             sourceDocumentImportService,
             _settings,
             NullLogger<FileWatcherService>.Instance);

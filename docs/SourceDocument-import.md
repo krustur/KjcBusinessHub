@@ -34,7 +34,6 @@ SourceDocumentsFolder/
 │   │   └── 2025-02-09 Pyttestor G096932665_Invoice.pdf
 │   ├── 2025-02-12 Pyttemjuk G096932665_Invoice.pdf
 │   └── 2025-02-23 Lönebesked.pdf
-└── Consulting-Transactions.txt
 ```
 
 ## File name parsing
@@ -85,4 +84,3 @@ For every SourceDocument in the App that was not present during the scan:
 
 1. The SourceDocument has been deleted from the disk or moved to outside of the SourceDocumentsFolder, update the SourceDocument:
 - Status = `RemovedFromDisk`
-

@@ -1,4 +1,5 @@
 using KjcBusinessHub.Application.Entities;
+using KjcBusinessHub.Application.Enums;
 using KjcBusinessHub.Application.Validators;
 using Xunit;
 
@@ -13,8 +14,8 @@ public class TransactionValidatorTests
         Id = Guid.NewGuid(),
         AccountingDate = DateOnly.FromDateTime(DateTime.Today),
         TransactionDate = DateOnly.FromDateTime(DateTime.Today),
+        TransactionType = TransactionType.Payment,
         Amount = 100m,
-        Balance = 1000m,
         Description = "Test transaction",
     };
 
