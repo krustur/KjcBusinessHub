@@ -19,7 +19,7 @@
         </Style>
     </UserControl.Styles>
 
-    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
 
         <!-- ── Toolbar ────────────────────────────────────────────────── -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="8,8,8,4">
@@ -76,103 +76,8 @@
             </StackPanel>
         </Border>
 
-        <!-- ── Transaction Import Panel ───────────────────────────────── -->
-        <Border Grid.Row="2"
-                IsVisible="{Binding IsTransactionImportOpen}"
-                BorderBrush="SteelBlue" BorderThickness="1" CornerRadius="4"
-                Margin="8,0,8,4" Padding="8">
-            <Grid RowDefinitions="Auto,180,220,Auto" RowSpacing="8">
-                <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-                    <StackPanel Spacing="2">
-                        <TextBlock Text="Import Transactions" FontWeight="Bold" />
-                        <TextBlock Text="{Binding TransactionImportSummary}" Foreground="Gray" />
-                    </StackPanel>
-                    <Button Grid.Column="1" Command="{Binding CloseTransactionImportCommand}" Padding="8,4">
-                        <StackPanel Orientation="Horizontal" Spacing="4">
-                            <materialIcons:MaterialIcon Kind="Close" Width="20" Height="20" />
-                            <TextBlock Text="Close" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Button>
-                </Grid>
-
-                <TextBox Grid.Row="1"
-                         Text="{Binding TransactionImportText}"
-                         AcceptsReturn="True"
-                         TextWrapping="NoWrap"
-                         VerticalContentAlignment="Top"
-                         PlaceholderText="Paste transactions here..." />
-
-                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-                    <StackPanel Spacing="10">
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="Error rows" FontWeight="SemiBold" />
-                            <ItemsControl ItemsSource="{Binding TransactionImportErrorRows}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="services:TransactionImportParseError">
-                                        <Border Background="#FFF3F3" BorderBrush="#D9534F" BorderThickness="1" CornerRadius="3" Padding="6">
-                                            <StackPanel>
-                                                <TextBlock Text="{Binding Message}" Foreground="#B22222" FontWeight="SemiBold" />
-                                                <TextBlock Text="{Binding RawText}" FontStyle="Italic" TextWrapping="Wrap" />
-                                            </StackPanel>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="New Transactions" FontWeight="SemiBold" />
-                            <ItemsControl ItemsSource="{Binding NewTransactionImports}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="services:TransactionImportPreviewTransaction">
-                                        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="8">
-                                            <TextBlock Grid.Column="0" Text="{Binding AccountingDate}" Foreground="Gray" />
-                                            <TextBlock Grid.Column="1" Text="{Binding TransactionDate}" />
-                                            <TextBlock Grid.Column="2" Text="{Binding TransactionTypeDisplay}" />
-                                            <TextBlock Grid.Column="3" Text="{Binding Description}" TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Grid.Column="4" Text="{Binding Amount, StringFormat='{}{0:N2}'}" HorizontalAlignment="Right" />
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="Duplicate Transactions" FontWeight="SemiBold" />
-                            <ItemsControl ItemsSource="{Binding DuplicateTransactionImports}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="services:TransactionImportPreviewTransaction">
-                                        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto" ColumnSpacing="8">
-                                            <TextBlock Grid.Column="0" Text="{Binding AccountingDate}" Foreground="Gray" />
-                                            <TextBlock Grid.Column="1" Text="{Binding TransactionDate}" />
-                                            <TextBlock Grid.Column="2" Text="{Binding TransactionTypeDisplay}" />
-                                            <TextBlock Grid.Column="3" Text="{Binding Description}" TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Grid.Column="4" Text="{Binding Amount, StringFormat='{}{0:N2}'}" HorizontalAlignment="Right" />
-                                            <TextBlock Grid.Column="5" Text="{Binding DuplicateReason}" Foreground="Gray" />
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </StackPanel>
-                </ScrollViewer>
-
-                <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="10">
-                    <CheckBox Content="I acknowledge the error rows and still want to import the new transactions"
-                              IsVisible="{Binding HasTransactionImportErrors}"
-                              IsChecked="{Binding HasAcknowledgedTransactionImportErrors}" />
-                    <Button Command="{Binding ImportTransactionsCommand}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <materialIcons:MaterialIcon Kind="Check" Width="20" Height="20" />
-                            <TextBlock Text="Import New Transactions" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
-            </Grid>
-        </Border>
-
         <!-- ── Linking Panel (always visible; highlights when both sides are selected) -->
-        <Border Grid.Row="3"
+        <Border Grid.Row="2"
                 BorderBrush="SteelBlue" BorderThickness="2" CornerRadius="4"
                 Margin="8,0,8,4" Padding="8,6" Background="#D6E8F8">
             <Grid ColumnDefinitions="*,Auto,*">
@@ -241,7 +146,7 @@
         </Border>
 
         <!-- ── Set Amount Panel ──────────────────────────────────────── -->
-        <Border Grid.Row="4"
+        <Border Grid.Row="3"
                 IsVisible="{Binding IsSettingAmount}"
                 BorderBrush="SteelBlue" BorderThickness="1"
                 CornerRadius="4" Margin="8,0,8,4" Padding="8">
@@ -273,10 +178,10 @@
         </Border>
 
         <!-- ── Main content ──────────────────────────────────────────── -->
-        <Grid Grid.Row="5" RowDefinitions="*,*">
+        <Grid Grid.Row="4" ColumnDefinitions="2*,*" ColumnSpacing="8" Margin="8,4,8,8">
 
-            <!-- Top row: available transactions | available source documents -->
-            <Grid Grid.Row="0" ColumnDefinitions="*,*" Margin="8,4,8,4">
+            <!-- Left column: available transactions | available source documents -->
+            <Grid Grid.Column="0" ColumnDefinitions="*,*" Margin="0,0,0,0">
 
                 <!-- ── Available Transactions ──────────────────── -->
                 <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1"
@@ -573,9 +478,9 @@
 
             </Grid>
 
-            <!-- Bottom row: Linked pairs -->
-            <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1"
-                    Margin="8,4,8,8" CornerRadius="4">
+            <!-- Right column: Linked pairs -->
+            <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1"
+                    CornerRadius="4">
                 <Grid RowDefinitions="Auto,*">
                     <TextBlock Grid.Row="0" Text="Linked Pairs"
                                FontWeight="Bold" Margin="8,4" />

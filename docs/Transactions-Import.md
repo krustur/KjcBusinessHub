@@ -5,16 +5,20 @@ This document defines the manual Transaction import flow and pasted-text format.
 ## Import workflow
 
 - The import is started explicitly by the user from the UI.
+- The import UI opens in a separate window for better overview.
 - The import UI contains:
-  - a top text area for pasted input
-  - a bottom result area showing parse results
+  - a text area for pasted input
+  - a result area showing parse results
 - Every text change triggers a full reparse of the current input.
 - Parsed rows are grouped into:
   - **Error rows** — rows that could not be parsed, shown with line number and original row text
   - **New Transactions** — valid rows that do not already exist in the application
   - **Duplicate Transactions** — valid rows that already exist in the application
-- Error rows and duplicate rows are never imported automatically.
-- New Transactions are only persisted when the user explicitly confirms import.
+- Error rows are never imported automatically.
+- Duplicate Transactions must each be explicitly marked as either **Keep transaction** or **Reject transaction** before import is enabled.
+- Duplicate Transactions marked as **Keep transaction** are imported as additional Transactions even when an exact match already exists.
+- Duplicate Transactions marked as **Reject transaction** are excluded from import.
+- New Transactions are persisted together with any kept duplicate Transactions when the user explicitly confirms import.
 - If any Error rows exist, the user must acknowledge that before import is enabled.
 
 ## Logging
@@ -80,7 +84,7 @@ When checking whether a parsed Transaction already exists in the application, ma
 ## Import result handling
 
 - **New Transactions** are eligible for import.
-- **Duplicate Transactions** are shown to the user but are not imported.
+- **Duplicate Transactions** are shown to the user and require an explicit keep/reject decision with no default selection.
 - **Error rows** stay as raw row text with a parse error message and line number.
 
 ## Persisted Transaction data

@@ -116,7 +116,7 @@ public class TransactionImportServiceTests
     }
 
     [Fact]
-    public async Task ImportAsync_adds_only_transactions_that_do_not_already_exist()
+    public async Task ImportAsync_adds_all_selected_transactions_including_duplicates()
     {
         var previewTransactions = new[]
         {
@@ -128,7 +128,7 @@ public class TransactionImportServiceTests
                 "Överföring",
                 "9060.42.850.51",
                 -82000.00m,
-                null),
+                "Already exists in the app"),
             new TransactionImportPreviewTransaction(
                 2,
                 new DateOnly(2026, 8, 9),
@@ -140,43 +140,12 @@ public class TransactionImportServiceTests
                 null),
         };
 
-        _repository.FindExactMatchAsync(
-                previewTransactions[0].AccountingDate,
-                previewTransactions[0].TransactionDate,
-                previewTransactions[0].TransactionType,
-                previewTransactions[0].Description,
-                previewTransactions[0].Amount,
-                Arg.Any<CancellationToken>())
-            .Returns((Transaction?)null);
-
-        _repository.FindExactMatchAsync(
-                previewTransactions[1].AccountingDate,
-                previewTransactions[1].TransactionDate,
-                previewTransactions[1].TransactionType,
-                previewTransactions[1].Description,
-                previewTransactions[1].Amount,
-                Arg.Any<CancellationToken>())
-            .Returns(new Transaction
-            {
-                Id = Guid.NewGuid(),
-                AccountingDate = previewTransactions[1].AccountingDate,
-                TransactionDate = previewTransactions[1].TransactionDate,
-                TransactionType = previewTransactions[1].TransactionType,
-                Description = previewTransactions[1].Description,
-                Amount = previewTransactions[1].Amount,
-                Status = TransactionStatus.Active,
-                CreatedAt = DateTimeOffset.UtcNow,
-            });
-
         var result = await _service.ImportAsync(previewTransactions);
 
-        Assert.Equal(1, result.ImportedCount);
-        Assert.Equal(1, result.SkippedDuplicateCount);
-        await _repository.Received(1).AddAsync(
-            Arg.Is<Transaction>(transaction =>
-                transaction.TransactionType == TransactionType.Transfer &&
-                transaction.Description == "9060.42.850.51" &&
-                transaction.Amount == -82000.00m),
+        Assert.Equal(2, result.ImportedCount);
+        Assert.Equal(1, result.DuplicateImportedCount);
+        await _repository.Received(2).AddAsync(
+            Arg.Any<Transaction>(),
             Arg.Any<CancellationToken>());
         await _repository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

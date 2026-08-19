@@ -1,0 +1,130 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:KjcBusinessHub.UI.ViewModels"
+        xmlns:services="using:KjcBusinessHub.Application.Services"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialIcons="using:Material.Icons.Avalonia"
+        mc:Ignorable="d"
+        d:DesignWidth="1200"
+        d:DesignHeight="800"
+        x:Class="KjcBusinessHub.UI.Views.TransactionImportWindow"
+        x:DataType="vm:AppViewModel"
+        Title="Import Transactions"
+        Width="1200"
+        Height="800"
+        MinWidth="900"
+        MinHeight="600">
+
+    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10" Margin="12">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="2">
+                <TextBlock Text="Import Transactions" FontWeight="Bold" FontSize="18" />
+                <TextBlock Text="{Binding TransactionImportSummary}" Foreground="Gray" />
+            </StackPanel>
+            <Button Grid.Column="1" Command="{Binding CloseTransactionImportCommand}" Padding="8,4">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <materialIcons:MaterialIcon Kind="Close" Width="20" Height="20" />
+                    <TextBlock Text="Close" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <Grid Grid.Row="1" ColumnDefinitions="2*,3*" ColumnSpacing="12">
+            <Border Grid.Column="0" BorderBrush="LightGray" BorderThickness="1" CornerRadius="4" Padding="8">
+                <Grid RowDefinitions="Auto,*" RowSpacing="6">
+                    <TextBlock Text="Paste transactions" FontWeight="SemiBold" />
+                    <TextBox Grid.Row="1"
+                             Text="{Binding TransactionImportText}"
+                             AcceptsReturn="True"
+                             TextWrapping="NoWrap"
+                             VerticalContentAlignment="Top"
+                             HorizontalAlignment="Stretch"
+                             VerticalAlignment="Stretch"
+                             PlaceholderText="Paste transactions here..." />
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="1" BorderBrush="LightGray" BorderThickness="1" CornerRadius="4" Padding="8">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="12">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Error rows" FontWeight="SemiBold" />
+                            <ItemsControl ItemsSource="{Binding TransactionImportErrorRows}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="services:TransactionImportParseError">
+                                        <Border Background="#FFF3F3" BorderBrush="#D9534F" BorderThickness="1" CornerRadius="3" Padding="6">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Message}" Foreground="#B22222" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding RawText}" FontStyle="Italic" TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="New Transactions" FontWeight="SemiBold" />
+                            <ItemsControl ItemsSource="{Binding NewTransactionImports}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="services:TransactionImportPreviewTransaction">
+                                        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="8">
+                                            <TextBlock Grid.Column="0" Text="{Binding AccountingDate}" Foreground="Gray" />
+                                            <TextBlock Grid.Column="1" Text="{Binding TransactionDate}" />
+                                            <TextBlock Grid.Column="2" Text="{Binding TransactionTypeDisplay}" />
+                                            <TextBlock Grid.Column="3" Text="{Binding Description}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Column="4" Text="{Binding Amount, StringFormat='{}{0:N2}'}" HorizontalAlignment="Right" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Duplicate Transactions" FontWeight="SemiBold" />
+                            <ItemsControl ItemsSource="{Binding DuplicateTransactionImports}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:DuplicateTransactionImportItem">
+                                        <Border BorderBrush="LightGray" BorderThickness="1" CornerRadius="3" Padding="6">
+                                            <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
+                                                <TextBlock Grid.Column="0" Text="{Binding AccountingDate}" Foreground="Gray" />
+                                                <TextBlock Grid.Column="1" Text="{Binding TransactionDate}" />
+                                                <TextBlock Grid.Column="2" Text="{Binding TransactionTypeDisplay}" />
+                                                <TextBlock Grid.Column="3" Text="{Binding Description}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Grid.Column="4" Text="{Binding Amount, StringFormat='{}{0:N2}'}" HorizontalAlignment="Right" />
+                                                <TextBlock Grid.Column="5" Text="{Binding DuplicateReason}" Foreground="Gray" VerticalAlignment="Center" />
+                                                <ComboBox Grid.Column="6"
+                                                          Width="180"
+                                                          ItemsSource="{Binding DecisionOptions}"
+                                                          SelectedItem="{Binding SelectedDecisionOption}">
+                                                    <ComboBox.ItemTemplate>
+                                                        <DataTemplate x:DataType="vm:DuplicateTransactionImportDecisionOption">
+                                                            <TextBlock Text="{Binding Label}" />
+                                                        </DataTemplate>
+                                                    </ComboBox.ItemTemplate>
+                                                </ComboBox>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10">
+            <CheckBox Content="I acknowledge the error rows and still want to import the selected transactions"
+                      IsVisible="{Binding HasTransactionImportErrors}"
+                      IsChecked="{Binding HasAcknowledgedTransactionImportErrors}" />
+            <Button Command="{Binding ImportTransactionsCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <materialIcons:MaterialIcon Kind="Check" Width="20" Height="20" />
+                    <TextBlock Text="Import Selected Transactions" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+        </StackPanel>
+    </Grid>
+</Window>

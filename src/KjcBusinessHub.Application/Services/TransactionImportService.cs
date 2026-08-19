@@ -107,28 +107,10 @@ public partial class TransactionImportService(
         CancellationToken cancellationToken = default)
     {
         var importedCount = 0;
-        var skippedDuplicateCount = 0;
+        var duplicateImportedCount = transactions.Count(transaction => !string.IsNullOrWhiteSpace(transaction.DuplicateReason));
 
         foreach (var previewTransaction in transactions)
         {
-            var existing = await repository.FindExactMatchAsync(
-                previewTransaction.AccountingDate,
-                previewTransaction.TransactionDate,
-                previewTransaction.TransactionType,
-                previewTransaction.Description,
-                previewTransaction.Amount,
-                cancellationToken);
-
-            if (existing is not null)
-            {
-                skippedDuplicateCount++;
-                logger.LogDebug(
-                    "Line {LineNumber}: transaction already exists at import time, skipping: {Description}.",
-                    previewTransaction.LineNumber,
-                    previewTransaction.Description);
-                continue;
-            }
-
             await repository.AddAsync(
                 new Transaction
                 {
@@ -151,7 +133,7 @@ public partial class TransactionImportService(
         }
 
         await repository.SaveChangesAsync(cancellationToken);
-        return new TransactionImportCommitResult(importedCount, skippedDuplicateCount);
+        return new TransactionImportCommitResult(importedCount, duplicateImportedCount);
     }
 
     private static decimal ParseSwedishDecimal(string value)
@@ -309,4 +291,4 @@ public sealed record TransactionImportPreviewTransaction(
 
 public sealed record TransactionImportCommitResult(
     int ImportedCount,
-    int SkippedDuplicateCount);
+    int DuplicateImportedCount);
