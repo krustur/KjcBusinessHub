@@ -1,6 +1,6 @@
 using KjcBusinessHub.UI;
 
-namespace KjcBusinessHub.Integration.Tests;
+namespace KjcBusinessHub.Application.Tests;
 
 public class WindowClosePolicyTests
 {

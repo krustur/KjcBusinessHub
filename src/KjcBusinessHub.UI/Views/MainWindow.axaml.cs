@@ -1,10 +1,10 @@
 using System;
-using System.IO;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
+using Avalonia.Media;
 using Avalonia.Platform;
 using KjcBusinessHub.Application.Interfaces;
 using KjcBusinessHub.UI.ViewModels;
@@ -197,9 +197,9 @@ public partial class MainWindow : Window
         };
         _trayIcon.Clicked += (_, _) => ToggleMainWindow();
 
-        if (Application.Current is not null)
+        if (Avalonia.Application.Current is not null)
         {
-            TrayIcon.SetIcons(Application.Current, new TrayIcons { _trayIcon });
+            TrayIcon.SetIcons(Avalonia.Application.Current, new TrayIcons { _trayIcon });
         }
     }
 
