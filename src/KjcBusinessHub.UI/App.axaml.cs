@@ -77,6 +77,13 @@ public partial class App : AvalApp
             };
 
             var mainWindow = (MainWindow)desktop.MainWindow;
+            if (runtime.IsDevelopment)
+            {
+                mainWindow.Title = string.IsNullOrWhiteSpace(mainWindow.Title)
+                    ? "KJC Business Hub (Development)"
+                    : $"{mainWindow.Title} (Development)";
+            }
+
             mainWindow.Configure(
                 _serviceProvider.GetRequiredService<MainWindowViewModel>(),
                 _serviceProvider.GetRequiredService<ISettingsService>(),
