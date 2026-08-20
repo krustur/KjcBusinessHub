@@ -48,13 +48,14 @@ jobs:
         run: dotnet test KjcBusinessHub.slnx --configuration Release --no-restore
 
       - name: Publish app
+        shell: pwsh
         run: |
-          dotnet publish src/KjcBusinessHub.UI/KjcBusinessHub.UI.csproj \
-            --configuration Release \
-            --runtime win-x64 \
-            --self-contained true \
-            -p:PublishSingleFile=false \
-            -p:PublishTrimmed=false \
+          dotnet publish src/KjcBusinessHub.UI/KjcBusinessHub.UI.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=false `
+            -p:PublishTrimmed=false `
             --output out/publish
 
       - name: Install Velopack CLI
@@ -93,7 +94,7 @@ jobs:
             --channel ${{ steps.meta.outputs.channel }} `
             --packAuthors "krustur" `
             --packTitle "KJC Business Hub" `
-            --icon src/KjcBusinessHub.UI/Assets/installer/installer-icon-256.png `
+            --icon src/KjcBusinessHub.UI/Assets/kjcbusinesshub.ico `
             --outputDir out/releases
 
       - name: Upload build artifacts
