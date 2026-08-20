@@ -180,13 +180,25 @@
                                   StringFormat='Set amount for: {0}'}"
                            FontWeight="SemiBold" />
                 <Grid ColumnDefinitions="*,*,Auto,Auto,Auto">
-                    <TextBox Grid.Column="0"
+                    <TextBox x:Name="AmountValueTextBox"
+                             Grid.Column="0"
                              Text="{Binding AmountInputText}"
-                             PlaceholderText="Amount…" />
-                    <TextBox Grid.Column="1"
+                             PlaceholderText="Amount…">
+                        <TextBox.KeyBindings>
+                            <KeyBinding Gesture="Enter" Command="{Binding ConfirmSetAmountCommand}" />
+                            <KeyBinding Gesture="Escape" Command="{Binding CancelSetAmountCommand}" />
+                        </TextBox.KeyBindings>
+                    </TextBox>
+                    <TextBox x:Name="AmountCcyValueTextBox"
+                             Grid.Column="1"
                              Text="{Binding CcyAmountInputText}"
                              PlaceholderText="Currency amount…"
-                             Margin="4,0,0,0" />
+                             Margin="4,0,0,0">
+                        <TextBox.KeyBindings>
+                            <KeyBinding Gesture="Enter" Command="{Binding ConfirmSetAmountCommand}" />
+                            <KeyBinding Gesture="Escape" Command="{Binding CancelSetAmountCommand}" />
+                        </TextBox.KeyBindings>
+                    </TextBox>
                     <ComboBox Grid.Column="2"
                              ItemsSource="{Binding SupportedCurrencies}"
                              SelectedItem="{Binding SelectedCurrency}"

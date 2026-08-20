@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using Avalonia.Controls;
+using Avalonia.Threading;
 using KjcBusinessHub.UI.ViewModels;
 
 namespace KjcBusinessHub.UI.Views;
@@ -43,6 +44,19 @@ public partial class AppView : UserControl
         {
             SyncTransactionImportWindow();
         }
+        else if (e.PropertyName == nameof(AppViewModel.DocumentBeingAmounted) && _viewModel?.DocumentBeingAmounted is not null)
+        {
+            FocusSetAmountInput();
+        }
+    }
+
+    private void FocusSetAmountInput()
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            AmountValueTextBox.Focus();
+            AmountValueTextBox.SelectAll();
+        }, DispatcherPriority.Background);
     }
 
     private void SyncTransactionImportWindow()
