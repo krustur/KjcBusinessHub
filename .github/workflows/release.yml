@@ -94,7 +94,7 @@ jobs:
             --channel ${{ steps.meta.outputs.channel }} `
             --packAuthors "krustur" `
             --packTitle "KJC Business Hub" `
-            --icon src/KjcBusinessHub.UI/Assets/installer/installer-icon-256.png `
+            --icon src/KjcBusinessHub.UI/Assets/kjcbusinesshub.ico `
             --outputDir out/releases
 
       - name: Upload build artifacts
