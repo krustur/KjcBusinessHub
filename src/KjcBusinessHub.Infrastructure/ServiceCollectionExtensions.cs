@@ -24,7 +24,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<ISourceDocumentRepository, SourceDocumentRepository>();
         services.AddScoped<IOffDayRepository, OffDayRepository>();
-        services.AddHttpClient<ISwedishPublicHolidayImporter, DagarApiPublicHolidayImporter>();
+        services.AddHttpClient<ISwedishPublicHolidayImporter, DagsmartApiPublicHolidayImporter>();
         services.AddTransient<SourceDocumentValidator>();
         services.AddSingleton<ISettingsService>(serviceProvider =>
             new SettingsService(

@@ -20,10 +20,10 @@ See [V_NEXT_DEV_PLAN.md](V_NEXT_DEV_PLAN.md) for the full feature specification.
 - [x] Register `IOffDayRepository` in DI
 - [x] Add EF Core migration for `OffDays` table
 
-### 2. Dagar API importer
+### 2. Dagsmart API importer
 
 - [x] Add `ISwedishPublicHolidayImporter` interface and `PublicHolidayImportResult`
-- [x] Add `DagarApiPublicHolidayImporter` (Infrastructure) using `HttpClient`
+- [x] Add `DagsmartApiPublicHolidayImporter` (Infrastructure) using `HttpClient`
 - [x] Register importer via `AddHttpClient` in DI
 
 ### 3. Calendar UI — year view, day toggle, import action

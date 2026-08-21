@@ -274,7 +274,7 @@ The user should see a view of all available Transactions top left and all availa
 
 **Acceptance Criteria:**
 - An explicit "Import red days for {year}" action is available.
-- The action calls the Dagar API and persists the results as `PublicHoliday` off-days.
+- The action calls the Dagsmart API and persists the results as `PublicHoliday` off-days.
 - Existing `Vacation` off-days are not modified.
 - A confirmation shows how many days were added or updated.
 - A user-visible warning is shown if the import fails (e.g. network unavailable).

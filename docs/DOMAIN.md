@@ -178,6 +178,6 @@ Vacation            // User-defined vacation day
 - `IsFutureTransaction` is a manual flag; it is not inferred automatically from transaction data. Clearing the flag is a manual user action.
 - Debitable days calculation: iterate every day in the requested period; exclude Saturdays and Sundays; exclude dates recorded as `PublicHoliday`; exclude dates recorded as `Vacation`; count remaining days grouped by month.
 - `CalendarYear` validates that each off-day's `Date` belongs to the owned year and that no two off-days share the same date.
-- The `DagarApiPublicHolidayImporter` upserts `PublicHoliday` off-days for the requested year; existing `Vacation` entries are never modified.
+- The `DagsmartApiPublicHolidayImporter` upserts `PublicHoliday` off-days for the requested year; existing `Vacation` entries are never modified.
 
 ---
