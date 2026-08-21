@@ -8,40 +8,40 @@ This document tracks the development progress of KjcBusinessHub.
 
 ### 1. Transaction model and persistence
 
-- [ ] Remove `Balance` from the `Transaction` entity, EF configuration, repositories, migrations, and any dependent tests
-- [ ] Add `TransactionType` to the domain model, persistence model, and database schema
-- [ ] Define the English `TransactionType` enum values and map them from the Swedish import labels
-- [ ] Update transaction duplicate matching to use `AccountingDate`, `TransactionDate`, `TransactionType`, `Description`, and `Amount`
+- [x] Remove `Balance` from the `Transaction` entity, EF configuration, repositories, migrations, and any dependent tests
+- [x] Add `TransactionType` to the domain model, persistence model, and database schema
+- [x] Define the English `TransactionType` enum values and map them from the Swedish import labels
+- [x] Update transaction duplicate matching to use `AccountingDate`, `TransactionDate`, `TransactionType`, `Description`, and `Amount`
 
 ### 2. Replace file-based transaction import
 
-- [ ] Remove the transaction file import from application startup
-- [ ] Remove the transaction file watcher while keeping source document import and source document watching intact
-- [ ] Replace file-based transaction import services/contracts with an explicit pasted-text import use case
-- [ ] Introduce import result models for `Error rows`, `New Transactions`, and `Duplicate Transactions`
+- [x] Remove the transaction file import from application startup
+- [x] Remove the transaction file watcher while keeping source document import and source document watching intact
+- [x] Replace file-based transaction import services/contracts with an explicit pasted-text import use case
+- [x] Introduce import result models for `Error rows`, `New Transactions`, and `Duplicate Transactions`
 
 ### 3. Build the transaction import UI flow
 
-- [ ] Add a user-visible action to open Transaction import from the main UI
-- [ ] Add a split import surface with pasted input in the top area and structured parse results in the bottom area
-- [ ] Reparse input whenever the text changes
-- [ ] Highlight parse errors and require explicit acknowledgement before enabling import
-- [ ] Allow importing all `New Transactions` in one explicit confirmation step
+- [x] Add a user-visible action to open Transaction import from the main UI
+- [x] Add a split import surface with pasted input in the top area and structured parse results in the bottom area
+- [x] Reparse input whenever the text changes
+- [x] Highlight parse errors and require explicit acknowledgement before enabling import
+- [x] Allow importing all `New Transactions` in one explicit confirmation step
 
 ### 4. Parsing, validation, and import behavior
 
-- [ ] Implement parsing for the new quoted semicolon-separated format: `AccountingDate`, `TransactionDate`, `TransactionType`, `Description`, `Amount`
-- [ ] Support Swedish-formatted decimal amounts and Swedish `TransactionType` labels
-- [ ] Preserve input order in the preview and import results
-- [ ] Ensure duplicate rows are shown to the user but not imported
-- [ ] Ensure invalid rows remain visible as raw error items with line numbers
+- [x] Implement parsing for the new quoted semicolon-separated format: `AccountingDate`, `TransactionDate`, `TransactionType`, `Description`, `Amount`
+- [x] Support Swedish-formatted decimal amounts and Swedish `TransactionType` labels
+- [x] Preserve input order in the preview and import results
+- [x] Ensure duplicate rows are shown to the user and require explicit keep/reject decisions before optional import
+- [x] Ensure invalid rows remain visible as raw error items with line numbers
 
 ### 5. Tests and documentation
 
-- [ ] Replace existing transaction import tests with coverage for the new parser, duplicate detection, and manual import flow
-- [ ] Update view-model/UI tests for the new import action, preview state, acknowledgement rule, and import confirmation
-- [ ] Update repository tests affected by the schema change from `Balance` to `TransactionType`
-- [ ] Update requirement documents (`USE_CASES.md`, `Transactions-Import.md`, `DOMAIN.md`, `DATABASE.md`) to reflect the redesign
+- [x] Replace existing transaction import tests with coverage for the new parser, duplicate detection, and manual import flow
+- [x] Update view-model/UI tests for the new import action, preview state, acknowledgement rule, and import confirmation
+- [x] Update repository tests affected by the schema change from `Balance` to `TransactionType`
+- [x] Update requirement documents (`USE_CASES.md`, `Transactions-Import.md`, `DOMAIN.md`, `DATABASE.md`) to reflect the redesign
 
 ---
 
@@ -152,9 +152,7 @@ This document tracks the development progress of KjcBusinessHub.
 
 ## Phase 1 — File Import & File Watching
 
-- [x] UC-0101 Transaction file import (parse Consulting Transactions CSV)
 - [x] UC-0102 Source document file import (scan SourceDocumentFolder)
-- [x] UC-0103 Transaction file watcher (re-import on file change)
 - [x] UC-0104 Source document file watcher (re-scan on folder change)
 
 ---
@@ -162,7 +160,7 @@ This document tracks the development progress of KjcBusinessHub.
 ## Phase 2 — App Startup & Navigation
 
 - [x] UC-0001 App first-time start → open Settings screen, block navigation until folder is configured
-- [x] UC-0002 App subsequent starts → open Main view, trigger file import & watchers
+- [x] UC-0002 App subsequent starts → open Main view, trigger source document import & watcher
 - [x] Settings screen: enter and validate SourceDocumentFolder
 - [x] Navigate from Settings to Main view once configured
 
@@ -172,7 +170,7 @@ This document tracks the development progress of KjcBusinessHub.
 
 - [x] UC-0201 Show unlinked transactions (top-left) and unlinked source documents (top-right)
 - [x] UC-0201 Show linked transaction–document pairs below, side-by-side
-- [x] Display transaction details: accounting date, transaction date, account no, description, amount
+- [x] Display transaction details: accounting date, transaction date, transaction type, description, amount
 - [x] Display source document details: file name date, description, amount
 - [x] Default sort order: transaction date → document date → mapped-document dates
 - [x] Filter: "See all" vs "See month" toggle
@@ -207,13 +205,6 @@ This document tracks the development progress of KjcBusinessHub.
 
 ---
 
-## Phase 7 — Transaction Lifecycle
-
-- [ ] Handle `RemovedFromFile` status: show indication, allow user to confirm removal (`Removed`)
-- [ ] Display deleted / removed transactions separately or with visual indicator
-
----
-
 ## Phase 8 — Quality of Life
 
 - [ ] Easy visual differentiation of incoming (credit) vs outgoing (debit) transactions
@@ -227,6 +218,6 @@ This document tracks the development progress of KjcBusinessHub.
 ## Phase 9 — Data Safety & Maintenance
 
 - [ ] Daily backup of the database to a human-readable text file
-- [ ] Formal DB schema documentation (docs/DATABASE.md)
+- [x] Formal DB schema documentation (docs/DATABASE.md)
 - [ ] DB migration strategy documented and tested
 - [ ] Integration tests covering import → link → persistence round-trip

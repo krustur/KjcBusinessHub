@@ -49,11 +49,11 @@ This document describes use cases for the KjcBusinessHub application.
 - The lower area shows three result groups in a structured way:
   1. Error rows that could not be parsed, including line number and original row text
   2. New Transactions that can be imported
-  3. Duplicate Transactions that already exist in the application and will not be imported
+  3. Duplicate Transactions that already exist in the application and require an explicit keep/reject decision
 - Parsed Transactions are not persisted until the user explicitly confirms import
 - If there are any Error rows, the user must acknowledge that before import is enabled
-- When the user confirms import, all New Transactions are added to the application
-- Duplicate Transactions are never imported
+- When the user confirms import, all New Transactions and any Duplicate Transactions marked as **Keep transaction** are added to the application
+- Duplicate Transactions marked as **Reject transaction** are not imported
 - The import uses the following column order: `AccountingDate`, `TransactionDate`, `TransactionType`, `Description`, `Amount`
 - The imported `TransactionType` value uses Swedish labels in the pasted text and is mapped to the application's English enum values
 
