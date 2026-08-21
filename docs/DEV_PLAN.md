@@ -4,6 +4,60 @@ This document tracks the development progress of KjcBusinessHub.
 
 ---
 
+## Next Priority — Year Calendar & Debitable Days (V-Next)
+
+See [V_NEXT_DEV_PLAN.md](V_NEXT_DEV_PLAN.md) for the full feature specification.
+
+### 1. Domain + persistence for `OffDay` / `CalendarYear`
+
+- [x] Add `OffDayType` enum (`PublicHoliday`, `Vacation`)
+- [x] Add `OffDay` entity
+- [x] Add `CalendarYear` aggregate with validation rules
+- [x] Add `IOffDayRepository` interface
+- [x] Add `OffDayConfiguration` (EF Core)
+- [x] Register `OffDays` `DbSet` in `AppDbContext`
+- [x] Add `OffDayRepository` implementation
+- [x] Register `IOffDayRepository` in DI
+- [x] Add EF Core migration for `OffDays` table
+
+### 2. Dagar API importer
+
+- [x] Add `ISwedishPublicHolidayImporter` interface and `PublicHolidayImportResult`
+- [x] Add `DagarApiPublicHolidayImporter` (Infrastructure) using `HttpClient`
+- [x] Register importer via `AddHttpClient` in DI
+
+### 3. Calendar UI — year view, day toggle, import action
+
+- [ ] Add `CalendarViewModel` with year navigation, off-day loading, and day toggle
+- [ ] Add `CalendarView.axaml` — 12 monthly mini-calendars, color-coded cells
+- [ ] Add "Import red days for {year}" action wired to `ISwedishPublicHolidayImporter`
+- [ ] Add **Calendar** entry to the main navigation
+
+### 4. Debitable days calculation (domain logic)
+
+- [ ] Add `YearMonth` value object
+- [ ] Add `DebitableDaysQuery` and `DebitableDaysResult` value objects
+- [ ] Add `DebitableDaysCalculator` service
+- [ ] Unit tests covering multi-year periods, all-off periods, single-month periods
+
+### 5. Debitable Days panel (UI)
+
+- [ ] Add `DebitableDaysViewModel` with reactive recalculation on off-day change
+- [ ] Add panel within Calendar view: start/end month pickers, total, per-month table
+- [ ] Show "No holiday data for YYYY" warning when a year has no public holiday data
+
+### 6. Tests and documentation
+
+- [x] Unit tests for `CalendarYear` / `OffDay` domain rules
+- [x] Repository integration tests for `OffDay` CRUD and upsert
+- [x] Update `DOMAIN.md` with new entities, value objects, and business rules
+- [x] Update `USE_CASES.md` with UC-CAL-01 to UC-CAL-06 and UC-DEB-01 to UC-DEB-03
+- [x] Update `DATABASE.md` with `OffDays` table schema
+- [ ] ViewModel / UI tests for year navigation, day toggle, import confirmation
+- [ ] ViewModel tests for Debitable Days start/end selection and reactive recalculation
+
+---
+
 ## Next Priority — Transaction Import Redesign
 
 ### 1. Transaction model and persistence
