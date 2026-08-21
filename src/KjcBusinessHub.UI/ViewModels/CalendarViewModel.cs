@@ -1,0 +1,348 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using KjcBusinessHub.Application.Entities;
+using KjcBusinessHub.Application.Enums;
+using KjcBusinessHub.Application.Interfaces;
+
+namespace KjcBusinessHub.UI.ViewModels;
+
+/// <summary>
+/// Represents a single day cell in the mini-calendar grid.
+/// </summary>
+public class CalendarDayCell : ObservableObject
+{
+    private OffDayType? _offDayType;
+    private string? _description;
+
+    /// <summary>The calendar date, or <c>null</c> for empty padding cells.</summary>
+    public DateOnly? Date { get; init; }
+
+    /// <summary><c>true</c> when this cell belongs to the displayed month (not a padding cell).</summary>
+    public bool IsCurrentMonth { get; init; }
+
+    public bool IsEmpty => !Date.HasValue;
+
+    public int DayNumber => Date?.Day ?? 0;
+
+    public bool IsWeekend =>
+        Date.HasValue &&
+        (Date.Value.DayOfWeek == DayOfWeek.Saturday || Date.Value.DayOfWeek == DayOfWeek.Sunday);
+
+    public OffDayType? OffDayType
+    {
+        get => _offDayType;
+        set
+        {
+            if (SetProperty(ref _offDayType, value))
+            {
+                OnPropertyChanged(nameof(IsPublicHoliday));
+                OnPropertyChanged(nameof(IsVacation));
+                OnPropertyChanged(nameof(CellBackground));
+                OnPropertyChanged(nameof(ForegroundBrush));
+            }
+        }
+    }
+
+    public string? Description
+    {
+        get => _description;
+        set => SetProperty(ref _description, value);
+    }
+
+    public bool IsPublicHoliday => OffDayType == Application.Enums.OffDayType.PublicHoliday;
+    public bool IsVacation => OffDayType == Application.Enums.OffDayType.Vacation;
+
+    /// <summary>Background brush name for color-coding the cell.</summary>
+    public string CellBackground =>
+        OffDayType switch
+        {
+            Application.Enums.OffDayType.PublicHoliday => "#FFCDD2",   // Red/Pink
+            Application.Enums.OffDayType.Vacation      => "#FFF9C4",   // Yellow/Amber
+            _ when IsWeekend                            => "#F5F5F5",   // Light grey
+            _                                           => "Transparent",
+        };
+
+    /// <summary>Foreground brush for day number text.</summary>
+    public string ForegroundBrush =>
+        OffDayType == Application.Enums.OffDayType.PublicHoliday
+            ? "#C62828"
+            : IsCurrentMonth ? "#212121" : "#BDBDBD";
+}
+
+/// <summary>
+/// Represents a single month in the year calendar — 6 rows × 7 day cells (Mon–Sun).
+/// </summary>
+public class MonthCalendarModel
+{
+    public int Year { get; init; }
+    public int Month { get; init; }
+    public string MonthName { get; init; } = string.Empty;
+
+    /// <summary>Up to 6 week-rows; each row contains 7 <see cref="CalendarDayCell"/> objects (Mon–Sun).</summary>
+    public IReadOnlyList<IReadOnlyList<CalendarDayCell>> WeekRows { get; init; } = [];
+}
+
+/// <summary>
+/// ViewModel for the Calendar view — year navigation, off-day display, vacation day toggle, and holiday import.
+/// </summary>
+public partial class CalendarViewModel : ViewModelBase
+{
+    private readonly IOffDayRepository _offDayRepository;
+    private readonly ISwedishPublicHolidayImporter _importer;
+
+    // Lookup of loaded off-days keyed by date, refreshed on every year load.
+    private Dictionary<DateOnly, OffDay> _offDaysByDate = [];
+
+    /// <summary>Action invoked when the user navigates back to the Transactions view.</summary>
+    public Action? NavigateToApp { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ImportButtonLabel))]
+    public partial int SelectedYear { get; set; } = DateOnly.FromDateTime(DateTime.Today).Year;
+
+    [ObservableProperty]
+    public partial bool IsLoading { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasStatusMessage))]
+    public partial string? StatusMessage { get; set; }
+
+    public bool HasStatusMessage => !string.IsNullOrWhiteSpace(StatusMessage);
+
+    public string ImportButtonLabel => $"Import red days for {SelectedYear}";
+
+    public ObservableCollection<MonthCalendarModel> Months { get; } = [];
+
+    public CalendarViewModel(IOffDayRepository offDayRepository, ISwedishPublicHolidayImporter importer)
+    {
+        _offDayRepository = offDayRepository;
+        _importer = importer;
+    }
+
+    // ── Commands ────────────────────────────────────────────────────────────
+
+    [RelayCommand]
+    private async Task PreviousYearAsync()
+    {
+        SelectedYear--;
+        await LoadAsync();
+    }
+
+    [RelayCommand]
+    private async Task NextYearAsync()
+    {
+        SelectedYear++;
+        await LoadAsync();
+    }
+
+    [RelayCommand]
+    private void GoToApp()
+    {
+        NavigateToApp?.Invoke();
+    }
+
+    [RelayCommand]
+    private async Task ImportRedDaysAsync(CancellationToken cancellationToken)
+    {
+        if (IsLoading) return;
+        IsLoading = true;
+        StatusMessage = null;
+
+        try
+        {
+            var result = await _importer.ImportAsync(SelectedYear, cancellationToken);
+
+            if (result.IsSuccess)
+            {
+                await LoadAsync(cancellationToken);
+                StatusMessage = $"Import complete: {result.Added} added, {result.Updated} updated.";
+            }
+            else
+            {
+                StatusMessage = $"Import failed: {result.ErrorMessage}";
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // silently cancelled
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Import error: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// Toggles a date as a vacation day.
+    /// Clicking a regular or weekend day marks it as Vacation; clicking an existing Vacation day removes it.
+    /// Public holidays cannot be toggled via this command.
+    /// </summary>
+    [RelayCommand]
+    private async Task ToggleDayAsync(DateOnly date)
+    {
+        if (_offDaysByDate.TryGetValue(date, out var existing))
+        {
+            if (existing.OffDayType == OffDayType.Vacation)
+            {
+                await _offDayRepository.DeleteAsync(existing.Id);
+                await _offDayRepository.SaveChangesAsync();
+                _offDaysByDate.Remove(date);
+                ApplyOffDayToCell(date, null);
+            }
+            // Public holidays are not toggled by clicking — ignore.
+        }
+        else
+        {
+            var offDay = new OffDay
+            {
+                Id = Guid.NewGuid(),
+                Year = date.Year,
+                Date = date,
+                OffDayType = OffDayType.Vacation,
+                Description = string.Empty,
+                CreatedAt = DateTimeOffset.UtcNow,
+            };
+            await _offDayRepository.AddAsync(offDay);
+            await _offDayRepository.SaveChangesAsync();
+            _offDaysByDate[date] = offDay;
+            ApplyOffDayToCell(date, offDay);
+        }
+    }
+
+    // ── Initialization / loading ─────────────────────────────────────────────
+
+    /// <summary>Loads off-days for the selected year and rebuilds the 12-month calendar grid.</summary>
+    public async Task LoadAsync(CancellationToken cancellationToken = default)
+    {
+        IsLoading = true;
+        StatusMessage = null;
+        try
+        {
+            var offDays = await _offDayRepository.GetByYearAsync(SelectedYear, cancellationToken);
+            _offDaysByDate = offDays.ToDictionary(d => d.Date);
+
+            var months = BuildMonthModels(SelectedYear, _offDaysByDate);
+
+            Months.Clear();
+            foreach (var m in months)
+                Months.Add(m);
+        }
+        catch (OperationCanceledException)
+        {
+            // silently cancelled
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Could not load calendar: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private static IReadOnlyList<MonthCalendarModel> BuildMonthModels(
+        int year,
+        IReadOnlyDictionary<DateOnly, OffDay> offDaysByDate)
+    {
+        var models = new List<MonthCalendarModel>(12);
+        for (var month = 1; month <= 12; month++)
+        {
+            var cells = BuildCellsForMonth(year, month, offDaysByDate);
+            var weeks = SplitIntoWeeks(cells);
+            models.Add(new MonthCalendarModel
+            {
+                Year = year,
+                Month = month,
+                MonthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month),
+                WeekRows = weeks,
+            });
+        }
+        return models;
+    }
+
+    /// <summary>
+    /// Builds 42 calendar cells (6 weeks × 7 days, Mon–Sun) for a given month.
+    /// Cells before the first day and after the last day of the month are empty padding cells.
+    /// </summary>
+    public static IReadOnlyList<CalendarDayCell> BuildCellsForMonth(
+        int year,
+        int month,
+        IReadOnlyDictionary<DateOnly, OffDay>? offDaysByDate = null)
+    {
+        var cells = new List<CalendarDayCell>(42);
+
+        var firstDay = new DateOnly(year, month, 1);
+        var daysInMonth = DateTime.DaysInMonth(year, month);
+
+        // DayOfWeek: Sunday = 0, Monday = 1, …, Saturday = 6
+        // We want Mon = 0, …, Sun = 6
+        var startPadding = ((int)firstDay.DayOfWeek + 6) % 7; // shift so Monday = 0
+
+        // Leading empty cells
+        for (var i = 0; i < startPadding; i++)
+            cells.Add(new CalendarDayCell { IsCurrentMonth = false });
+
+        // Days of month
+        for (var day = 1; day <= daysInMonth; day++)
+        {
+            var date = new DateOnly(year, month, day);
+            OffDay? offDay = null;
+            offDaysByDate?.TryGetValue(date, out offDay);
+            cells.Add(new CalendarDayCell
+            {
+                Date = date,
+                IsCurrentMonth = true,
+                OffDayType = offDay?.OffDayType,
+                Description = offDay?.Description,
+            });
+        }
+
+        // Trailing empty cells to complete 42 slots
+        while (cells.Count < 42)
+            cells.Add(new CalendarDayCell { IsCurrentMonth = false });
+
+        return cells;
+    }
+
+    private static IReadOnlyList<IReadOnlyList<CalendarDayCell>> SplitIntoWeeks(
+        IReadOnlyList<CalendarDayCell> cells)
+    {
+        var weeks = new List<IReadOnlyList<CalendarDayCell>>(6);
+        for (var i = 0; i < 42; i += 7)
+            weeks.Add(cells.Skip(i).Take(7).ToList());
+        return weeks;
+    }
+
+    /// <summary>
+    /// Finds the cell for <paramref name="date"/> in the current <see cref="Months"/> collection
+    /// and updates its <see cref="CalendarDayCell.OffDayType"/> and <see cref="CalendarDayCell.Description"/>.
+    /// </summary>
+    private void ApplyOffDayToCell(DateOnly date, OffDay? offDay)
+    {
+        var month = Months.FirstOrDefault(m => m.Year == date.Year && m.Month == date.Month);
+        if (month is null) return;
+
+        foreach (var week in month.WeekRows)
+        {
+            var cell = week.FirstOrDefault(c => c.Date == date);
+            if (cell is null) continue;
+            cell.OffDayType = offDay?.OffDayType;
+            cell.Description = offDay?.Description;
+            return;
+        }
+    }
+}

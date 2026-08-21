@@ -63,6 +63,20 @@ This document describes the database schema, migrations strategy, and EF Core se
 | SourceDocumentId   | UNIQUEIDENTIFIER | PK, FK          |
 | CreatedAt          | DATETIMEOFFSET   | NOT NULL        |
 
+### OffDays
+
+| Column      | Type             | Constraints                              |
+|-------------|------------------|------------------------------------------|
+| Id          | UNIQUEIDENTIFIER | PK, NOT NULL                             |
+| Year        | INT              | NOT NULL                                 |
+| Date        | DATE             | NOT NULL                                 |
+| OffDayType  | INT              | NOT NULL (0 = PublicHoliday, 1 = Vacation) |
+| Description | NVARCHAR(500)    | NOT NULL, default ''                     |
+| CreatedAt   | DATETIMEOFFSET   | NOT NULL                                 |
+| UpdatedAt   | DATETIMEOFFSET   | NULL                                     |
+
+**Unique index:** `(Year, Date)` — a date may appear at most once per year.
+
 ---
 
 ## EF Core Setup

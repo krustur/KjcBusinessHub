@@ -3,6 +3,7 @@ using KjcBusinessHub.Application.Services;
 using KjcBusinessHub.Application.Validators;
 using KjcBusinessHub.Infrastructure.Data;
 using KjcBusinessHub.Infrastructure.FileSystem;
+using KjcBusinessHub.Infrastructure.PublicHolidays;
 using KjcBusinessHub.Infrastructure.Repositories;
 using KjcBusinessHub.Infrastructure.Settings;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +23,8 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<ISourceDocumentRepository, SourceDocumentRepository>();
+        services.AddScoped<IOffDayRepository, OffDayRepository>();
+        services.AddHttpClient<ISwedishPublicHolidayImporter, DagsmartApiPublicHolidayImporter>();
         services.AddTransient<SourceDocumentValidator>();
         services.AddSingleton<ISettingsService>(serviceProvider =>
             new SettingsService(

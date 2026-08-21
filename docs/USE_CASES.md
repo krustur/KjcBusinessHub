@@ -220,9 +220,112 @@ The user should see a view of all available Transactions top left and all availa
 
 ## Future / Planned
 
+## Calendar (CAL)
 
+### UC-CAL-01 View Year Calendar
 
+**Pre-Conditions:**
+- The application is started and configured.
 
+**Acceptance Criteria:**
+- The user can navigate to a **Calendar** view from the main navigation.
+- All 12 months of the selected year are displayed in a grid.
+- Day cells are color-coded: red for public holidays, yellow/amber for vacation days, light grey for weekends, default for regular workdays.
+
+---
+
+### UC-CAL-02 Navigate Years
+
+**Pre-Conditions:**
+- The Calendar view is open.
+
+**Acceptance Criteria:**
+- Previous-year and next-year navigation buttons are available.
+- The view defaults to the current year on first open.
+
+---
+
+### UC-CAL-03 Add Vacation Day
+
+**Pre-Conditions:**
+- The Calendar view is open.
+
+**Acceptance Criteria:**
+- The user can click a date cell to toggle it as a vacation day.
+- The vacation day is saved immediately.
+
+---
+
+### UC-CAL-04 Remove Vacation Day
+
+**Pre-Conditions:**
+- The Calendar view is open and at least one vacation day exists.
+
+**Acceptance Criteria:**
+- The user can click an existing vacation day to remove it.
+- The change is saved immediately.
+
+---
+
+### UC-CAL-05 Import Swedish Public Holidays
+
+**Pre-Conditions:**
+- The Calendar view is open.
+
+**Acceptance Criteria:**
+- An explicit "Import red days for {year}" action is available.
+- The action calls the Dagsmart API and persists the results as `PublicHoliday` off-days.
+- Existing `Vacation` off-days are not modified.
+- A confirmation shows how many days were added or updated.
+- A user-visible warning is shown if the import fails (e.g. network unavailable).
+
+---
+
+### UC-CAL-06 Add / Edit Off Day Description
+
+**Pre-Conditions:**
+- The Calendar view is open.
+
+**Acceptance Criteria:**
+- The user can set or edit an optional description for any off-day via a day detail panel or tooltip.
+
+---
+
+## Debitable Days (DEB)
+
+### UC-DEB-01 Calculate Debitable Days
+
+**Pre-Conditions:**
+- The Calendar view (or Debitable Days panel) is open.
+
+**Acceptance Criteria:**
+- The user selects a start month and an end month.
+- The application returns a `DebitableDaysResult` derived from the off-day data for all affected years.
+- Excluded from the count: Saturdays, Sundays, public holidays, vacation days.
+
+---
+
+### UC-DEB-02 View Per-Month Breakdown
+
+**Pre-Conditions:**
+- UC-DEB-01 has been executed.
+
+**Acceptance Criteria:**
+- The result shows a prominent total: "Total debitable days: N".
+- A table/list shows one row per month with the month name and its debitable-day count.
+- Months whose years have no holiday data display a clear warning: "No holiday data for YYYY — import red days first".
+
+---
+
+### UC-DEB-03 Recalculate on Off-Day Change
+
+**Pre-Conditions:**
+- The Debitable Days panel is visible and showing a result.
+
+**Acceptance Criteria:**
+- Whenever the user adds or removes an off-day in the Calendar view, the displayed Debitable Days result is automatically refreshed.
+
+---
 
 ### Backlog / Unsorted
 
