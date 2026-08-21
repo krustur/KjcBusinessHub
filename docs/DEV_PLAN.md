@@ -152,11 +152,7 @@ This document tracks the development progress of KjcBusinessHub.
 
 ## Phase 1 — File Import & File Watching
 
-> Legacy transaction file import items are kept here for historical context only. Transaction import is now manual pasted-text import; source document file import and watching remain active.
-
-- [x] ~~UC-0101 Transaction file import (parse Consulting Transactions CSV)~~ — superseded by manual pasted-text import
 - [x] UC-0102 Source document file import (scan SourceDocumentFolder)
-- [x] ~~UC-0103 Transaction file watcher (re-import on file change)~~ — superseded by manual pasted-text import
 - [x] UC-0104 Source document file watcher (re-scan on folder change)
 
 ---
@@ -206,15 +202,6 @@ This document tracks the development progress of KjcBusinessHub.
 - [ ] Handle `RemovedFromDisk` status: show indication, allow user to confirm removal (`Removed`)
 - [ ] Handle `Revived` status: restore previously removed document matched by file hash
 - [ ] Handle `Changed` status: notify user that a tracked file has changed on disk
-
----
-
-## Phase 7 — Transaction Lifecycle
-
-> The remaining file-removal items in this phase are no longer relevant after replacing watched transaction file import with manual pasted-text import.
-
-- [ ] ~~Handle `RemovedFromFile` status: show indication, allow user to confirm removal (`Removed`)~~
-- [ ] ~~Display deleted / removed transactions separately or with visual indicator~~
 
 ---
 
