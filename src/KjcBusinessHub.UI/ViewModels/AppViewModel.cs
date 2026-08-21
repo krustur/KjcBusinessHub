@@ -467,6 +467,15 @@ public partial class AppViewModel : ViewModelBase
         _ = PreviewTransactionImportAsync(value);
     }
 
+    /// <summary>Action invoked to navigate to the Calendar view. Wired by <see cref="MainWindowViewModel"/>.</summary>
+    public Action? NavigateToCalendar { get; set; }
+
+    [RelayCommand]
+    private void OpenCalendar()
+    {
+        NavigateToCalendar?.Invoke();
+    }
+
     [RelayCommand]
     private void OpenTransactionImport()
     {

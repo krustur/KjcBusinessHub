@@ -1,0 +1,196 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:KjcBusinessHub.UI.ViewModels"
+             xmlns:materialIcons="using:Material.Icons.Avalonia"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+             x:Class="KjcBusinessHub.UI.Views.CalendarView"
+             x:DataType="vm:CalendarViewModel">
+
+    <UserControl.Styles>
+
+        <!-- Day cell button -->
+        <Style Selector="Button.day-cell">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="MinWidth" Value="28" />
+            <Setter Property="MinHeight" Value="24" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+        <Style Selector="Button.day-cell:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#BBDEFB" />
+        </Style>
+
+        <!-- Month container -->
+        <Style Selector="Border.month-box">
+            <Setter Property="BorderBrush" Value="#E0E0E0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="6,4" />
+            <Setter Property="Margin" Value="4" />
+            <Setter Property="Background" Value="White" />
+        </Style>
+
+        <!-- Day-of-week header -->
+        <Style Selector="TextBlock.dow-header">
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#9E9E9E" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Width" Value="28" />
+        </Style>
+
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,*">
+
+        <!-- ── Top bar ──────────────────────────────────────────────────── -->
+        <Border Grid.Row="0"
+                BorderBrush="Gray" BorderThickness="1" CornerRadius="4"
+                Margin="8,8,8,4" Padding="8,6"
+                Background="#EEF5FC">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+
+                <!-- Back + year navigation -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                    <Button Command="{Binding GoToAppCommand}" Padding="6,4" ToolTip.Tip="Back to Transactions">
+                        <materialIcons:MaterialIcon Kind="ArrowLeft" Width="22" Height="22" />
+                    </Button>
+                    <Separator />
+                    <Button Command="{Binding PreviousYearCommand}" Padding="6,4" ToolTip.Tip="Previous year">
+                        <materialIcons:MaterialIcon Kind="ChevronLeft" Width="22" Height="22" />
+                    </Button>
+                    <TextBlock Text="{Binding SelectedYear}"
+                               FontSize="18" FontWeight="Bold"
+                               VerticalAlignment="Center"
+                               MinWidth="54"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center" />
+                    <Button Command="{Binding NextYearCommand}" Padding="6,4" ToolTip.Tip="Next year">
+                        <materialIcons:MaterialIcon Kind="ChevronRight" Width="22" Height="22" />
+                    </Button>
+                    <Separator />
+                    <Button Command="{Binding ImportRedDaysCommand}" Padding="10,6">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <materialIcons:MaterialIcon Kind="CalendarImport" Width="20" Height="20" />
+                            <TextBlock Text="{Binding ImportButtonLabel}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <!-- Status message -->
+                <TextBlock Grid.Column="2"
+                           Text="{Binding StatusMessage}"
+                           IsVisible="{Binding HasStatusMessage}"
+                           VerticalAlignment="Center"
+                           Foreground="DarkSlateGray"
+                           Margin="8,0,0,0" />
+            </Grid>
+        </Border>
+
+        <!-- Loading indicator -->
+        <ProgressBar Grid.Row="0" IsIndeterminate="True"
+                     IsVisible="{Binding IsLoading}"
+                     VerticalAlignment="Bottom" />
+
+        <!-- ── Colour legend ─────────────────────────────────────────────── -->
+        <Border Grid.Row="1"
+                BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4"
+                Margin="8,0,8,4" Padding="8,4">
+            <StackPanel Orientation="Horizontal" Spacing="16">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Border Width="14" Height="14" CornerRadius="2" Background="#FFCDD2" />
+                    <TextBlock Text="Public holiday" VerticalAlignment="Center" FontSize="12" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Border Width="14" Height="14" CornerRadius="2" Background="#FFF9C4" />
+                    <TextBlock Text="Vacation" VerticalAlignment="Center" FontSize="12" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Border Width="14" Height="14" CornerRadius="2" Background="#F5F5F5" BorderBrush="#E0E0E0" BorderThickness="1" />
+                    <TextBlock Text="Weekend" VerticalAlignment="Center" FontSize="12" />
+                </StackPanel>
+                <TextBlock Text="Click a day to toggle vacation" VerticalAlignment="Center"
+                           FontSize="11" Foreground="Gray" />
+            </StackPanel>
+        </Border>
+
+        <!-- ── 12-month grid ─────────────────────────────────────────────── -->
+        <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding Months}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:MonthCalendarModel">
+                        <Border Classes="month-box" Width="224">
+                            <StackPanel Spacing="2">
+
+                                <!-- Month name -->
+                                <TextBlock Text="{Binding MonthName}"
+                                           FontWeight="SemiBold" FontSize="13"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,0,0,4" />
+
+                                <!-- Day-of-week headers: Mon Tue Wed Thu Fri Sat Sun -->
+                                <StackPanel Orientation="Horizontal" Spacing="0">
+                                    <TextBlock Classes="dow-header" Text="Mo" />
+                                    <TextBlock Classes="dow-header" Text="Tu" />
+                                    <TextBlock Classes="dow-header" Text="We" />
+                                    <TextBlock Classes="dow-header" Text="Th" />
+                                    <TextBlock Classes="dow-header" Text="Fr" />
+                                    <TextBlock Classes="dow-header" Text="Sa" />
+                                    <TextBlock Classes="dow-header" Text="Su" />
+                                </StackPanel>
+
+                                <!-- Week rows -->
+                                <ItemsControl ItemsSource="{Binding WeekRows}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <!-- Each week row is an IReadOnlyList<CalendarDayCell> -->
+                                            <ItemsControl ItemsSource="{Binding}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel Orientation="Horizontal" Spacing="0" />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:CalendarDayCell">
+                                                        <Button Classes="day-cell"
+                                                                Width="28" Height="24"
+                                                                Background="{Binding CellBackground}"
+                                                                IsVisible="{Binding !IsEmpty}"
+                                                                IsEnabled="{Binding IsCurrentMonth}"
+                                                                ToolTip.Tip="{Binding Description}"
+                                                                Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).ToggleDayCommand}"
+                                                                CommandParameter="{Binding Date}">
+                                                            <TextBlock Text="{Binding DayNumber}"
+                                                                       FontSize="11"
+                                                                       Foreground="{Binding ForegroundBrush}"
+                                                                       HorizontalAlignment="Center"
+                                                                       VerticalAlignment="Center" />
+                                                        </Button>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+    </Grid>
+</UserControl>
