@@ -25,7 +25,13 @@ public class DebitableDaysCalculator(IOffDayRepository offDayRepository)
 
         var allOffDays = offDaysByYear.SelectMany(list => list).ToList();
 
-        var hasPublicHolidays = allOffDays.Any(d => d.OffDayType is OffDayType.PublicHoliday);
+        var periodStart = query.StartMonth.FirstDay();
+        var periodEnd = query.EndMonth.LastDay();
+
+        var hasPublicHolidays = allOffDays.Any(d =>
+            d.OffDayType is OffDayType.PublicHoliday &&
+            d.Date >= periodStart &&
+            d.Date <= periodEnd);
 
         var offDaySet = allOffDays
             .Where(d => d.OffDayType is OffDayType.PublicHoliday

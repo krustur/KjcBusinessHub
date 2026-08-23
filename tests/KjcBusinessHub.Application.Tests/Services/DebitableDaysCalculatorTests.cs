@@ -225,6 +225,21 @@ public class DebitableDaysCalculatorTests
         Assert.False(result.HasPublicHolidays);
     }
 
+    [Fact]
+    public async Task HasPublicHolidays_is_false_when_holiday_exists_outside_queried_period()
+    {
+        // Holiday in January, but we're querying June
+        var holidayOutsidePeriod = MakeOffDay(new DateOnly(2025, 1, 1), OffDayType.PublicHoliday);
+        _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([holidayOutsidePeriod]));
+
+        var sut = CreateSubject();
+        var result = await sut.CalculateAsync(
+            new DebitableDaysQuery(new YearMonth(2025, 6), new YearMonth(2025, 6)));
+
+        Assert.False(result.HasPublicHolidays);
+    }
+
     // ── DebitableDaysQuery validation ────────────────────────────────────────
 
     [Fact]

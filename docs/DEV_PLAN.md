@@ -44,7 +44,7 @@ See [V_NEXT_DEV_PLAN.md](V_NEXT_DEV_PLAN.md) for the full feature specification.
 
 - [x] Add `DebitableDaysViewModel` with reactive recalculation on off-day change
 - [x] Add panel within Calendar view: start/end month pickers, total, per-month table
-- [ ] Show "No holiday data for YYYY" warning when a year has no public holiday data
+- [x] Show "No holiday data for YYYY" warning when a year has no public holiday data
 
 ### 6. Tests and documentation
 
