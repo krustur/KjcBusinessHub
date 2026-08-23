@@ -112,7 +112,9 @@ public partial class CalendarViewModel : ViewModelBase
 
     partial void OnSelectedYearChanged(int value)
     {
-        DebitableDays.CalendarYear = value;
+        // Update the year without an immediate recalculation; LoadAsync will
+        // recalculate after off-day data for the new year has been loaded.
+        DebitableDays.ApplyCalendarYear(value);
     }
 
     [ObservableProperty]
@@ -136,7 +138,7 @@ public partial class CalendarViewModel : ViewModelBase
         _offDayRepository = offDayRepository;
         _importer = importer;
         DebitableDays = debitableDays;
-        DebitableDays.CalendarYear = SelectedYear;
+        DebitableDays.ApplyCalendarYear(SelectedYear);
     }
 
     // ── Commands ────────────────────────────────────────────────────────────

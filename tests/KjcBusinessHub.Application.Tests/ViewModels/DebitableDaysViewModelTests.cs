@@ -181,7 +181,7 @@ public class DebitableDaysViewModelTests
 
         await sut.RecalculateAsync();
 
-        // Vacation not deducted → all 12 months of 2025 weekdays (253 total)
+        // Vacation not deducted → all 12 months of 2025 weekdays (261 total)
         Assert.Equal(261, sut.TotalDebitableDays);
     }
 

@@ -53,6 +53,18 @@ public partial class DebitableDaysViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// Updates <see cref="CalendarYear"/> without triggering an immediate recalculation.
+    /// Use this when the caller will trigger <see cref="RecalculateAsync"/> itself
+    /// (e.g. after loading off-day data for the new year).
+    /// </summary>
+    internal void ApplyCalendarYear(int year)
+    {
+        if (_calendarYear == year) return;
+        _calendarYear = year;
+        OnPropertyChanged(nameof(CalendarYear));
+    }
+
     // ── Fiscal year start month ──────────────────────────────────────────────
 
     /// <summary>All twelve months available as dropdown options.</summary>
