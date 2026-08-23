@@ -144,21 +144,29 @@ public partial class DebitableDaysViewModel : ViewModelBase
 
     public ObservableCollection<MonthDebitableDaysRow> PerMonth { get; } = [];
 
+    private bool _isInitializing = true;
+
     public DebitableDaysViewModel(DebitableDaysCalculator calculator, ISettingsService settings)
     {
         _calculator = calculator;
         _settings = settings;
 
+        // Initialize without triggering OnStartMonthChanged (save + premature recalculation
+        // would run before CalendarYear has been set by the parent CalendarViewModel).
         var savedMonth = settings.FiscalStartMonth;
         StartMonth = savedMonth >= 1 && savedMonth <= 12 ? savedMonth : 1;
+        _isInitializing = false;
     }
 
     // ── Partial property change hooks ────────────────────────────────────────
 
     partial void OnStartMonthChanged(int value)
     {
-        _settings.FiscalStartMonth = value;
-        _settings.Save();
+        if (!_isInitializing)
+        {
+            _settings.FiscalStartMonth = value;
+            _settings.Save();
+        }
         _ = RecalculateAsync();
     }
 
