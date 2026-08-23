@@ -110,6 +110,11 @@ public partial class CalendarViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(ImportButtonLabel))]
     public partial int SelectedYear { get; set; } = DateOnly.FromDateTime(DateTime.Today).Year;
 
+    partial void OnSelectedYearChanged(int value)
+    {
+        DebitableDays.CalendarYear = value;
+    }
+
     [ObservableProperty]
     public partial bool IsLoading { get; set; }
 
@@ -131,6 +136,7 @@ public partial class CalendarViewModel : ViewModelBase
         _offDayRepository = offDayRepository;
         _importer = importer;
         DebitableDays = debitableDays;
+        DebitableDays.CalendarYear = SelectedYear;
     }
 
     // ── Commands ────────────────────────────────────────────────────────────

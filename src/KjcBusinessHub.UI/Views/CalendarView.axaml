@@ -207,36 +207,22 @@
 
                     <!-- Controls column -->
                     <StackPanel Grid.Column="0" Spacing="8" Margin="0,0,16,0">
-                        <TextBlock Text="Period" FontWeight="SemiBold" FontSize="13" />
 
-                        <!-- Start month -->
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="Start" FontSize="11" Foreground="Gray" />
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <NumericUpDown Value="{Binding StartYear}"
-                                               Minimum="2000" Maximum="2100"
-                                               Width="140" Padding="6,4"
-                                               FontSize="14"
-                                               FormatString="0000"
-                                               ToolTip.Tip="Start year" />
-                                <NumericUpDown Value="{Binding StartMonth}"
-                                               Minimum="1" Maximum="12"
-                                               Width="100" Padding="6,4"
-                                               FontSize="14"
-                                               FormatString="0"
-                                               ToolTip.Tip="Start month (1–12)" />
-                            </StackPanel>
-                        </StackPanel>
-
-                        <!-- Number of months -->
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="Number of months" FontSize="11" Foreground="Gray" />
-                            <NumericUpDown Value="{Binding NumberOfMonths}"
-                                           Minimum="1" Maximum="120"
-                                           Width="100" Padding="6,4"
-                                           FontSize="14"
-                                           FormatString="0"
-                                           ToolTip.Tip="Number of months to include" />
+                        <!-- Fiscal year start month picker -->
+                        <TextBlock Text="Fiscal year start month" FontWeight="SemiBold" FontSize="13" />
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <Button Command="{Binding PreviousStartMonthCommand}" Padding="6,4"
+                                    ToolTip.Tip="Previous month">
+                                <materialIcons:MaterialIcon Kind="ChevronLeft" Width="20" Height="20" />
+                            </Button>
+                            <ComboBox ItemsSource="{Binding AvailableStartMonths}"
+                                      SelectedItem="{Binding SelectedStartMonth}"
+                                      MinWidth="130" FontSize="14"
+                                      VerticalAlignment="Center" />
+                            <Button Command="{Binding NextStartMonthCommand}" Padding="6,4"
+                                    ToolTip.Tip="Next month">
+                                <materialIcons:MaterialIcon Kind="ChevronRight" Width="20" Height="20" />
+                            </Button>
                         </StackPanel>
 
                         <!-- Error / validation message -->

@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using KjcBusinessHub.Application.Entities;
 using KjcBusinessHub.Application.Services;
 
@@ -12,27 +15,81 @@ namespace KjcBusinessHub.UI.ViewModels;
 /// <summary>One row in the per-month debitable-days breakdown table.</summary>
 public sealed record MonthDebitableDaysRow(string MonthLabel, int DebitableDays);
 
+/// <summary>One selectable item in the fiscal-year start-month picker.</summary>
+public sealed record FiscalStartMonthOption(int Month)
+{
+    public string DisplayName { get; } =
+        CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(Month);
+
+    public override string ToString() => DisplayName;
+}
+
 /// <summary>
 /// ViewModel for the Debitable Days panel embedded in the Calendar view.
-/// Recalculates whenever <see cref="StartYear"/>, <see cref="StartMonth"/>,
-/// or <see cref="NumberOfMonths"/> change.
+/// The period is always exactly 12 months starting from <see cref="FiscalStartMonth"/>
+/// within the year provided by the parent (<see cref="CalendarYear"/>).
 /// </summary>
 public partial class DebitableDaysViewModel : ViewModelBase
 {
     private readonly DebitableDaysCalculator _calculator;
 
-    // ── Start month picker ───────────────────────────────────────────────────
+    // ── Calendar year (set by the parent CalendarViewModel) ──────────────────
+
+    private int _calendarYear = DateOnly.FromDateTime(DateTime.Today).Year;
+
+    /// <summary>
+    /// The year currently shown in the Calendar view.
+    /// Setting this value triggers a recalculation.
+    /// </summary>
+    public int CalendarYear
+    {
+        get => _calendarYear;
+        set
+        {
+            if (_calendarYear == value) return;
+            _calendarYear = value;
+            OnPropertyChanged();
+            _ = RecalculateAsync();
+        }
+    }
+
+    // ── Fiscal year start month ──────────────────────────────────────────────
+
+    /// <summary>All twelve months available as dropdown options.</summary>
+    public IReadOnlyList<FiscalStartMonthOption> AvailableStartMonths { get; } =
+        Enumerable.Range(1, 12)
+                  .Select(m => new FiscalStartMonthOption(m))
+                  .ToList();
 
     [ObservableProperty]
-    public partial int StartYear { get; set; } = DateOnly.FromDateTime(DateTime.Today).Year;
-
-    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedStartMonth))]
     public partial int StartMonth { get; set; } = 1;
 
-    // ── Number of months ─────────────────────────────────────────────────────
+    /// <summary>The currently selected <see cref="FiscalStartMonthOption"/>; drives the dropdown.</summary>
+    public FiscalStartMonthOption SelectedStartMonth
+    {
+        get => AvailableStartMonths[StartMonth - 1];
+        set
+        {
+            if (value is not null)
+                StartMonth = value.Month;
+        }
+    }
 
-    [ObservableProperty]
-    public partial int NumberOfMonths { get; set; } = 12;
+    // ── Derived end month ────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Derived end <see cref="YearMonth"/>: always 11 months after the start (i.e. a full 12-month year).
+    /// </summary>
+    public YearMonth EndMonth
+    {
+        get
+        {
+            var start = new YearMonth(CalendarYear, StartMonth);
+            var totalMonths = start.Month - 1 + 11;
+            return new YearMonth(start.Year + totalMonths / 12, totalMonths % 12 + 1);
+        }
+    }
 
     // ── Options ──────────────────────────────────────────────────────────────
 
@@ -42,20 +99,6 @@ public partial class DebitableDaysViewModel : ViewModelBase
     /// </summary>
     [ObservableProperty]
     public partial bool DeductVacationDays { get; set; } = true;
-
-    // ── Derived end month ────────────────────────────────────────────────────
-
-    /// <summary>Derived end <see cref="YearMonth"/> based on start + <see cref="NumberOfMonths"/>.</summary>
-    public YearMonth EndMonth
-    {
-        get
-        {
-            var start = new YearMonth(StartYear, StartMonth);
-            var n = Math.Max(1, NumberOfMonths) - 1;
-            var totalMonths = start.Month - 1 + n;
-            return new YearMonth(start.Year + totalMonths / 12, totalMonths % 12 + 1);
-        }
-    }
 
     // ── Results ──────────────────────────────────────────────────────────────
 
@@ -86,10 +129,22 @@ public partial class DebitableDaysViewModel : ViewModelBase
 
     // ── Partial property change hooks ────────────────────────────────────────
 
-    partial void OnStartYearChanged(int value) => _ = RecalculateAsync();
     partial void OnStartMonthChanged(int value) => _ = RecalculateAsync();
-    partial void OnNumberOfMonthsChanged(int value) => _ = RecalculateAsync();
     partial void OnDeductVacationDaysChanged(bool value) => _ = RecalculateAsync();
+
+    // ── Commands ─────────────────────────────────────────────────────────────
+
+    [RelayCommand]
+    private void PreviousStartMonth()
+    {
+        StartMonth = StartMonth == 1 ? 12 : StartMonth - 1;
+    }
+
+    [RelayCommand]
+    private void NextStartMonth()
+    {
+        StartMonth = StartMonth == 12 ? 1 : StartMonth + 1;
+    }
 
     // ── Recalculation ────────────────────────────────────────────────────────
 
@@ -101,7 +156,7 @@ public partial class DebitableDaysViewModel : ViewModelBase
 
         try
         {
-            var start = new YearMonth(StartYear, StartMonth);
+            var start = new YearMonth(CalendarYear, StartMonth);
             var query = new DebitableDaysQuery(start, EndMonth, DeductVacationDays);
 
             var result = await _calculator.CalculateAsync(query, cancellationToken);
@@ -109,7 +164,7 @@ public partial class DebitableDaysViewModel : ViewModelBase
             PerMonth.Clear();
             foreach (var m in result.PerMonth)
             {
-                var label = $"{System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(m.Month.Month)} {m.Month.Year}";
+                var label = $"{CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(m.Month.Month)} {m.Month.Year}";
                 PerMonth.Add(new MonthDebitableDaysRow(label, m.DebitableDays));
             }
 

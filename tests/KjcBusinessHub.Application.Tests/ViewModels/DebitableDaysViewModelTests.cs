@@ -31,61 +31,90 @@ public class DebitableDaysViewModelTests
     // ── EndMonth derivation ──────────────────────────────────────────────────
 
     [Fact]
-    public void EndMonth_equals_start_when_NumberOfMonths_is_1()
+    public void EndMonth_is_always_12_months_from_start_within_same_year()
     {
         var sut = CreateSubject();
-        sut.StartYear = 2025;
-        sut.StartMonth = 6;
-        sut.NumberOfMonths = 1;
+        sut.CalendarYear = 2025;
+        sut.StartMonth = 1;
 
-        Assert.Equal(new YearMonth(2025, 6), sut.EndMonth);
+        // Jan → Dec of the same year
+        Assert.Equal(new YearMonth(2025, 12), sut.EndMonth);
     }
 
     [Fact]
-    public void EndMonth_crosses_year_boundary()
+    public void EndMonth_crosses_year_boundary_when_start_month_is_not_January()
     {
         var sut = CreateSubject();
-        sut.StartYear = 2025;
-        sut.StartMonth = 11;
-        sut.NumberOfMonths = 3;
+        sut.CalendarYear = 2025;
+        sut.StartMonth = 6;
 
-        Assert.Equal(new YearMonth(2026, 1), sut.EndMonth);
+        // Jun 2025 → May 2026
+        Assert.Equal(new YearMonth(2026, 5), sut.EndMonth);
+    }
+
+    // ── Always 12 months ─────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task RecalculateAsync_always_produces_12_PerMonth_rows()
+    {
+        SetupEmptyRepo(2025);
+        var sut = CreateSubject();
+        sut.CalendarYear = 2025;
+        sut.StartMonth = 1;
+
+        await sut.RecalculateAsync();
+
+        Assert.Equal(12, sut.PerMonth.Count);
+    }
+
+    [Fact]
+    public async Task RecalculateAsync_produces_12_rows_spanning_two_years_when_start_not_January()
+    {
+        SetupEmptyRepo(2025, 2026);
+        var sut = CreateSubject();
+        sut.CalendarYear = 2025;
+        sut.StartMonth = 6; // Jun 2025 – May 2026
+
+        await sut.RecalculateAsync();
+
+        Assert.Equal(12, sut.PerMonth.Count);
     }
 
     // ── RecalculateAsync on property change ──────────────────────────────────
 
     [Fact]
-    public async Task ChangeNumberOfMonths_triggers_recalculation()
+    public async Task ChangeStartMonth_triggers_recalculation()
     {
-        SetupEmptyRepo(2025);
+        SetupEmptyRepo(2025, 2026);
         var sut = CreateSubject();
-        sut.StartYear = 2025;
+        sut.CalendarYear = 2025;
         sut.StartMonth = 1;
-        sut.NumberOfMonths = 3;
 
         await sut.RecalculateAsync();
-        Assert.Equal(3, sut.PerMonth.Count);
+        var firstTotal = sut.TotalDebitableDays;
 
-        SetupEmptyRepo(2025);
-        sut.NumberOfMonths = 4;
+        sut.StartMonth = 6;
         await sut.RecalculateAsync();
 
-        Assert.Equal(4, sut.PerMonth.Count);
+        // Different start month → different set of months → different total
+        Assert.NotEqual(firstTotal, sut.TotalDebitableDays);
     }
 
     [Fact]
-    public async Task RecalculateAsync_populates_PerMonth_and_Total()
+    public async Task ChangeCalendarYear_triggers_recalculation()
     {
-        SetupEmptyRepo(2025);
+        SetupEmptyRepo(2024, 2025, 2026);
         var sut = CreateSubject();
-        sut.StartYear = 2025;
+        sut.CalendarYear = 2024;
         sut.StartMonth = 1;
-        sut.NumberOfMonths = 1;
 
         await sut.RecalculateAsync();
+        var total2024 = sut.TotalDebitableDays;
 
-        Assert.Single(sut.PerMonth);
-        Assert.Equal(23, sut.TotalDebitableDays); // Jan 2025 = 23 weekdays
+        sut.CalendarYear = 2025;
+        await sut.RecalculateAsync();
+
+        Assert.NotEqual(total2024, sut.TotalDebitableDays);
     }
 
     [Fact]
@@ -98,9 +127,8 @@ public class DebitableDaysViewModelTests
         _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
             .Returns<Task<IReadOnlyList<OffDay>>>(_ => throw new InvalidOperationException("test error"));
 
-        sut.StartYear = 2025;
+        sut.CalendarYear = 2025;
         sut.StartMonth = 1;
-        sut.NumberOfMonths = 1;
         await sut.RecalculateAsync();
         Assert.True(sut.HasError);
 
@@ -112,23 +140,6 @@ public class DebitableDaysViewModelTests
         Assert.Null(sut.ErrorMessage);
     }
 
-    // ── Multi-year span ──────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task RecalculateAsync_spans_two_years()
-    {
-        SetupEmptyRepo(2024, 2025);
-        var sut = CreateSubject();
-        sut.StartYear = 2024;
-        sut.StartMonth = 12;
-        sut.NumberOfMonths = 2;
-
-        await sut.RecalculateAsync();
-
-        Assert.Equal(2, sut.PerMonth.Count);
-        Assert.Equal(22 + 23, sut.TotalDebitableDays);
-    }
-
     // ── PerMonth row labels ──────────────────────────────────────────────────
 
     [Fact]
@@ -136,27 +147,26 @@ public class DebitableDaysViewModelTests
     {
         SetupEmptyRepo(2025);
         var sut = CreateSubject();
-        sut.StartYear = 2025;
-        sut.StartMonth = 3;
-        sut.NumberOfMonths = 1;
+        sut.CalendarYear = 2025;
+        sut.StartMonth = 1;
 
         await sut.RecalculateAsync();
 
-        Assert.Single(sut.PerMonth);
-        Assert.Contains("2025", sut.PerMonth[0].MonthLabel);
+        Assert.Equal(12, sut.PerMonth.Count);
+        Assert.Contains("2025", sut.PerMonth[0].MonthLabel); // first row is January 2025
     }
 
     // ── DeductVacationDays option ────────────────────────────────────────────
 
     [Fact]
-    public async Task DeductVacationDays_false_excludes_vacation_from_query()
+    public async Task DeductVacationDays_false_excludes_vacation_from_total()
     {
-        // June 10 2025 is a Tuesday vacation day
+        // Jan 6 2025 is a Monday vacation day; CalendarYear=2025, StartMonth=1 spans Jan–Dec 2025
         var vacation = new OffDay
         {
             Id = Guid.NewGuid(),
             Year = 2025,
-            Date = new DateOnly(2025, 6, 10),
+            Date = new DateOnly(2025, 1, 6),
             OffDayType = OffDayType.Vacation,
             Description = string.Empty,
             CreatedAt = DateTimeOffset.UtcNow,
@@ -165,15 +175,40 @@ public class DebitableDaysViewModelTests
             .Returns(Task.FromResult<IReadOnlyList<OffDay>>([vacation]));
 
         var sut = CreateSubject();
-        sut.StartYear = 2025;
-        sut.StartMonth = 6;
-        sut.NumberOfMonths = 1;
+        sut.CalendarYear = 2025;
+        sut.StartMonth = 1;
         sut.DeductVacationDays = false;
 
         await sut.RecalculateAsync();
 
-        // vacation not deducted → June 2025 = 21 weekdays
-        Assert.Equal(21, sut.TotalDebitableDays);
+        // Vacation not deducted → all 12 months of 2025 weekdays (253 total)
+        Assert.Equal(261, sut.TotalDebitableDays);
+    }
+
+    [Fact]
+    public async Task DeductVacationDays_true_subtracts_vacation_from_total()
+    {
+        // Jan 6 2025 is a Monday vacation day
+        var vacation = new OffDay
+        {
+            Id = Guid.NewGuid(),
+            Year = 2025,
+            Date = new DateOnly(2025, 1, 6),
+            OffDayType = OffDayType.Vacation,
+            Description = string.Empty,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+        _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([vacation]));
+
+        var sut = CreateSubject();
+        sut.CalendarYear = 2025;
+        sut.StartMonth = 1;
+        sut.DeductVacationDays = true;
+
+        await sut.RecalculateAsync();
+
+        Assert.Equal(260, sut.TotalDebitableDays);
     }
 
     [Fact]
@@ -183,7 +218,7 @@ public class DebitableDaysViewModelTests
         {
             Id = Guid.NewGuid(),
             Year = 2025,
-            Date = new DateOnly(2025, 6, 10),
+            Date = new DateOnly(2025, 1, 6),
             OffDayType = OffDayType.Vacation,
             Description = string.Empty,
             CreatedAt = DateTimeOffset.UtcNow,
@@ -192,18 +227,17 @@ public class DebitableDaysViewModelTests
             .Returns(Task.FromResult<IReadOnlyList<OffDay>>([vacation]));
 
         var sut = CreateSubject();
-        sut.StartYear = 2025;
-        sut.StartMonth = 6;
-        sut.NumberOfMonths = 1;
+        sut.CalendarYear = 2025;
+        sut.StartMonth = 1;
 
         // With deduction (default)
         await sut.RecalculateAsync();
-        Assert.Equal(20, sut.TotalDebitableDays);
+        Assert.Equal(260, sut.TotalDebitableDays);
 
         // Without deduction
         sut.DeductVacationDays = false;
         await sut.RecalculateAsync();
-        Assert.Equal(21, sut.TotalDebitableDays);
+        Assert.Equal(261, sut.TotalDebitableDays);
     }
 
     // ── No public holidays warning ───────────────────────────────────────────
@@ -213,9 +247,8 @@ public class DebitableDaysViewModelTests
     {
         SetupEmptyRepo(2025);
         var sut = CreateSubject();
-        sut.StartYear = 2025;
+        sut.CalendarYear = 2025;
         sut.StartMonth = 1;
-        sut.NumberOfMonths = 1;
 
         await sut.RecalculateAsync();
 
@@ -240,13 +273,37 @@ public class DebitableDaysViewModelTests
             .Returns(Task.FromResult<IReadOnlyList<OffDay>>([holiday]));
 
         var sut = CreateSubject();
-        sut.StartYear = 2025;
+        sut.CalendarYear = 2025;
         sut.StartMonth = 1;
-        sut.NumberOfMonths = 1;
 
         await sut.RecalculateAsync();
 
         Assert.False(sut.HasNoPublicHolidaysWarning);
         Assert.Null(sut.NoPublicHolidaysWarning);
+    }
+
+    // ── AvailableStartMonths and SelectedStartMonth ──────────────────────────
+
+    [Fact]
+    public void AvailableStartMonths_contains_12_options()
+    {
+        var sut = CreateSubject();
+        Assert.Equal(12, sut.AvailableStartMonths.Count);
+    }
+
+    [Fact]
+    public void SelectedStartMonth_reflects_StartMonth()
+    {
+        var sut = CreateSubject();
+        sut.StartMonth = 6;
+        Assert.Equal(6, sut.SelectedStartMonth.Month);
+    }
+
+    [Fact]
+    public void Setting_SelectedStartMonth_updates_StartMonth()
+    {
+        var sut = CreateSubject();
+        sut.SelectedStartMonth = sut.AvailableStartMonths[8]; // September
+        Assert.Equal(9, sut.StartMonth);
     }
 }
