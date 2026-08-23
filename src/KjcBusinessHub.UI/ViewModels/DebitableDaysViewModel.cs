@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KjcBusinessHub.Application.Entities;
+using KjcBusinessHub.Application.Interfaces;
 using KjcBusinessHub.Application.Services;
 
 namespace KjcBusinessHub.UI.ViewModels;
@@ -32,6 +33,7 @@ public sealed record FiscalStartMonthOption(int Month)
 public partial class DebitableDaysViewModel : ViewModelBase
 {
     private readonly DebitableDaysCalculator _calculator;
+    private readonly ISettingsService _settings;
 
     // ── Calendar year (set by the parent CalendarViewModel) ──────────────────
 
@@ -112,6 +114,14 @@ public partial class DebitableDaysViewModel : ViewModelBase
     [ObservableProperty]
     public partial bool DeductVacationDays { get; set; } = true;
 
+    /// <summary>
+    /// When <c>true</c>, bridging days (weekdays sandwiched between non-working days) are deducted
+    /// from the debitable-days count.  When <c>false</c> (the default), they are treated as
+    /// ordinary working days.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool DeductBridgingDays { get; set; } = false;
+
     // ── Results ──────────────────────────────────────────────────────────────
 
     [ObservableProperty]
@@ -134,15 +144,26 @@ public partial class DebitableDaysViewModel : ViewModelBase
 
     public ObservableCollection<MonthDebitableDaysRow> PerMonth { get; } = [];
 
-    public DebitableDaysViewModel(DebitableDaysCalculator calculator)
+    public DebitableDaysViewModel(DebitableDaysCalculator calculator, ISettingsService settings)
     {
         _calculator = calculator;
+        _settings = settings;
+
+        var savedMonth = settings.FiscalStartMonth;
+        StartMonth = savedMonth >= 1 && savedMonth <= 12 ? savedMonth : 1;
     }
 
     // ── Partial property change hooks ────────────────────────────────────────
 
-    partial void OnStartMonthChanged(int value) => _ = RecalculateAsync();
+    partial void OnStartMonthChanged(int value)
+    {
+        _settings.FiscalStartMonth = value;
+        _settings.Save();
+        _ = RecalculateAsync();
+    }
+
     partial void OnDeductVacationDaysChanged(bool value) => _ = RecalculateAsync();
+    partial void OnDeductBridgingDaysChanged(bool value) => _ = RecalculateAsync();
 
     // ── Commands ─────────────────────────────────────────────────────────────
 
@@ -169,7 +190,7 @@ public partial class DebitableDaysViewModel : ViewModelBase
         try
         {
             var start = new YearMonth(CalendarYear, StartMonth);
-            var query = new DebitableDaysQuery(start, EndMonth, DeductVacationDays);
+            var query = new DebitableDaysQuery(start, EndMonth, DeductVacationDays, DeductBridgingDays);
 
             var result = await _calculator.CalculateAsync(query, cancellationToken);
 
@@ -182,13 +203,12 @@ public partial class DebitableDaysViewModel : ViewModelBase
 
             TotalDebitableDays = result.TotalDebitableDays;
 
-            if (!result.HasPublicHolidays)
+            if (result.YearsWithoutPublicHolidays.Count > 0)
             {
-                var years = Enumerable.Range(start.Year, EndMonth.Year - start.Year + 1);
-                var yearList = string.Join(", ", years);
+                var yearList = string.Join(", ", result.YearsWithoutPublicHolidays);
                 NoPublicHolidaysWarning =
-                    $"No public holidays found for the selected period. " +
-                    $"Consider importing red days for: {yearList}.";
+                    $"No public holidays found for: {yearList}. " +
+                    $"Consider importing red days for those years.";
             }
         }
         catch (OperationCanceledException)

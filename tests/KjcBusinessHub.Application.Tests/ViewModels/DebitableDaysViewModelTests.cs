@@ -14,11 +14,13 @@ namespace KjcBusinessHub.Application.Tests.ViewModels;
 public class DebitableDaysViewModelTests
 {
     private readonly IOffDayRepository _repo = Substitute.For<IOffDayRepository>();
+    private readonly ISettingsService _settings = Substitute.For<ISettingsService>();
 
     private DebitableDaysViewModel CreateSubject()
     {
+        _settings.FiscalStartMonth.Returns(1);
         var calculator = new DebitableDaysCalculator(_repo);
-        return new DebitableDaysViewModel(calculator);
+        return new DebitableDaysViewModel(calculator, _settings);
     }
 
     private void SetupEmptyRepo(params int[] years)
@@ -258,7 +260,7 @@ public class DebitableDaysViewModelTests
     }
 
     [Fact]
-    public async Task RecalculateAsync_no_warning_when_public_holidays_exist()
+    public async Task RecalculateAsync_no_warning_when_all_years_have_public_holidays()
     {
         var holiday = new OffDay
         {
@@ -280,6 +282,35 @@ public class DebitableDaysViewModelTests
 
         Assert.False(sut.HasNoPublicHolidaysWarning);
         Assert.Null(sut.NoPublicHolidaysWarning);
+    }
+
+    [Fact]
+    public async Task RecalculateAsync_warning_only_mentions_years_missing_holidays_in_multi_year_period()
+    {
+        // 2025 has a holiday; 2026 does not
+        var holiday2025 = new OffDay
+        {
+            Id = Guid.NewGuid(),
+            Year = 2025,
+            Date = new DateOnly(2025, 6, 6),
+            OffDayType = OffDayType.PublicHoliday,
+            Description = string.Empty,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+        _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([holiday2025]));
+        _repo.GetByYearAsync(2026, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([]));
+
+        var sut = CreateSubject();
+        sut.CalendarYear = 2025;
+        sut.StartMonth = 6; // Jun 2025 – May 2026
+
+        await sut.RecalculateAsync();
+
+        Assert.True(sut.HasNoPublicHolidaysWarning);
+        Assert.Contains("2026", sut.NoPublicHolidaysWarning);
+        Assert.DoesNotContain("2025", sut.NoPublicHolidaysWarning);
     }
 
     // ── AvailableStartMonths and SelectedStartMonth ──────────────────────────

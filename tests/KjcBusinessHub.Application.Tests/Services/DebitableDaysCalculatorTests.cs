@@ -185,7 +185,7 @@ public class DebitableDaysCalculatorTests
     // ── HasPublicHolidays flag ───────────────────────────────────────────────
 
     [Fact]
-    public async Task HasPublicHolidays_is_false_when_no_public_holidays_in_period()
+    public async Task YearsWithoutPublicHolidays_contains_year_when_no_public_holidays_in_period()
     {
         _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<OffDay>>([]));
@@ -194,11 +194,11 @@ public class DebitableDaysCalculatorTests
         var result = await sut.CalculateAsync(
             new DebitableDaysQuery(new YearMonth(2025, 1), new YearMonth(2025, 1)));
 
-        Assert.False(result.HasPublicHolidays);
+        Assert.Contains(2025, result.YearsWithoutPublicHolidays);
     }
 
     [Fact]
-    public async Task HasPublicHolidays_is_true_when_at_least_one_public_holiday_exists()
+    public async Task YearsWithoutPublicHolidays_is_empty_when_at_least_one_public_holiday_exists()
     {
         var holiday = MakeOffDay(new DateOnly(2025, 1, 1), OffDayType.PublicHoliday);
         _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
@@ -208,11 +208,11 @@ public class DebitableDaysCalculatorTests
         var result = await sut.CalculateAsync(
             new DebitableDaysQuery(new YearMonth(2025, 1), new YearMonth(2025, 1)));
 
-        Assert.True(result.HasPublicHolidays);
+        Assert.Empty(result.YearsWithoutPublicHolidays);
     }
 
     [Fact]
-    public async Task HasPublicHolidays_is_false_when_only_vacation_days_exist()
+    public async Task YearsWithoutPublicHolidays_contains_year_when_only_vacation_days_exist()
     {
         var vacation = MakeOffDay(new DateOnly(2025, 6, 10), OffDayType.Vacation);
         _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
@@ -222,11 +222,11 @@ public class DebitableDaysCalculatorTests
         var result = await sut.CalculateAsync(
             new DebitableDaysQuery(new YearMonth(2025, 6), new YearMonth(2025, 6)));
 
-        Assert.False(result.HasPublicHolidays);
+        Assert.Contains(2025, result.YearsWithoutPublicHolidays);
     }
 
     [Fact]
-    public async Task HasPublicHolidays_is_false_when_holiday_exists_outside_queried_period()
+    public async Task YearsWithoutPublicHolidays_contains_year_when_holiday_exists_outside_queried_period()
     {
         // Holiday in January, but we're querying June
         var holidayOutsidePeriod = MakeOffDay(new DateOnly(2025, 1, 1), OffDayType.PublicHoliday);
@@ -237,7 +237,109 @@ public class DebitableDaysCalculatorTests
         var result = await sut.CalculateAsync(
             new DebitableDaysQuery(new YearMonth(2025, 6), new YearMonth(2025, 6)));
 
-        Assert.False(result.HasPublicHolidays);
+        Assert.Contains(2025, result.YearsWithoutPublicHolidays);
+    }
+
+    [Fact]
+    public async Task YearsWithoutPublicHolidays_only_contains_years_missing_holidays_in_multi_year_period()
+    {
+        // 2024 has a holiday, 2025 does not
+        var holiday2024 = MakeOffDay(new DateOnly(2024, 12, 25), OffDayType.PublicHoliday);
+        _repo.GetByYearAsync(2024, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([holiday2024]));
+        _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([]));
+
+        var sut = CreateSubject();
+        var result = await sut.CalculateAsync(
+            new DebitableDaysQuery(new YearMonth(2024, 12), new YearMonth(2025, 1)));
+
+        Assert.DoesNotContain(2024, result.YearsWithoutPublicHolidays);
+        Assert.Contains(2025, result.YearsWithoutPublicHolidays);
+    }
+
+    // ── Bridging days ────────────────────────────────────────────────────────
+
+    [Fact]
+    public void ComputeBridgingDays_detects_friday_between_thursday_holiday_and_weekend()
+    {
+        // May 1 2025 is a Thursday. May 2 (Friday) should be a bridging day.
+        var holidays = new HashSet<DateOnly> { new DateOnly(2025, 5, 1) };
+        var start = new DateOnly(2025, 5, 1);
+        var end = new DateOnly(2025, 5, 31);
+
+        var result = DebitableDaysCalculator.ComputeBridgingDays(holidays, start, end);
+
+        Assert.Contains(new DateOnly(2025, 5, 2), result);
+    }
+
+    [Fact]
+    public void ComputeBridgingDays_detects_monday_between_weekend_and_tuesday_holiday()
+    {
+        // If June 3 2025 (Tuesday) were a holiday, June 2 (Monday) is sandwiched between Sunday and Tuesday.
+        var holidays = new HashSet<DateOnly> { new DateOnly(2025, 6, 3) };
+        var start = new DateOnly(2025, 6, 1);
+        var end = new DateOnly(2025, 6, 30);
+
+        var result = DebitableDaysCalculator.ComputeBridgingDays(holidays, start, end);
+
+        Assert.Contains(new DateOnly(2025, 6, 2), result);
+    }
+
+    [Fact]
+    public void ComputeBridgingDays_does_not_include_the_holiday_itself()
+    {
+        var holidays = new HashSet<DateOnly> { new DateOnly(2025, 5, 1) };
+        var start = new DateOnly(2025, 5, 1);
+        var end = new DateOnly(2025, 5, 31);
+
+        var result = DebitableDaysCalculator.ComputeBridgingDays(holidays, start, end);
+
+        Assert.DoesNotContain(new DateOnly(2025, 5, 1), result);
+    }
+
+    [Fact]
+    public void ComputeBridgingDays_returns_empty_when_no_holidays()
+    {
+        var start = new DateOnly(2025, 1, 1);
+        var end = new DateOnly(2025, 1, 31);
+
+        var result = DebitableDaysCalculator.ComputeBridgingDays([], start, end);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task DeductBridgingDays_true_reduces_debitable_days()
+    {
+        // May 1 2025 (Thursday) is a holiday → May 2 (Friday) is a bridging day.
+        var holiday = MakeOffDay(new DateOnly(2025, 5, 1), OffDayType.PublicHoliday);
+        _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([holiday]));
+
+        var sut = CreateSubject();
+
+        var withDeduction = await sut.CalculateAsync(
+            new DebitableDaysQuery(new YearMonth(2025, 5), new YearMonth(2025, 5), deductBridgingDays: true));
+        var withoutDeduction = await sut.CalculateAsync(
+            new DebitableDaysQuery(new YearMonth(2025, 5), new YearMonth(2025, 5), deductBridgingDays: false));
+
+        Assert.Equal(withoutDeduction.TotalDebitableDays - 1, withDeduction.TotalDebitableDays);
+    }
+
+    [Fact]
+    public async Task DeductBridgingDays_false_does_not_reduce_debitable_days()
+    {
+        var holiday = MakeOffDay(new DateOnly(2025, 5, 1), OffDayType.PublicHoliday);
+        _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([holiday]));
+
+        var sut = CreateSubject();
+        var result = await sut.CalculateAsync(
+            new DebitableDaysQuery(new YearMonth(2025, 5), new YearMonth(2025, 5), deductBridgingDays: false));
+
+        // May 2025: 22 weekdays minus May 1 holiday = 21
+        Assert.Equal(21, result.TotalDebitableDays);
     }
 
     // ── DebitableDaysQuery validation ────────────────────────────────────────

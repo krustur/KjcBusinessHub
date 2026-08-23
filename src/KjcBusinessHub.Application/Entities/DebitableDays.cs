@@ -11,7 +11,7 @@ public sealed record MonthDebitableDays(YearMonth Month, int DebitableDays);
 public sealed record DebitableDaysResult(
     int TotalDebitableDays,
     IReadOnlyList<MonthDebitableDays> PerMonth,
-    bool HasPublicHolidays);
+    IReadOnlyList<int> YearsWithoutPublicHolidays);
 
 /// <summary>
 /// Specifies the period for a debitable-days calculation.
@@ -24,7 +24,7 @@ public sealed record DebitableDaysQuery
     /// <summary>Last month of the period (inclusive); must be ≥ <see cref="StartMonth"/>.</summary>
     public YearMonth EndMonth { get; init; }
 
-    public DebitableDaysQuery(YearMonth startMonth, YearMonth endMonth, bool deductVacationDays = true)
+    public DebitableDaysQuery(YearMonth startMonth, YearMonth endMonth, bool deductVacationDays = true, bool deductBridgingDays = false)
     {
         if (endMonth < startMonth)
             throw new ArgumentException(
@@ -34,6 +34,7 @@ public sealed record DebitableDaysQuery
         StartMonth = startMonth;
         EndMonth = endMonth;
         DeductVacationDays = deductVacationDays;
+        DeductBridgingDays = deductBridgingDays;
     }
 
     /// <summary>
@@ -41,4 +42,11 @@ public sealed record DebitableDaysQuery
     /// When <c>false</c>, vacation days are treated as ordinary working days and not deducted.
     /// </summary>
     public bool DeductVacationDays { get; init; }
+
+    /// <summary>
+    /// When <c>true</c>, bridging days (weekdays sandwiched between non-working days) are deducted
+    /// from the debitable-days count.  When <c>false</c> (the default), they are treated as
+    /// ordinary working days.
+    /// </summary>
+    public bool DeductBridgingDays { get; init; }
 }

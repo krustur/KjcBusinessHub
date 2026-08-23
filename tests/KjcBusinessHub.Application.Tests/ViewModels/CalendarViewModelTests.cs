@@ -15,10 +15,12 @@ public class CalendarViewModelTests
 {
     private readonly IOffDayRepository _offDayRepository = Substitute.For<IOffDayRepository>();
     private readonly ISwedishPublicHolidayImporter _importer = Substitute.For<ISwedishPublicHolidayImporter>();
+    private readonly ISettingsService _settings = Substitute.For<ISettingsService>();
 
     private CalendarViewModel CreateSubject()
     {
-        var debitableDays = new DebitableDaysViewModel(new DebitableDaysCalculator(_offDayRepository));
+        _settings.FiscalStartMonth.Returns(1);
+        var debitableDays = new DebitableDaysViewModel(new DebitableDaysCalculator(_offDayRepository), _settings);
         return new CalendarViewModel(_offDayRepository, _importer, debitableDays);
     }
 

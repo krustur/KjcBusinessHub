@@ -112,6 +112,10 @@
                     <TextBlock Text="Public holiday" VerticalAlignment="Center" FontSize="12" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Border Width="14" Height="14" CornerRadius="2" Background="#FFE0B2" />
+                    <TextBlock Text="Bridging day" VerticalAlignment="Center" FontSize="12" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4">
                     <Border Width="14" Height="14" CornerRadius="2" Background="#FFF9C4" />
                     <TextBlock Text="Vacation" VerticalAlignment="Center" FontSize="12" />
                 </StackPanel>
@@ -238,6 +242,12 @@
                                   Content="Deduct vacation days"
                                   FontSize="12"
                                   ToolTip.Tip="When checked, vacation days are subtracted from the debitable-days count" />
+
+                        <!-- Deduct bridging days option -->
+                        <CheckBox IsChecked="{Binding DeductBridgingDays}"
+                                  Content="Deduct bridging days"
+                                  FontSize="12"
+                                  ToolTip.Tip="When checked, bridging days (weekdays sandwiched between non-working days) are subtracted from the debitable-days count" />
                     </StackPanel>
 
                     <!-- Results column -->

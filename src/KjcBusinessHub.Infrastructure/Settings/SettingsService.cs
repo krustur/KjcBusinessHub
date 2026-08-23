@@ -36,6 +36,12 @@ public class SettingsService : ISettingsService
         set => _settings.CloseToSystemTray = value;
     }
 
+    public int FiscalStartMonth
+    {
+        get => _settings.FiscalStartMonth;
+        set => _settings.FiscalStartMonth = value;
+    }
+
     public void Save()
     {
         var dir = Path.GetDirectoryName(_settingsFilePath)!;
@@ -67,5 +73,6 @@ public class SettingsService : ISettingsService
     {
         public string? SourceDocumentFolder { get; set; }
         public bool CloseToSystemTray { get; set; }
+        public int FiscalStartMonth { get; set; } = 1;
     }
 }

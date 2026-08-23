@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.Input;
 using KjcBusinessHub.Application.Entities;
 using KjcBusinessHub.Application.Enums;
 using KjcBusinessHub.Application.Interfaces;
+using KjcBusinessHub.Application.Services;
 
 namespace KjcBusinessHub.UI.ViewModels;
 
@@ -44,6 +45,7 @@ public class CalendarDayCell : ObservableObject
             {
                 OnPropertyChanged(nameof(IsPublicHoliday));
                 OnPropertyChanged(nameof(IsVacation));
+                OnPropertyChanged(nameof(IsBridgingDay));
                 OnPropertyChanged(nameof(CellBackground));
                 OnPropertyChanged(nameof(ForegroundBrush));
             }
@@ -58,6 +60,7 @@ public class CalendarDayCell : ObservableObject
 
     public bool IsPublicHoliday => OffDayType == Application.Enums.OffDayType.PublicHoliday;
     public bool IsVacation => OffDayType == Application.Enums.OffDayType.Vacation;
+    public bool IsBridgingDay => OffDayType == Application.Enums.OffDayType.BridgingDay;
 
     /// <summary>Background brush name for color-coding the cell.</summary>
     public string CellBackground =>
@@ -65,6 +68,7 @@ public class CalendarDayCell : ObservableObject
         {
             Application.Enums.OffDayType.PublicHoliday => "#FFCDD2",   // Red/Pink
             Application.Enums.OffDayType.Vacation      => "#FFF9C4",   // Yellow/Amber
+            Application.Enums.OffDayType.BridgingDay   => "#FFE0B2",   // Orange/Peach
             _ when IsWeekend                            => "#F5F5F5",   // Light grey
             _                                           => "Transparent",
         };
@@ -73,7 +77,9 @@ public class CalendarDayCell : ObservableObject
     public string ForegroundBrush =>
         OffDayType == Application.Enums.OffDayType.PublicHoliday
             ? "#C62828"
-            : IsCurrentMonth ? "#212121" : "#BDBDBD";
+            : OffDayType == Application.Enums.OffDayType.BridgingDay
+                ? "#E65100"
+                : IsCurrentMonth ? "#212121" : "#BDBDBD";
 }
 
 /// <summary>
@@ -277,10 +283,20 @@ public partial class CalendarViewModel : ViewModelBase
         int year,
         IReadOnlyDictionary<DateOnly, OffDay> offDaysByDate)
     {
+        var periodStart = new DateOnly(year, 1, 1);
+        var periodEnd = new DateOnly(year, 12, 31);
+
+        var publicHolidays = offDaysByDate.Values
+            .Where(d => d.OffDayType == OffDayType.PublicHoliday)
+            .Select(d => d.Date)
+            .ToHashSet();
+
+        var bridgingDays = DebitableDaysCalculator.ComputeBridgingDays(publicHolidays, periodStart, periodEnd);
+
         var models = new List<MonthCalendarModel>(12);
         for (var month = 1; month <= 12; month++)
         {
-            var cells = BuildCellsForMonth(year, month, offDaysByDate);
+            var cells = BuildCellsForMonth(year, month, offDaysByDate, bridgingDays);
             var weeks = SplitIntoWeeks(cells);
             models.Add(new MonthCalendarModel
             {
@@ -300,7 +316,8 @@ public partial class CalendarViewModel : ViewModelBase
     public static IReadOnlyList<CalendarDayCell> BuildCellsForMonth(
         int year,
         int month,
-        IReadOnlyDictionary<DateOnly, OffDay>? offDaysByDate = null)
+        IReadOnlyDictionary<DateOnly, OffDay>? offDaysByDate = null,
+        IReadOnlySet<DateOnly>? bridgingDays = null)
     {
         var cells = new List<CalendarDayCell>(42);
 
@@ -321,12 +338,23 @@ public partial class CalendarViewModel : ViewModelBase
             var date = new DateOnly(year, month, day);
             OffDay? offDay = null;
             offDaysByDate?.TryGetValue(date, out offDay);
+
+            OffDayType? offDayType = offDay?.OffDayType;
+            string? description = offDay?.Description;
+
+            // Mark as bridging day when not already an explicit off-day
+            if (offDayType is null && bridgingDays is not null && bridgingDays.Contains(date))
+            {
+                offDayType = OffDayType.BridgingDay;
+                description = "Bridging day";
+            }
+
             cells.Add(new CalendarDayCell
             {
                 Date = date,
                 IsCurrentMonth = true,
-                OffDayType = offDay?.OffDayType,
-                Description = offDay?.Description,
+                OffDayType = offDayType,
+                Description = description,
             });
         }
 
