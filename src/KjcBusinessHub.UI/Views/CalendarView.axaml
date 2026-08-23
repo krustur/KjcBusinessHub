@@ -223,26 +223,20 @@
                                                Minimum="1" Maximum="12"
                                                Width="100" Padding="6,4"
                                                FontSize="14"
+                                               FormatString="0"
                                                ToolTip.Tip="Start month (1–12)" />
                             </StackPanel>
                         </StackPanel>
 
-                        <!-- End month -->
+                        <!-- Number of months -->
                         <StackPanel Spacing="4">
-                            <TextBlock Text="End" FontSize="11" Foreground="Gray" />
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <NumericUpDown Value="{Binding EndYear}"
-                                               Minimum="2000" Maximum="2100"
-                                               Width="140" Padding="6,4"
-                                               FontSize="14"
-                                               FormatString="0000"
-                                               ToolTip.Tip="End year" />
-                                <NumericUpDown Value="{Binding EndMonth}"
-                                               Minimum="1" Maximum="12"
-                                               Width="100" Padding="6,4"
-                                               FontSize="14"
-                                               ToolTip.Tip="End month (1–12)" />
-                            </StackPanel>
+                            <TextBlock Text="Number of months" FontSize="11" Foreground="Gray" />
+                            <NumericUpDown Value="{Binding NumberOfMonths}"
+                                           Minimum="1" Maximum="120"
+                                           Width="100" Padding="6,4"
+                                           FontSize="14"
+                                           FormatString="0"
+                                           ToolTip.Tip="Number of months to include" />
                         </StackPanel>
 
                         <!-- Error / validation message -->

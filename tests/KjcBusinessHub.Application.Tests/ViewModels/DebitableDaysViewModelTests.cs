@@ -28,49 +28,46 @@ public class DebitableDaysViewModelTests
                 .Returns(Task.FromResult<IReadOnlyList<OffDay>>([]));
     }
 
-    // ── IsEndBeforeStart ─────────────────────────────────────────────────────
+    // ── EndMonth derivation ──────────────────────────────────────────────────
 
     [Fact]
-    public void IsEndBeforeStart_false_when_end_equals_start()
+    public void EndMonth_equals_start_when_NumberOfMonths_is_1()
     {
         var sut = CreateSubject();
         sut.StartYear = 2025;
         sut.StartMonth = 6;
-        sut.EndYear = 2025;
-        sut.EndMonth = 6;
+        sut.NumberOfMonths = 1;
 
-        Assert.False(sut.IsEndBeforeStart);
+        Assert.Equal(new YearMonth(2025, 6), sut.EndMonth);
     }
 
     [Fact]
-    public void IsEndBeforeStart_true_when_end_before_start()
+    public void EndMonth_crosses_year_boundary()
     {
         var sut = CreateSubject();
         sut.StartYear = 2025;
-        sut.StartMonth = 6;
-        sut.EndYear = 2025;
-        sut.EndMonth = 5;
+        sut.StartMonth = 11;
+        sut.NumberOfMonths = 3;
 
-        Assert.True(sut.IsEndBeforeStart);
+        Assert.Equal(new YearMonth(2026, 1), sut.EndMonth);
     }
 
     // ── RecalculateAsync on property change ──────────────────────────────────
 
     [Fact]
-    public async Task ChangeStartYear_triggers_recalculation()
+    public async Task ChangeNumberOfMonths_triggers_recalculation()
     {
         SetupEmptyRepo(2025);
         var sut = CreateSubject();
         sut.StartYear = 2025;
         sut.StartMonth = 1;
-        sut.EndYear = 2025;
-        sut.EndMonth = 3;
+        sut.NumberOfMonths = 3;
 
         await sut.RecalculateAsync();
         Assert.Equal(3, sut.PerMonth.Count);
 
-        SetupEmptyRepo(2025); // same year, just reconfirm setup
-        sut.EndMonth = 4;
+        SetupEmptyRepo(2025);
+        sut.NumberOfMonths = 4;
         await sut.RecalculateAsync();
 
         Assert.Equal(4, sut.PerMonth.Count);
@@ -83,8 +80,7 @@ public class DebitableDaysViewModelTests
         var sut = CreateSubject();
         sut.StartYear = 2025;
         sut.StartMonth = 1;
-        sut.EndYear = 2025;
-        sut.EndMonth = 1;
+        sut.NumberOfMonths = 1;
 
         await sut.RecalculateAsync();
 
@@ -93,38 +89,23 @@ public class DebitableDaysViewModelTests
     }
 
     [Fact]
-    public async Task RecalculateAsync_sets_error_when_end_before_start()
-    {
-        var sut = CreateSubject();
-        sut.StartYear = 2025;
-        sut.StartMonth = 6;
-        sut.EndYear = 2025;
-        sut.EndMonth = 5;
-
-        await sut.RecalculateAsync();
-
-        Assert.True(sut.HasError);
-        Assert.NotNull(sut.ErrorMessage);
-        Assert.Empty(sut.PerMonth);
-        Assert.Equal(0, sut.TotalDebitableDays);
-    }
-
-    [Fact]
     public async Task RecalculateAsync_clears_error_on_valid_input()
     {
         SetupEmptyRepo(2025);
         var sut = CreateSubject();
 
-        // First trigger an error
+        // Simulate a calculation error by breaking the repo temporarily
+        _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns<Task<IReadOnlyList<OffDay>>>(_ => throw new InvalidOperationException("test error"));
+
         sut.StartYear = 2025;
-        sut.StartMonth = 6;
-        sut.EndYear = 2025;
-        sut.EndMonth = 5;
+        sut.StartMonth = 1;
+        sut.NumberOfMonths = 1;
         await sut.RecalculateAsync();
         Assert.True(sut.HasError);
 
-        // Now fix the range
-        sut.EndMonth = 6;
+        // Fix the repo and recalculate
+        SetupEmptyRepo(2025);
         await sut.RecalculateAsync();
 
         Assert.False(sut.HasError);
@@ -140,8 +121,7 @@ public class DebitableDaysViewModelTests
         var sut = CreateSubject();
         sut.StartYear = 2024;
         sut.StartMonth = 12;
-        sut.EndYear = 2025;
-        sut.EndMonth = 1;
+        sut.NumberOfMonths = 2;
 
         await sut.RecalculateAsync();
 
@@ -158,8 +138,7 @@ public class DebitableDaysViewModelTests
         var sut = CreateSubject();
         sut.StartYear = 2025;
         sut.StartMonth = 3;
-        sut.EndYear = 2025;
-        sut.EndMonth = 3;
+        sut.NumberOfMonths = 1;
 
         await sut.RecalculateAsync();
 
