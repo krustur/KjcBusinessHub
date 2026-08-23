@@ -33,6 +33,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IFileSystemService, FileSystemService>();
         services.AddTransient<TransactionImportService>();
         services.AddTransient<SourceDocumentImportService>();
+        services.AddTransient<DebitableDaysCalculator>();
         services.AddSingleton<FileWatcherService>();
 
         return services;

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using KjcBusinessHub.Application.Entities;
 using KjcBusinessHub.Application.Enums;
 using KjcBusinessHub.Application.Interfaces;
+using KjcBusinessHub.Application.Services;
 using KjcBusinessHub.UI.ViewModels;
 using NSubstitute;
 
@@ -14,8 +15,14 @@ public class CalendarViewModelTests
 {
     private readonly IOffDayRepository _offDayRepository = Substitute.For<IOffDayRepository>();
     private readonly ISwedishPublicHolidayImporter _importer = Substitute.For<ISwedishPublicHolidayImporter>();
+    private readonly ISettingsService _settings = Substitute.For<ISettingsService>();
 
-    private CalendarViewModel CreateSubject() => new(_offDayRepository, _importer);
+    private CalendarViewModel CreateSubject()
+    {
+        _settings.FiscalStartMonth.Returns(1);
+        var debitableDays = new DebitableDaysViewModel(new DebitableDaysCalculator(_offDayRepository), _settings);
+        return new CalendarViewModel(_offDayRepository, _importer, debitableDays);
+    }
 
     // ── Year navigation ──────────────────────────────────────────────────────
 

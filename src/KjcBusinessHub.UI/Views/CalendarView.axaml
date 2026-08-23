@@ -26,6 +26,10 @@
             <Setter Property="Background" Value="#BBDEFB" />
         </Style>
 
+        <Style Selector="Button.day-cell:disabled /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
         <!-- Month container -->
         <Style Selector="Border.month-box">
             <Setter Property="BorderBrush" Value="#E0E0E0" />
@@ -47,7 +51,7 @@
 
     </UserControl.Styles>
 
-    <Grid RowDefinitions="Auto,Auto,*">
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
 
         <!-- ── Top bar ──────────────────────────────────────────────────── -->
         <Border Grid.Row="0"
@@ -108,6 +112,10 @@
                     <TextBlock Text="Public holiday" VerticalAlignment="Center" FontSize="12" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Border Width="14" Height="14" CornerRadius="2" Background="#FFE0B2" />
+                    <TextBlock Text="Bridging day" VerticalAlignment="Center" FontSize="12" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4">
                     <Border Width="14" Height="14" CornerRadius="2" Background="#FFF9C4" />
                     <TextBlock Text="Vacation" VerticalAlignment="Center" FontSize="12" />
                 </StackPanel>
@@ -165,13 +173,13 @@
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate x:DataType="vm:CalendarDayCell">
                                                         <Button Classes="day-cell"
-                                                                Width="28" Height="24"
-                                                                Background="{Binding CellBackground}"
-                                                                IsEnabled="{Binding IsCurrentMonth}"
-                                                                IsHitTestVisible="{Binding !IsEmpty}"
-                                                                ToolTip.Tip="{Binding Description}"
-                                                                Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).ToggleDayCommand}"
-                                                                CommandParameter="{Binding Date}">
+                                                               Width="28" Height="24"
+                                                               Background="{Binding CellBackground}"
+                                                               IsEnabled="{Binding IsCurrentMonth}"
+                                                               IsHitTestVisible="{Binding !IsEmpty}"
+                                                               ToolTip.Tip="{Binding Description}"
+                                                               Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).ToggleDayCommand}"
+                                                               CommandParameter="{Binding Date}">
                                                             <TextBlock Text="{Binding DayNumber}"
                                                                        IsVisible="{Binding !IsEmpty}"
                                                                        FontSize="11"
@@ -192,6 +200,111 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
+
+        <!-- ── Debitable Days panel ──────────────────────────────────────── -->
+        <Expander Grid.Row="3"
+                  Header="Debitable Days"
+                  Margin="8,4,8,8"
+                  DataContext="{Binding DebitableDays}">
+            <Border BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Padding="0,8,0,0">
+                <Grid ColumnDefinitions="Auto,*">
+
+                    <!-- Controls column -->
+                    <StackPanel Grid.Column="0" Spacing="8" Margin="0,0,16,0">
+
+                        <!-- Fiscal year start month picker -->
+                        <TextBlock Text="Fiscal year start month" FontWeight="SemiBold" FontSize="13" />
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <Button Command="{Binding PreviousStartMonthCommand}" Padding="6,4"
+                                    ToolTip.Tip="Previous month">
+                                <materialIcons:MaterialIcon Kind="ChevronLeft" Width="20" Height="20" />
+                            </Button>
+                            <ComboBox ItemsSource="{Binding AvailableStartMonths}"
+                                      SelectedItem="{Binding SelectedStartMonth}"
+                                      MinWidth="130" FontSize="14"
+                                      VerticalAlignment="Center" />
+                            <Button Command="{Binding NextStartMonthCommand}" Padding="6,4"
+                                    ToolTip.Tip="Next month">
+                                <materialIcons:MaterialIcon Kind="ChevronRight" Width="20" Height="20" />
+                            </Button>
+                        </StackPanel>
+
+                        <!-- Error / validation message -->
+                        <TextBlock Text="{Binding ErrorMessage}"
+                                   IsVisible="{Binding HasError}"
+                                   Foreground="#C62828"
+                                   FontSize="11"
+                                   TextWrapping="Wrap"
+                                   MaxWidth="200" />
+
+                        <!-- Deduct vacation days option -->
+                        <CheckBox IsChecked="{Binding DeductVacationDays}"
+                                  Content="Deduct vacation days"
+                                  FontSize="12"
+                                  ToolTip.Tip="When checked, vacation days are subtracted from the debitable-days count" />
+
+                        <!-- Deduct bridging days option -->
+                        <CheckBox IsChecked="{Binding DeductBridgingDays}"
+                                  Content="Deduct bridging days"
+                                  FontSize="12"
+                                  ToolTip.Tip="When checked, bridging days (weekdays sandwiched between non-working days) are subtracted from the debitable-days count" />
+                    </StackPanel>
+
+                    <!-- Results column -->
+                    <StackPanel Grid.Column="1" Spacing="8">
+                        <ProgressBar IsIndeterminate="True"
+                                     IsVisible="{Binding IsCalculating}"
+                                     Height="4" />
+
+                        <StackPanel Orientation="Horizontal" Spacing="8"
+                                    IsVisible="{Binding !HasError}">
+                            <TextBlock Text="Total debitable days:" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding TotalDebitableDays}"
+                                       FontSize="20" FontWeight="Bold"
+                                       Foreground="#1565C0"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <!-- No public holidays warning -->
+                        <Border IsVisible="{Binding HasNoPublicHolidaysWarning}"
+                                Background="#FFF8E1"
+                                BorderBrush="#F9A825"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                Padding="8,6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <materialIcons:MaterialIcon Kind="AlertCircleOutline"
+                                                            Width="16" Height="16"
+                                                            Foreground="#F57F17" />
+                                <TextBlock Text="{Binding NoPublicHolidaysWarning}"
+                                           FontSize="11"
+                                           Foreground="#5D4037"
+                                           TextWrapping="Wrap"
+                                           MaxWidth="360"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+
+                        <ScrollViewer IsVisible="{Binding !HasError}"
+                                      HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl ItemsSource="{Binding PerMonth}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:MonthDebitableDaysRow">
+                                        <Grid ColumnDefinitions="*,Auto" Margin="0,1">
+                                            <TextBlock Grid.Column="0" Text="{Binding MonthLabel}" FontSize="12" />
+                                            <TextBlock Grid.Column="1" Text="{Binding DebitableDays}"
+                                                       FontSize="12" FontWeight="SemiBold"
+                                                       HorizontalAlignment="Right"
+                                                       Margin="16,0,0,0" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Expander>
 
     </Grid>
 </UserControl>
