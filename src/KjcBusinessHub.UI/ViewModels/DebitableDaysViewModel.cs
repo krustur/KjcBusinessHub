@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -33,6 +34,15 @@ public partial class DebitableDaysViewModel : ViewModelBase
     [ObservableProperty]
     public partial int NumberOfMonths { get; set; } = 12;
 
+    // ── Options ──────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// When <c>true</c> (the default), vacation days are deducted from the debitable-days count.
+    /// When <c>false</c>, vacation days are treated as ordinary working days.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool DeductVacationDays { get; set; } = true;
+
     // ── Derived end month ────────────────────────────────────────────────────
 
     /// <summary>Derived end <see cref="YearMonth"/> based on start + <see cref="NumberOfMonths"/>.</summary>
@@ -61,6 +71,12 @@ public partial class DebitableDaysViewModel : ViewModelBase
 
     public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasNoPublicHolidaysWarning))]
+    public partial string? NoPublicHolidaysWarning { get; set; }
+
+    public bool HasNoPublicHolidaysWarning => !string.IsNullOrWhiteSpace(NoPublicHolidaysWarning);
+
     public ObservableCollection<MonthDebitableDaysRow> PerMonth { get; } = [];
 
     public DebitableDaysViewModel(DebitableDaysCalculator calculator)
@@ -73,18 +89,20 @@ public partial class DebitableDaysViewModel : ViewModelBase
     partial void OnStartYearChanged(int value) => _ = RecalculateAsync();
     partial void OnStartMonthChanged(int value) => _ = RecalculateAsync();
     partial void OnNumberOfMonthsChanged(int value) => _ = RecalculateAsync();
+    partial void OnDeductVacationDaysChanged(bool value) => _ = RecalculateAsync();
 
     // ── Recalculation ────────────────────────────────────────────────────────
 
     public async Task RecalculateAsync(CancellationToken cancellationToken = default)
     {
         ErrorMessage = null;
+        NoPublicHolidaysWarning = null;
         IsCalculating = true;
 
         try
         {
             var start = new YearMonth(StartYear, StartMonth);
-            var query = new DebitableDaysQuery(start, EndMonth);
+            var query = new DebitableDaysQuery(start, EndMonth, DeductVacationDays);
 
             var result = await _calculator.CalculateAsync(query, cancellationToken);
 
@@ -96,6 +114,15 @@ public partial class DebitableDaysViewModel : ViewModelBase
             }
 
             TotalDebitableDays = result.TotalDebitableDays;
+
+            if (!result.HasPublicHolidays)
+            {
+                var years = Enumerable.Range(start.Year, EndMonth.Year - start.Year + 1);
+                var yearList = string.Join(", ", years);
+                NoPublicHolidaysWarning =
+                    $"No public holidays found for the selected period. " +
+                    $"Consider importing red days for: {yearList}.";
+            }
         }
         catch (OperationCanceledException)
         {

@@ -151,6 +151,80 @@ public class DebitableDaysCalculatorTests
         Assert.Equal((22 - 1) + (23 - 1), result.TotalDebitableDays);
     }
 
+    // ── DeductVacationDays flag ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task DeductVacationDays_false_does_not_subtract_vacation_days()
+    {
+        var vacation = MakeOffDay(new DateOnly(2025, 6, 10), OffDayType.Vacation);
+        _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([vacation]));
+
+        var sut = CreateSubject();
+        var result = await sut.CalculateAsync(
+            new DebitableDaysQuery(new YearMonth(2025, 6), new YearMonth(2025, 6), deductVacationDays: false));
+
+        // June 2025 has 21 weekdays; vacation not deducted → still 21
+        Assert.Equal(21, result.TotalDebitableDays);
+    }
+
+    [Fact]
+    public async Task DeductVacationDays_true_still_subtracts_vacation_days()
+    {
+        var vacation = MakeOffDay(new DateOnly(2025, 6, 10), OffDayType.Vacation);
+        _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([vacation]));
+
+        var sut = CreateSubject();
+        var result = await sut.CalculateAsync(
+            new DebitableDaysQuery(new YearMonth(2025, 6), new YearMonth(2025, 6), deductVacationDays: true));
+
+        Assert.Equal(20, result.TotalDebitableDays);
+    }
+
+    // ── HasPublicHolidays flag ───────────────────────────────────────────────
+
+    [Fact]
+    public async Task HasPublicHolidays_is_false_when_no_public_holidays_in_period()
+    {
+        _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([]));
+
+        var sut = CreateSubject();
+        var result = await sut.CalculateAsync(
+            new DebitableDaysQuery(new YearMonth(2025, 1), new YearMonth(2025, 1)));
+
+        Assert.False(result.HasPublicHolidays);
+    }
+
+    [Fact]
+    public async Task HasPublicHolidays_is_true_when_at_least_one_public_holiday_exists()
+    {
+        var holiday = MakeOffDay(new DateOnly(2025, 1, 1), OffDayType.PublicHoliday);
+        _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([holiday]));
+
+        var sut = CreateSubject();
+        var result = await sut.CalculateAsync(
+            new DebitableDaysQuery(new YearMonth(2025, 1), new YearMonth(2025, 1)));
+
+        Assert.True(result.HasPublicHolidays);
+    }
+
+    [Fact]
+    public async Task HasPublicHolidays_is_false_when_only_vacation_days_exist()
+    {
+        var vacation = MakeOffDay(new DateOnly(2025, 6, 10), OffDayType.Vacation);
+        _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([vacation]));
+
+        var sut = CreateSubject();
+        var result = await sut.CalculateAsync(
+            new DebitableDaysQuery(new YearMonth(2025, 6), new YearMonth(2025, 6)));
+
+        Assert.False(result.HasPublicHolidays);
+    }
+
     // ── DebitableDaysQuery validation ────────────────────────────────────────
 
     [Fact]

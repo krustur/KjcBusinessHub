@@ -145,4 +145,108 @@ public class DebitableDaysViewModelTests
         Assert.Single(sut.PerMonth);
         Assert.Contains("2025", sut.PerMonth[0].MonthLabel);
     }
+
+    // ── DeductVacationDays option ────────────────────────────────────────────
+
+    [Fact]
+    public async Task DeductVacationDays_false_excludes_vacation_from_query()
+    {
+        // June 10 2025 is a Tuesday vacation day
+        var vacation = new OffDay
+        {
+            Id = Guid.NewGuid(),
+            Year = 2025,
+            Date = new DateOnly(2025, 6, 10),
+            OffDayType = OffDayType.Vacation,
+            Description = string.Empty,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+        _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([vacation]));
+
+        var sut = CreateSubject();
+        sut.StartYear = 2025;
+        sut.StartMonth = 6;
+        sut.NumberOfMonths = 1;
+        sut.DeductVacationDays = false;
+
+        await sut.RecalculateAsync();
+
+        // vacation not deducted → June 2025 = 21 weekdays
+        Assert.Equal(21, sut.TotalDebitableDays);
+    }
+
+    [Fact]
+    public async Task DeductVacationDays_change_triggers_recalculation()
+    {
+        var vacation = new OffDay
+        {
+            Id = Guid.NewGuid(),
+            Year = 2025,
+            Date = new DateOnly(2025, 6, 10),
+            OffDayType = OffDayType.Vacation,
+            Description = string.Empty,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+        _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([vacation]));
+
+        var sut = CreateSubject();
+        sut.StartYear = 2025;
+        sut.StartMonth = 6;
+        sut.NumberOfMonths = 1;
+
+        // With deduction (default)
+        await sut.RecalculateAsync();
+        Assert.Equal(20, sut.TotalDebitableDays);
+
+        // Without deduction
+        sut.DeductVacationDays = false;
+        await sut.RecalculateAsync();
+        Assert.Equal(21, sut.TotalDebitableDays);
+    }
+
+    // ── No public holidays warning ───────────────────────────────────────────
+
+    [Fact]
+    public async Task RecalculateAsync_sets_warning_when_no_public_holidays()
+    {
+        SetupEmptyRepo(2025);
+        var sut = CreateSubject();
+        sut.StartYear = 2025;
+        sut.StartMonth = 1;
+        sut.NumberOfMonths = 1;
+
+        await sut.RecalculateAsync();
+
+        Assert.True(sut.HasNoPublicHolidaysWarning);
+        Assert.NotNull(sut.NoPublicHolidaysWarning);
+        Assert.Contains("2025", sut.NoPublicHolidaysWarning);
+    }
+
+    [Fact]
+    public async Task RecalculateAsync_no_warning_when_public_holidays_exist()
+    {
+        var holiday = new OffDay
+        {
+            Id = Guid.NewGuid(),
+            Year = 2025,
+            Date = new DateOnly(2025, 1, 1),
+            OffDayType = OffDayType.PublicHoliday,
+            Description = string.Empty,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+        _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([holiday]));
+
+        var sut = CreateSubject();
+        sut.StartYear = 2025;
+        sut.StartMonth = 1;
+        sut.NumberOfMonths = 1;
+
+        await sut.RecalculateAsync();
+
+        Assert.False(sut.HasNoPublicHolidaysWarning);
+        Assert.Null(sut.NoPublicHolidaysWarning);
+    }
 }

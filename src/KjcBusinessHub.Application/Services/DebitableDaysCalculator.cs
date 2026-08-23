@@ -23,9 +23,13 @@ public class DebitableDaysCalculator(IOffDayRepository offDayRepository)
         var offDayTasks = years.Select(y => offDayRepository.GetByYearAsync(y, cancellationToken));
         var offDaysByYear = await Task.WhenAll(offDayTasks);
 
-        var offDaySet = offDaysByYear
-            .SelectMany(list => list)
-            .Where(d => d.OffDayType is OffDayType.PublicHoliday or OffDayType.Vacation)
+        var allOffDays = offDaysByYear.SelectMany(list => list).ToList();
+
+        var hasPublicHolidays = allOffDays.Any(d => d.OffDayType is OffDayType.PublicHoliday);
+
+        var offDaySet = allOffDays
+            .Where(d => d.OffDayType is OffDayType.PublicHoliday
+                        || (query.DeductVacationDays && d.OffDayType is OffDayType.Vacation))
             .Select(d => d.Date)
             .ToHashSet();
 
@@ -41,7 +45,8 @@ public class DebitableDaysCalculator(IOffDayRepository offDayRepository)
 
         return new DebitableDaysResult(
             TotalDebitableDays: perMonth.Sum(m => m.DebitableDays),
-            PerMonth: perMonth);
+            PerMonth: perMonth,
+            HasPublicHolidays: hasPublicHolidays);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

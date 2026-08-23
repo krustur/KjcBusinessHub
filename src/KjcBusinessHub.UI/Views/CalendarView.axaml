@@ -246,6 +246,12 @@
                                    FontSize="11"
                                    TextWrapping="Wrap"
                                    MaxWidth="200" />
+
+                        <!-- Deduct vacation days option -->
+                        <CheckBox IsChecked="{Binding DeductVacationDays}"
+                                  Content="Deduct vacation days"
+                                  FontSize="12"
+                                  ToolTip.Tip="When checked, vacation days are subtracted from the debitable-days count" />
                     </StackPanel>
 
                     <!-- Results column -->
@@ -262,6 +268,26 @@
                                        Foreground="#1565C0"
                                        VerticalAlignment="Center" />
                         </StackPanel>
+
+                        <!-- No public holidays warning -->
+                        <Border IsVisible="{Binding HasNoPublicHolidaysWarning}"
+                                Background="#FFF8E1"
+                                BorderBrush="#F9A825"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                Padding="8,6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <materialIcons:MaterialIcon Kind="AlertCircleOutline"
+                                                            Width="16" Height="16"
+                                                            Foreground="#F57F17" />
+                                <TextBlock Text="{Binding NoPublicHolidaysWarning}"
+                                           FontSize="11"
+                                           Foreground="#5D4037"
+                                           TextWrapping="Wrap"
+                                           MaxWidth="360"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
 
                         <ScrollViewer IsVisible="{Binding !HasError}"
                                       HorizontalScrollBarVisibility="Disabled">
