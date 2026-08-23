@@ -131,7 +131,6 @@ public partial class CalendarViewModel : ViewModelBase
         _offDayRepository = offDayRepository;
         _importer = importer;
         DebitableDays = debitableDays;
-        _importer = importer;
     }
 
     // ── Commands ────────────────────────────────────────────────────────────
