@@ -103,6 +103,9 @@ public partial class CalendarViewModel : ViewModelBase
     /// <summary>Action invoked when the user navigates back to the Transactions view.</summary>
     public Action? NavigateToApp { get; set; }
 
+    /// <summary>The embedded Debitable Days panel view model.</summary>
+    public DebitableDaysViewModel DebitableDays { get; }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ImportButtonLabel))]
     public partial int SelectedYear { get; set; } = DateOnly.FromDateTime(DateTime.Today).Year;
@@ -120,9 +123,14 @@ public partial class CalendarViewModel : ViewModelBase
 
     public ObservableCollection<MonthCalendarModel> Months { get; } = [];
 
-    public CalendarViewModel(IOffDayRepository offDayRepository, ISwedishPublicHolidayImporter importer)
+    public CalendarViewModel(
+        IOffDayRepository offDayRepository,
+        ISwedishPublicHolidayImporter importer,
+        DebitableDaysViewModel debitableDays)
     {
         _offDayRepository = offDayRepository;
+        _importer = importer;
+        DebitableDays = debitableDays;
         _importer = importer;
     }
 
@@ -199,6 +207,7 @@ public partial class CalendarViewModel : ViewModelBase
                 await _offDayRepository.SaveChangesAsync();
                 _offDaysByDate.Remove(date);
                 ApplyOffDayToCell(date, null);
+                _ = DebitableDays.RecalculateAsync();
             }
             // Public holidays are not toggled by clicking — ignore.
         }
@@ -217,6 +226,7 @@ public partial class CalendarViewModel : ViewModelBase
             await _offDayRepository.SaveChangesAsync();
             _offDaysByDate[date] = offDay;
             ApplyOffDayToCell(date, offDay);
+            _ = DebitableDays.RecalculateAsync();
         }
     }
 
@@ -237,6 +247,8 @@ public partial class CalendarViewModel : ViewModelBase
             Months.Clear();
             foreach (var m in months)
                 Months.Add(m);
+
+            _ = DebitableDays.RecalculateAsync(cancellationToken);
         }
         catch (OperationCanceledException)
         {

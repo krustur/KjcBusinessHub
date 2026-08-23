@@ -35,15 +35,15 @@ See [V_NEXT_DEV_PLAN.md](V_NEXT_DEV_PLAN.md) for the full feature specification.
 
 ### 4. Debitable days calculation (domain logic)
 
-- [ ] Add `YearMonth` value object
-- [ ] Add `DebitableDaysQuery` and `DebitableDaysResult` value objects
-- [ ] Add `DebitableDaysCalculator` service
-- [ ] Unit tests covering multi-year periods, all-off periods, single-month periods
+- [x] Add `YearMonth` value object
+- [x] Add `DebitableDaysQuery` and `DebitableDaysResult` value objects
+- [x] Add `DebitableDaysCalculator` service
+- [x] Unit tests covering multi-year periods, all-off periods, single-month periods
 
 ### 5. Debitable Days panel (UI)
 
-- [ ] Add `DebitableDaysViewModel` with reactive recalculation on off-day change
-- [ ] Add panel within Calendar view: start/end month pickers, total, per-month table
+- [x] Add `DebitableDaysViewModel` with reactive recalculation on off-day change
+- [x] Add panel within Calendar view: start/end month pickers, total, per-month table
 - [ ] Show "No holiday data for YYYY" warning when a year has no public holiday data
 
 ### 6. Tests and documentation
@@ -54,7 +54,7 @@ See [V_NEXT_DEV_PLAN.md](V_NEXT_DEV_PLAN.md) for the full feature specification.
 - [x] Update `USE_CASES.md` with UC-CAL-01 to UC-CAL-06 and UC-DEB-01 to UC-DEB-03
 - [x] Update `DATABASE.md` with `OffDays` table schema
 - [x] ViewModel / UI tests for year navigation, day toggle, import confirmation
-- [ ] ViewModel tests for Debitable Days start/end selection and reactive recalculation
+- [x] ViewModel tests for Debitable Days start/end selection and reactive recalculation
 
 ---
 
