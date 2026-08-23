@@ -40,6 +40,12 @@
                             <TextBlock Text="Import Transactions" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
+                    <Button Command="{Binding OpenCalendarCommand}" Padding="10,6">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <materialIcons:MaterialIcon Kind="CalendarMonth" Width="20" Height="20" />
+                            <TextBlock Text="Calendar" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
                     <Separator />
                     <TextBlock VerticalAlignment="Center" Foreground="Gray">
                         <TextBlock.Text>

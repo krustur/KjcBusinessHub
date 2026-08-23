@@ -27,8 +27,8 @@ A full-year calendar view that lets the user track Swedish public holidays (red 
 
 ### Swedish public holiday import (bonus)
 
-- Use the free, public **[Dagar API](https://api.dagar.se)** (`https://api.dagar.se/v1/{year}`) which returns Swedish public holidays (röda dagar) as JSON — no authentication required.
-- Introduce an `ISwedishPublicHolidayImporter` interface and a concrete `DagarApiPublicHolidayImporter` implementation in the Infrastructure layer.
+- Use the free, public **[Dagsmart API](https://api.dagsmart.se)** (`https://api.dagsmart.se/holidays?year={year}`) which returns Swedish public holidays (röda dagar) as JSON — no authentication required.
+- Introduce an `ISwedishPublicHolidayImporter` interface and a concrete `DagsmartApiPublicHolidayImporter` implementation in the Infrastructure layer.
 - The importer fetches holidays for the requested year and upserts them as `PublicHoliday` off days into the repository; existing manually added `Vacation` off days are left untouched.
 - Wrap the HTTP call in a try/catch; surface a user-visible warning if the import fails (network unavailable, etc.).
 - Cache the imported holidays in the local database so the app works offline after the first successful import.
@@ -39,7 +39,7 @@ A full-year calendar view that lets the user track Swedish public holidays (red 
 - **UC-CAL-02 Navigate years** — previous-year / next-year navigation buttons; default to the current year on first open.
 - **UC-CAL-03 Add vacation day** — click a date cell to toggle it as a vacation day; saves immediately.
 - **UC-CAL-04 Remove vacation day** — click an existing vacation day to remove it.
-- **UC-CAL-05 Import Swedish public holidays** — an explicit "Import red days" action for the current year; calls the Dagar API and persists results; shows a confirmation of how many days were added or updated.
+- **UC-CAL-05 Import Swedish public holidays** — an explicit "Import red days" action for the current year; calls the Dagsmart API and persists results; shows a confirmation of how many days were added or updated.
 - **UC-CAL-06 Add/edit off day description** — optional description field accessible from a day detail panel or tooltip.
 
 ### UI
@@ -58,7 +58,7 @@ A full-year calendar view that lets the user track Swedish public holidays (red 
 ### Tests
 
 - Unit tests for `CalendarYear` / `OffDay` domain rules (duplicate date, year mismatch).
-- Unit tests for `DagarApiPublicHolidayImporter` using a stubbed HTTP client.
+- Unit tests for `DagsmartApiPublicHolidayImporter` using a stubbed HTTP client.
 - Repository tests for CRUD operations on `OffDay`.
 - ViewModel / UI tests for year navigation, day toggle, and import confirmation state.
 
@@ -115,7 +115,7 @@ This feature is built on top of Feature 1 and can be integrated as a panel withi
 ## Suggested Implementation Order
 
 1. **Domain + persistence** for `OffDay` / `CalendarYear` (Feature 1 core).
-2. **Dagar API importer** and local caching (Feature 1 bonus).
+2. **Dagsmart API importer** and local caching (Feature 1 bonus).
 3. **Calendar UI** — year view, day toggle, import action (Feature 1 UI).
 4. **Debitable days calculation** domain logic (Feature 2 core).
 5. **Debitable Days panel** integrated into the Calendar view (Feature 2 UI).

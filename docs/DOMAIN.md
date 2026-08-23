@@ -101,6 +101,66 @@ Annual              // Yearly document still valid for current accounting period
 ExpiredAnnual       // Yearly document from earlier period, kept for reference
 ```
 
+### CalendarYear
+Aggregate that owns all tracked off-days for a single calendar year.
+
+| Property | Type                  | Description                         |
+|----------|-----------------------|-------------------------------------|
+| Year     | int                   | The calendar year this aggregate represents |
+| OffDays  | IReadOnlyList\<OffDay\> | All off-day entries for this year  |
+
+**Validation Rules:**
+- Each date may appear at most once across all `OffDay` entries; a day cannot be both a `PublicHoliday` and a `Vacation` simultaneously.
+- The `Date` of every `OffDay` must belong to the year represented by the aggregate.
+
+---
+
+### OffDay
+A single day marked as unavailable for billing purposes.
+
+| Property    | Type           | Description                                          |
+|-------------|----------------|------------------------------------------------------|
+| Id          | Guid           | Unique identifier                                    |
+| Year        | int            | Calendar year (denormalised for query convenience)   |
+| Date        | DateOnly       | The calendar date                                    |
+| OffDayType  | enum           | `PublicHoliday` or `Vacation`                        |
+| Description | string         | Optional label (e.g. "Midsommar", "Summer vacation") |
+| CreatedAt   | DateTimeOffset | When the record was created                          |
+| UpdatedAt   | DateTimeOffset? | When the record was last modified                   |
+
+---
+
+## Value Objects
+
+### DebitableDaysQuery
+Represents a request to calculate debitable workdays over a month range.
+
+| Property   | Type      | Description                                    |
+|------------|-----------|------------------------------------------------|
+| StartMonth | YearMonth | First month of the period (inclusive)          |
+| EndMonth   | YearMonth | Last month of the period (must be ≥ StartMonth) |
+
+### DebitableDaysResult
+Result of a debitable-days calculation.
+
+| Property          | Type                               | Description                             |
+|-------------------|------------------------------------|-----------------------------------------|
+| TotalDebitableDays | int                               | Total billable workdays across the full period |
+| PerMonth          | IReadOnlyList\<MonthDebitableDays\> | One entry per month in the range       |
+
+### MonthDebitableDays
+
+| Property       | Type      | Description                     |
+|----------------|-----------|---------------------------------|
+| Month          | YearMonth | The calendar month              |
+| DebitableDays  | int       | Number of billable days in this month |
+
+### OffDayType
+```
+PublicHoliday       // Swedish red day (röd dag)
+Vacation            // User-defined vacation day
+```
+
 ---
 
 ## Business Rules
@@ -116,5 +176,8 @@ ExpiredAnnual       // Yearly document from earlier period, kept for reference
 - Monthly SourceDocument coverage scope includes only month-filtered items; always-visible `Annual` items do not affect the `Month complete` indicator.
 - SourceDocuments with `IsFutureTransaction == true` are excluded from monthly SourceDocument coverage totals but remain visible in the list and can still be linked to Transactions.
 - `IsFutureTransaction` is a manual flag; it is not inferred automatically from transaction data. Clearing the flag is a manual user action.
+- Debitable days calculation: iterate every day in the requested period; exclude Saturdays and Sundays; exclude dates recorded as `PublicHoliday`; exclude dates recorded as `Vacation`; count remaining days grouped by month.
+- `CalendarYear` validates that each off-day's `Date` belongs to the owned year and that no two off-days share the same date.
+- The `DagsmartApiPublicHolidayImporter` upserts `PublicHoliday` off-days for the requested year; existing `Vacation` entries are never modified.
 
 ---

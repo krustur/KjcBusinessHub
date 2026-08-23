@@ -61,6 +61,7 @@ public partial class App : AvalApp
         // Register view models
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<AppViewModel>();
+        services.AddTransient<CalendarViewModel>();
         services.AddTransient<MainWindowViewModel>();
         services.AddSingleton<UpdateService>();
 
