@@ -211,12 +211,14 @@
                             <StackPanel Orientation="Horizontal" Spacing="4">
                                 <NumericUpDown Value="{Binding StartYear}"
                                                Minimum="2000" Maximum="2100"
-                                               Width="80" Padding="4,2"
+                                               Width="110" Padding="6,4"
+                                               FontSize="14"
                                                FormatString="0000"
                                                ToolTip.Tip="Start year" />
                                 <NumericUpDown Value="{Binding StartMonth}"
                                                Minimum="1" Maximum="12"
-                                               Width="56" Padding="4,2"
+                                               Width="80" Padding="6,4"
+                                               FontSize="14"
                                                ToolTip.Tip="Start month (1–12)" />
                             </StackPanel>
                         </StackPanel>
@@ -227,12 +229,14 @@
                             <StackPanel Orientation="Horizontal" Spacing="4">
                                 <NumericUpDown Value="{Binding EndYear}"
                                                Minimum="2000" Maximum="2100"
-                                               Width="80" Padding="4,2"
+                                               Width="110" Padding="6,4"
+                                               FontSize="14"
                                                FormatString="0000"
                                                ToolTip.Tip="End year" />
                                 <NumericUpDown Value="{Binding EndMonth}"
                                                Minimum="1" Maximum="12"
-                                               Width="56" Padding="4,2"
+                                               Width="80" Padding="6,4"
+                                               FontSize="14"
                                                ToolTip.Tip="End month (1–12)" />
                             </StackPanel>
                         </StackPanel>
@@ -261,7 +265,7 @@
                                        VerticalAlignment="Center" />
                         </StackPanel>
 
-                        <ScrollViewer MaxHeight="160" IsVisible="{Binding !HasError}"
+                        <ScrollViewer IsVisible="{Binding !HasError}"
                                       HorizontalScrollBarVisibility="Disabled">
                             <ItemsControl ItemsSource="{Binding PerMonth}">
                                 <ItemsControl.ItemTemplate>
