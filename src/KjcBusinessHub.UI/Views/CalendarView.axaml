@@ -26,6 +26,10 @@
             <Setter Property="Background" Value="#BBDEFB" />
         </Style>
 
+        <Style Selector="Button.day-cell:disabled /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
         <!-- Month container -->
         <Style Selector="Border.month-box">
             <Setter Property="BorderBrush" Value="#E0E0E0" />
@@ -165,13 +169,13 @@
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate x:DataType="vm:CalendarDayCell">
                                                         <Button Classes="day-cell"
-                                                                Width="28" Height="24"
-                                                                Background="{Binding CellBackground}"
-                                                                IsEnabled="{Binding IsCurrentMonth}"
-                                                                IsHitTestVisible="{Binding !IsEmpty}"
-                                                                ToolTip.Tip="{Binding Description}"
-                                                                Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).ToggleDayCommand}"
-                                                                CommandParameter="{Binding Date}">
+                                                               Width="28" Height="24"
+                                                               Background="{Binding CellBackground}"
+                                                               IsEnabled="{Binding IsCurrentMonth}"
+                                                               IsHitTestVisible="{Binding !IsEmpty}"
+                                                               ToolTip.Tip="{Binding Description}"
+                                                               Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).ToggleDayCommand}"
+                                                               CommandParameter="{Binding Date}">
                                                             <TextBlock Text="{Binding DayNumber}"
                                                                        IsVisible="{Binding !IsEmpty}"
                                                                        FontSize="11"
@@ -211,13 +215,13 @@
                             <StackPanel Orientation="Horizontal" Spacing="4">
                                 <NumericUpDown Value="{Binding StartYear}"
                                                Minimum="2000" Maximum="2100"
-                                               Width="110" Padding="6,4"
+                                               Width="140" Padding="6,4"
                                                FontSize="14"
                                                FormatString="0000"
                                                ToolTip.Tip="Start year" />
                                 <NumericUpDown Value="{Binding StartMonth}"
                                                Minimum="1" Maximum="12"
-                                               Width="80" Padding="6,4"
+                                               Width="100" Padding="6,4"
                                                FontSize="14"
                                                ToolTip.Tip="Start month (1–12)" />
                             </StackPanel>
@@ -229,13 +233,13 @@
                             <StackPanel Orientation="Horizontal" Spacing="4">
                                 <NumericUpDown Value="{Binding EndYear}"
                                                Minimum="2000" Maximum="2100"
-                                               Width="110" Padding="6,4"
+                                               Width="140" Padding="6,4"
                                                FontSize="14"
                                                FormatString="0000"
                                                ToolTip.Tip="End year" />
                                 <NumericUpDown Value="{Binding EndMonth}"
                                                Minimum="1" Maximum="12"
-                                               Width="80" Padding="6,4"
+                                               Width="100" Padding="6,4"
                                                FontSize="14"
                                                ToolTip.Tip="End month (1–12)" />
                             </StackPanel>
