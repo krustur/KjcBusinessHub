@@ -1,4 +1,6 @@
 using System;
+using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -172,6 +174,9 @@ public partial class MainWindow : Window
             }
         };
 
+        var aboutItem = new NativeMenuItem("About");
+        aboutItem.Click += async (_, _) => await ShowAboutDialogAsync();
+
         var quitItem = new NativeMenuItem("Quit");
         quitItem.Click += async (_, _) => await RequestQuitAsync();
 
@@ -183,6 +188,7 @@ public partial class MainWindow : Window
                 _closeToTrayMenuItem,
                 new NativeMenuItemSeparator(),
                 checkForUpdatesItem,
+                aboutItem,
                 new NativeMenuItemSeparator(),
                 quitItem,
             }
@@ -239,5 +245,96 @@ public partial class MainWindow : Window
         {
             _isTogglingCloseToTray = false;
         }
+    }
+
+    private async Task ShowAboutDialogAsync()
+    {
+        var aboutWindow = new Window
+        {
+            Width = 500,
+            Height = 300,
+            CanResize = false,
+            Title = "About KJC Business Hub",
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Content = BuildAboutDialogContent(),
+        };
+
+        if (Icon is not null)
+        {
+            aboutWindow.Icon = Icon;
+        }
+
+        if (aboutWindow.Content is StackPanel panel && panel.Children[1] is Button closeButton)
+        {
+            closeButton.Click += (_, _) => aboutWindow.Close();
+        }
+
+        await aboutWindow.ShowDialog(this);
+    }
+
+    private static StackPanel BuildAboutDialogContent()
+    {
+        var appFilePath = ResolveAppFilePath();
+        var versionInfo = FileVersionInfo.GetVersionInfo(appFilePath);
+        var buildLocal = File.GetLastWriteTime(appFilePath);
+        var fileVersion = string.IsNullOrWhiteSpace(versionInfo.FileVersion) ? "N/A" : versionInfo.FileVersion;
+        var productVersion = string.IsNullOrWhiteSpace(versionInfo.ProductVersion) ? "N/A" : versionInfo.ProductVersion;
+        var copyright = string.IsNullOrWhiteSpace(versionInfo.LegalCopyright) ? "N/A" : versionInfo.LegalCopyright;
+
+        var details = string.Join(Environment.NewLine, new[]
+        {
+            $"File Version: {fileVersion}",
+            $"Product Version: {productVersion}",
+            $"Copyright: {copyright}",
+            $"Build Date/Time: {buildLocal:yyyy-MM-dd HH:mm:ss}",
+        });
+
+        return new StackPanel
+        {
+            Spacing = 12,
+            Margin = new Thickness(18),
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = "KJC Business Hub",
+                    FontSize = 20,
+                    FontWeight = FontWeight.SemiBold,
+                },
+                new TextBlock
+                {
+                    Text = details,
+                    TextWrapping = TextWrapping.Wrap,
+                },
+                new Button
+                {
+                    Content = "Close",
+                    Width = 90,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                }
+            }
+        };
+    }
+
+    private static string ResolveAppFilePath()
+    {
+        if (!string.IsNullOrWhiteSpace(Environment.ProcessPath) && File.Exists(Environment.ProcessPath))
+        {
+            return Environment.ProcessPath;
+        }
+
+        var assemblyPath = typeof(MainWindow).Assembly.Location;
+        if (!string.IsNullOrWhiteSpace(assemblyPath) && File.Exists(assemblyPath))
+        {
+            return assemblyPath;
+        }
+
+        var candidateExe = Path.Combine(AppContext.BaseDirectory, "KjcBusinessHub.UI.exe");
+        if (File.Exists(candidateExe))
+        {
+            return candidateExe;
+        }
+
+        return Path.Combine(AppContext.BaseDirectory, "KjcBusinessHub.UI.dll");
     }
 }
