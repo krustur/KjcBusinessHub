@@ -148,7 +148,8 @@ public partial class MainWindow : Window
             return;
         }
 
-        var icon = new WindowIcon(AssetLoader.Open(new Uri("avares://KjcBusinessHub.UI/Assets/kjcbusinesshub-tray.ico")));
+        var icon = new WindowIcon(
+            AssetLoader.Open(new Uri("avares://KjcBusinessHub.UI/Assets/kjcbusinesshub-tray.ico")));
 
         var settingsItem = new NativeMenuItem("Settings");
         settingsItem.Click += (_, _) =>
@@ -262,7 +263,7 @@ public partial class MainWindow : Window
     {
         var aboutWindow = new Window
         {
-            Width = 500,
+            Width = 650,
             Height = 300,
             CanResize = false,
             Title = "About KJC Business Hub",
@@ -275,7 +276,7 @@ public partial class MainWindow : Window
             aboutWindow.Icon = Icon;
         }
 
-        if (aboutWindow.Content is StackPanel panel)
+        if (aboutWindow.Content is Panel panel)
         {
             var closeButton = panel.Children.OfType<Button>().FirstOrDefault();
             if (closeButton is not null)
@@ -289,7 +290,7 @@ public partial class MainWindow : Window
 
     public Task ShowAboutDialogFromUiAsync() => ShowAboutDialogAsync();
 
-    private static StackPanel BuildAboutDialogContent()
+    private static Panel BuildAboutDialogContent()
     {
         var appFilePath = ResolveAppFilePath();
         var runtimeProfile = Program.RuntimeProfile;
@@ -338,28 +339,36 @@ public partial class MainWindow : Window
             $"Config Path: {runtimeProfile.SettingsPath}",
         });
 
-        return new StackPanel
+        return new Panel()
         {
-            Spacing = 12,
             Margin = new Thickness(18),
             Children =
             {
-                new TextBlock
+                new StackPanel
                 {
-                    Text = "KJC Business Hub",
-                    FontSize = 20,
-                    FontWeight = FontWeight.SemiBold,
-                },
-                new TextBlock
-                {
-                    Text = details,
-                    TextWrapping = TextWrapping.Wrap,
+                    Spacing = 12,
+                    // Margin = new Thickness(18),
+                    Children =
+                    {
+                        new TextBlock
+                        {
+                            Text = "KJC Business Hub",
+                            FontSize = 20,
+                            FontWeight = FontWeight.SemiBold,
+                        },
+                        new TextBlock
+                        {
+                            Text = details,
+                            TextWrapping = TextWrapping.Wrap,
+                        }
+                    }
                 },
                 new Button
                 {
                     Content = "Close",
                     Width = 90,
                     HorizontalAlignment = HorizontalAlignment.Right,
+                    VerticalAlignment = VerticalAlignment.Bottom
                 }
             }
         };
