@@ -69,9 +69,10 @@ KJCBH_RUNTIME_MODE=development dotnet run --project src/KjcBusinessHub.UI
 
 - Tray icon is created on startup and removed on app shutdown.
 - Tray menu includes:
-  - `Settings`
   - `Close to system tray` (persisted checkbox)
-  - `Check for updates`
+  - `Check for Updates`
+  - `Check for Updates (pre-release)`
+  - `About`
   - `Quit`
 - Window close behavior:
   - If `Close to system tray` is enabled, close hides the app to tray.
@@ -84,7 +85,9 @@ KJCBH_RUNTIME_MODE=development dotnet run --project src/KjcBusinessHub.UI
 
 - Velopack bootstrap runs at app startup.
 - Production installs check GitHub Releases for updates.
+- Manual update checks are available from the tray menu and About dialog for both stable and pre-release channels.
 - When an update is found, the package is downloaded and the app restarts to apply it.
+- When a manual update check does not find an update, the app shows a user-facing message.
 - Optional channel override: `KJCBH_UPDATE_CHANNEL=prerelease`.
 
 ---

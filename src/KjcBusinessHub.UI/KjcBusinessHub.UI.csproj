@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>Assets\kjcbusinesshub.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\kjcbusinesshub-tray.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
