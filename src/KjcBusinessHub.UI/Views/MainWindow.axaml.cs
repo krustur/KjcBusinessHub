@@ -292,6 +292,7 @@ public partial class MainWindow : Window
     private static StackPanel BuildAboutDialogContent()
     {
         var appFilePath = ResolveAppFilePath();
+        var runtimeProfile = Program.RuntimeProfile;
         var fileVersion = "N/A";
         var productVersion = "N/A";
         var copyright = "N/A";
@@ -332,6 +333,9 @@ public partial class MainWindow : Window
             $"Product Version: {productVersion}",
             $"Copyright: {copyright}",
             $"Build Date/Time: {buildDateTimeText}",
+            $"Application Path: {appFilePath}",
+            $"Database Path: {runtimeProfile.DatabasePath}",
+            $"Config Path: {runtimeProfile.SettingsPath}",
         });
 
         return new StackPanel
