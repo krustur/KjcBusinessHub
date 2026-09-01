@@ -28,7 +28,7 @@ public partial class App : AvalApp
     {
         var runtime = Program.RuntimeProfile;
         var appDataDir = runtime.StorageRoot;
-        Directory.CreateDirectory(appDataDir);
+        Directory.CreateDirectory(appDataDir); // idempotent — directory was already created in Main()
 
         // Rolling file: one file per day, keep 7 days
         var logPath = Path.Combine(appDataDir, "logs", "kjcbusinesshub-.log");
@@ -67,9 +67,6 @@ public partial class App : AvalApp
         services.AddSingleton<UpdateService>();
 
         _serviceProvider = services.BuildServiceProvider();
-
-        // Apply EF migrations synchronously on startup
-        _serviceProvider.MigrateDatabaseAsync().GetAwaiter().GetResult();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
