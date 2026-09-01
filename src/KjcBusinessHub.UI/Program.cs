@@ -1,8 +1,7 @@
-﻿using Avalonia;
+using Avalonia;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using KjcBusinessHub.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Velopack;
@@ -174,7 +173,7 @@ sealed class Program
         IEnumerable<string> appVersionDirectories = Array.Empty<string>();
         try
         {
-            appVersionDirectories = Directory.EnumerateDirectories(appBaseParent, "app-*").ToList();
+            appVersionDirectories = Directory.GetDirectories(appBaseParent, "app-*");
         }
         catch
         {
