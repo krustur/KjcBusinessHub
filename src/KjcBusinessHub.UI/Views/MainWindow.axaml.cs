@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -264,9 +265,13 @@ public partial class MainWindow : Window
             aboutWindow.Icon = Icon;
         }
 
-        if (aboutWindow.Content is StackPanel panel && panel.Children[2] is Button closeButton)
+        if (aboutWindow.Content is StackPanel panel)
         {
-            closeButton.Click += (_, _) => aboutWindow.Close();
+            var closeButton = panel.Children.OfType<Button>().FirstOrDefault();
+            if (closeButton is not null)
+            {
+                closeButton.Click += (_, _) => aboutWindow.Close();
+            }
         }
 
         await aboutWindow.ShowDialog(this);
@@ -275,18 +280,46 @@ public partial class MainWindow : Window
     private static StackPanel BuildAboutDialogContent()
     {
         var appFilePath = ResolveAppFilePath();
-        var versionInfo = FileVersionInfo.GetVersionInfo(appFilePath);
-        var buildDateTime = File.GetLastWriteTime(appFilePath);
-        var fileVersion = string.IsNullOrWhiteSpace(versionInfo.FileVersion) ? "N/A" : versionInfo.FileVersion;
-        var productVersion = string.IsNullOrWhiteSpace(versionInfo.ProductVersion) ? "N/A" : versionInfo.ProductVersion;
-        var copyright = string.IsNullOrWhiteSpace(versionInfo.LegalCopyright) ? "N/A" : versionInfo.LegalCopyright;
+        var fileVersion = "N/A";
+        var productVersion = "N/A";
+        var copyright = "N/A";
+        var buildDateTimeText = "N/A";
+
+        if (!string.IsNullOrWhiteSpace(appFilePath) && File.Exists(appFilePath))
+        {
+            try
+            {
+                var versionInfo = FileVersionInfo.GetVersionInfo(appFilePath);
+                if (!string.IsNullOrWhiteSpace(versionInfo.FileVersion))
+                {
+                    fileVersion = versionInfo.FileVersion;
+                }
+
+                if (!string.IsNullOrWhiteSpace(versionInfo.ProductVersion))
+                {
+                    productVersion = versionInfo.ProductVersion;
+                }
+
+                if (!string.IsNullOrWhiteSpace(versionInfo.LegalCopyright))
+                {
+                    copyright = versionInfo.LegalCopyright;
+                }
+
+                var buildDateTime = File.GetLastWriteTime(appFilePath);
+                buildDateTimeText = buildDateTime.ToString("yyyy-MM-dd HH:mm:ss");
+            }
+            catch
+            {
+                // Keep N/A fallbacks if metadata cannot be read.
+            }
+        }
 
         var details = string.Join(Environment.NewLine, new[]
         {
             $"File Version: {fileVersion}",
             $"Product Version: {productVersion}",
             $"Copyright: {copyright}",
-            $"Build Date/Time: {buildDateTime:yyyy-MM-dd HH:mm:ss}",
+            $"Build Date/Time: {buildDateTimeText}",
         });
 
         return new StackPanel
@@ -335,6 +368,12 @@ public partial class MainWindow : Window
             return candidateExe;
         }
 
-        return Path.Combine(AppContext.BaseDirectory, "KjcBusinessHub.UI.dll");
+        var candidateDll = Path.Combine(AppContext.BaseDirectory, "KjcBusinessHub.UI.dll");
+        if (File.Exists(candidateDll))
+        {
+            return candidateDll;
+        }
+
+        return string.Empty;
     }
 }
