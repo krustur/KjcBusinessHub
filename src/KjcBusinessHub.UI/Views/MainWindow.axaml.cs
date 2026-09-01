@@ -264,7 +264,7 @@ public partial class MainWindow : Window
             aboutWindow.Icon = Icon;
         }
 
-        if (aboutWindow.Content is StackPanel panel && panel.Children[1] is Button closeButton)
+        if (aboutWindow.Content is StackPanel panel && panel.Children[2] is Button closeButton)
         {
             closeButton.Click += (_, _) => aboutWindow.Close();
         }
@@ -276,7 +276,7 @@ public partial class MainWindow : Window
     {
         var appFilePath = ResolveAppFilePath();
         var versionInfo = FileVersionInfo.GetVersionInfo(appFilePath);
-        var buildLocal = File.GetLastWriteTime(appFilePath);
+        var buildDateTime = File.GetLastWriteTime(appFilePath);
         var fileVersion = string.IsNullOrWhiteSpace(versionInfo.FileVersion) ? "N/A" : versionInfo.FileVersion;
         var productVersion = string.IsNullOrWhiteSpace(versionInfo.ProductVersion) ? "N/A" : versionInfo.ProductVersion;
         var copyright = string.IsNullOrWhiteSpace(versionInfo.LegalCopyright) ? "N/A" : versionInfo.LegalCopyright;
@@ -286,7 +286,7 @@ public partial class MainWindow : Window
             $"File Version: {fileVersion}",
             $"Product Version: {productVersion}",
             $"Copyright: {copyright}",
-            $"Build Date/Time: {buildLocal:yyyy-MM-dd HH:mm:ss}",
+            $"Build Date/Time: {buildDateTime:yyyy-MM-dd HH:mm:ss}",
         });
 
         return new StackPanel
