@@ -96,7 +96,8 @@ public class AppViewModelTests
 
         Assert.True(sut.UseSeparateSourceDocumentMonth);
         Assert.False(sut.SyncTransactionAndSourceDocumentMonth);
-        Assert.Equal(new DateOnly(2026, 8, 1), sut.SelectedSourceDocumentMonthOption!.Date);
+        Assert.Equal(2026, sut.SelectedSourceDocumentYear);
+        Assert.Equal(8, sut.SelectedSourceDocumentMonth);
     }
 
     [Fact]
