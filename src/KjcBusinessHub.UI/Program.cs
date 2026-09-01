@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using KjcBusinessHub.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Velopack;
@@ -171,7 +172,7 @@ sealed class Program
         IEnumerable<string> appVersionDirectories = Array.Empty<string>();
         try
         {
-            appVersionDirectories = Directory.EnumerateDirectories(appBaseParent, "app-*");
+            appVersionDirectories = Directory.EnumerateDirectories(appBaseParent, "app-*").ToList();
         }
         catch
         {
