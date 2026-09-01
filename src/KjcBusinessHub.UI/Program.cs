@@ -102,10 +102,12 @@ sealed class Program
         }
 
         var targetDirectory = Path.GetDirectoryName(targetPath);
-        if (!string.IsNullOrWhiteSpace(targetDirectory))
+        if (string.IsNullOrWhiteSpace(targetDirectory))
         {
-            Directory.CreateDirectory(targetDirectory);
+            throw new InvalidOperationException($"Cannot determine target directory for '{targetPath}'.");
         }
+
+        Directory.CreateDirectory(targetDirectory);
 
         try
         {
