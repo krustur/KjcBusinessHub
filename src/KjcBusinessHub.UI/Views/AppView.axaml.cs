@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using KjcBusinessHub.UI.ViewModels;
 
@@ -135,6 +136,14 @@ public partial class AppView : UserControl
         if (ReferenceEquals(sender, _transactionImportWindow))
         {
             _transactionImportWindow = null;
+        }
+    }
+
+    private async void OnAboutClicked(object? sender, RoutedEventArgs e)
+    {
+        if (TopLevel.GetTopLevel(this) is MainWindow mainWindow)
+        {
+            await mainWindow.ShowAboutDialogFromUiAsync();
         }
     }
 }

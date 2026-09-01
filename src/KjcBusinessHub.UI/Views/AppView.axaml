@@ -46,6 +46,12 @@
                             <TextBlock Text="Calendar" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
+                    <Button Click="OnAboutClicked" Padding="10,6">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <materialIcons:MaterialIcon Kind="InformationOutline" Width="20" Height="20" />
+                            <TextBlock Text="About" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
                     <Separator />
                     <TextBlock VerticalAlignment="Center" Foreground="Gray">
                         <TextBlock.Text>

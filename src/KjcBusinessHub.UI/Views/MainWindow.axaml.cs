@@ -1,4 +1,7 @@
 using System;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -145,7 +148,8 @@ public partial class MainWindow : Window
             return;
         }
 
-        var icon = new WindowIcon(AssetLoader.Open(new Uri("avares://KjcBusinessHub.UI/Assets/kjcbusinesshub-tray.ico")));
+        var icon = new WindowIcon(
+            AssetLoader.Open(new Uri("avares://KjcBusinessHub.UI/Assets/kjcbusinesshub-tray.ico")));
 
         var settingsItem = new NativeMenuItem("Settings");
         settingsItem.Click += (_, _) =>
@@ -154,6 +158,15 @@ public partial class MainWindow : Window
             WindowState = WindowState.Normal;
             Activate();
             _viewModel?.ShowSettings();
+        };
+
+        var calendarItem = new NativeMenuItem("Calendar");
+        calendarItem.Click += (_, _) =>
+        {
+            Show();
+            WindowState = WindowState.Normal;
+            Activate();
+            _viewModel?.ShowCalendar();
         };
 
         _closeToTrayMenuItem = new NativeMenuItem("Close to system tray")
@@ -172,6 +185,9 @@ public partial class MainWindow : Window
             }
         };
 
+        var aboutItem = new NativeMenuItem("About");
+        aboutItem.Click += async (_, _) => await ShowAboutDialogAsync();
+
         var quitItem = new NativeMenuItem("Quit");
         quitItem.Click += async (_, _) => await RequestQuitAsync();
 
@@ -180,9 +196,11 @@ public partial class MainWindow : Window
             Items =
             {
                 settingsItem,
+                calendarItem,
                 _closeToTrayMenuItem,
                 new NativeMenuItemSeparator(),
                 checkForUpdatesItem,
+                aboutItem,
                 new NativeMenuItemSeparator(),
                 quitItem,
             }
@@ -239,5 +257,142 @@ public partial class MainWindow : Window
         {
             _isTogglingCloseToTray = false;
         }
+    }
+
+    private async Task ShowAboutDialogAsync()
+    {
+        var aboutWindow = new Window
+        {
+            Width = 650,
+            Height = 300,
+            CanResize = false,
+            Title = "About KJC Business Hub",
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Content = BuildAboutDialogContent(),
+        };
+
+        if (Icon is not null)
+        {
+            aboutWindow.Icon = Icon;
+        }
+
+        if (aboutWindow.Content is Panel panel)
+        {
+            var closeButton = panel.Children.OfType<Button>().FirstOrDefault();
+            if (closeButton is not null)
+            {
+                closeButton.Click += (_, _) => aboutWindow.Close();
+            }
+        }
+
+        await aboutWindow.ShowDialog(this);
+    }
+
+    public Task ShowAboutDialogFromUiAsync() => ShowAboutDialogAsync();
+
+    private static Panel BuildAboutDialogContent()
+    {
+        var appFilePath = ResolveAppFilePath();
+        var runtimeProfile = Program.RuntimeProfile;
+        var fileVersion = "N/A";
+        var productVersion = "N/A";
+        var copyright = "N/A";
+        var buildDateTimeText = "N/A";
+
+        if (!string.IsNullOrWhiteSpace(appFilePath) && File.Exists(appFilePath))
+        {
+            try
+            {
+                var versionInfo = FileVersionInfo.GetVersionInfo(appFilePath);
+                if (!string.IsNullOrWhiteSpace(versionInfo.FileVersion))
+                {
+                    fileVersion = versionInfo.FileVersion;
+                }
+
+                if (!string.IsNullOrWhiteSpace(versionInfo.ProductVersion))
+                {
+                    productVersion = versionInfo.ProductVersion;
+                }
+
+                if (!string.IsNullOrWhiteSpace(versionInfo.LegalCopyright))
+                {
+                    copyright = versionInfo.LegalCopyright;
+                }
+
+                var buildDateTime = File.GetLastWriteTime(appFilePath);
+                buildDateTimeText = buildDateTime.ToString("yyyy-MM-dd HH:mm:ss");
+            }
+            catch
+            {
+                // Keep N/A fallbacks if metadata cannot be read.
+            }
+        }
+
+        var details = string.Join(Environment.NewLine, new[]
+        {
+            $"File Version: {fileVersion}",
+            $"Product Version: {productVersion}",
+            $"Copyright: {copyright}",
+            $"Build Date/Time: {buildDateTimeText}",
+            $"Application Path: {appFilePath}",
+            $"Database Path: {runtimeProfile.DatabasePath}",
+            $"Config Path: {runtimeProfile.SettingsPath}",
+        });
+
+        return new Panel()
+        {
+            Margin = new Thickness(18),
+            Children =
+            {
+                new StackPanel
+                {
+                    Spacing = 12,
+                    // Margin = new Thickness(18),
+                    Children =
+                    {
+                        new TextBlock
+                        {
+                            Text = "KJC Business Hub",
+                            FontSize = 20,
+                            FontWeight = FontWeight.SemiBold,
+                        },
+                        new TextBlock
+                        {
+                            Text = details,
+                            TextWrapping = TextWrapping.Wrap,
+                        }
+                    }
+                },
+                new Button
+                {
+                    Content = "Close",
+                    Width = 90,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    VerticalAlignment = VerticalAlignment.Bottom
+                }
+            }
+        };
+    }
+
+    private static string ResolveAppFilePath()
+    {
+        if (!string.IsNullOrWhiteSpace(Environment.ProcessPath) && File.Exists(Environment.ProcessPath))
+        {
+            return Environment.ProcessPath;
+        }
+
+        var assemblyPath = typeof(MainWindow).Assembly.Location;
+        if (!string.IsNullOrWhiteSpace(assemblyPath) && File.Exists(assemblyPath))
+        {
+            return assemblyPath;
+        }
+
+        var entryAssemblyPath = System.Reflection.Assembly.GetEntryAssembly()?.Location;
+        if (!string.IsNullOrWhiteSpace(entryAssemblyPath) && File.Exists(entryAssemblyPath))
+        {
+            return entryAssemblyPath;
+        }
+
+        return string.Empty;
     }
 }
