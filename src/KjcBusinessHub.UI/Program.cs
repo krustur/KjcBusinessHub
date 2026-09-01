@@ -106,7 +106,14 @@ sealed class Program
             Directory.CreateDirectory(targetDirectory);
         }
 
-        File.Copy(bestCandidate, targetPath, overwrite: false);
+        try
+        {
+            File.Copy(bestCandidate, targetPath, overwrite: false);
+        }
+        catch (IOException) when (File.Exists(targetPath))
+        {
+            // Another process/thread created the target file after our existence check.
+        }
     }
 
     private static IEnumerable<string> GetLegacyFileCandidates(string fileName)
