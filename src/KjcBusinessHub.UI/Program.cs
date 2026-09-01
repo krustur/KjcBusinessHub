@@ -161,16 +161,19 @@ sealed class Program
 
         yield return appBaseParent;
 
+        IEnumerable<string> appVersionDirectories = Array.Empty<string>();
         try
         {
-            foreach (var directory in Directory.EnumerateDirectories(appBaseParent, "app-*"))
-            {
-                yield return directory;
-            }
+            appVersionDirectories = Directory.EnumerateDirectories(appBaseParent, "app-*");
         }
         catch
         {
             // Ignore missing/inaccessible parent directories.
+        }
+
+        foreach (var directory in appVersionDirectories)
+        {
+            yield return directory;
         }
     }
 
