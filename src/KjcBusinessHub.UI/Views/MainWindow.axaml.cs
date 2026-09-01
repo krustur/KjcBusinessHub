@@ -362,16 +362,10 @@ public partial class MainWindow : Window
             return assemblyPath;
         }
 
-        var candidateExe = Path.Combine(AppContext.BaseDirectory, "KjcBusinessHub.UI.exe");
-        if (File.Exists(candidateExe))
+        var entryAssemblyPath = System.Reflection.Assembly.GetEntryAssembly()?.Location;
+        if (!string.IsNullOrWhiteSpace(entryAssemblyPath) && File.Exists(entryAssemblyPath))
         {
-            return candidateExe;
-        }
-
-        var candidateDll = Path.Combine(AppContext.BaseDirectory, "KjcBusinessHub.UI.dll");
-        if (File.Exists(candidateDll))
-        {
-            return candidateDll;
+            return entryAssemblyPath;
         }
 
         return string.Empty;
