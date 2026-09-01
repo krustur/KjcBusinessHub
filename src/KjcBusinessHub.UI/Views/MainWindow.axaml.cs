@@ -159,6 +159,15 @@ public partial class MainWindow : Window
             _viewModel?.ShowSettings();
         };
 
+        var calendarItem = new NativeMenuItem("Calendar");
+        calendarItem.Click += (_, _) =>
+        {
+            Show();
+            WindowState = WindowState.Normal;
+            Activate();
+            _viewModel?.ShowCalendar();
+        };
+
         _closeToTrayMenuItem = new NativeMenuItem("Close to system tray")
         {
             ToggleType = MenuItemToggleType.CheckBox,
@@ -186,6 +195,7 @@ public partial class MainWindow : Window
             Items =
             {
                 settingsItem,
+                calendarItem,
                 _closeToTrayMenuItem,
                 new NativeMenuItemSeparator(),
                 checkForUpdatesItem,
@@ -276,6 +286,8 @@ public partial class MainWindow : Window
 
         await aboutWindow.ShowDialog(this);
     }
+
+    public Task ShowAboutDialogFromUiAsync() => ShowAboutDialogAsync();
 
     private static StackPanel BuildAboutDialogContent()
     {
