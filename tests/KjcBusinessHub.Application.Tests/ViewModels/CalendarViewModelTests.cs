@@ -81,6 +81,7 @@ public class CalendarViewModelTests
         Assert.Equal(12, sut.Months.Count);
         Assert.Equal((2025, 6), (sut.Months[0].Year, sut.Months[0].Month));
         Assert.Equal((2026, 5), (sut.Months[11].Year, sut.Months[11].Month));
+        Assert.Equal($"{sut.Months[0].MonthName} {sut.Months[0].Year}", sut.Months[0].MonthLabel);
     }
 
     [Fact]
@@ -208,6 +209,97 @@ public class CalendarViewModelTests
 
         await _offDayRepository.DidNotReceive().DeleteAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await _offDayRepository.DidNotReceive().AddAsync(Arg.Any<OffDay>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SaveDescriptionCommand_creates_custom_vacation_day_when_missing()
+    {
+        _offDayRepository.GetByYearAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([]));
+        _offDayRepository.AddAsync(Arg.Any<OffDay>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        _offDayRepository.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var sut = CreateSubject();
+        sut.SelectedFiscalYearStart = FindFiscalYearStart(sut, 2025, 1);
+        await sut.LoadAsync();
+
+        var targetDate = new DateOnly(2025, 3, 12);
+        sut.DescriptionEditDate = targetDate;
+        sut.CustomDescriptionInput = "Family trip";
+
+        await sut.SaveDescriptionCommand.ExecuteAsync(null);
+
+        await _offDayRepository.Received(1).AddAsync(
+            Arg.Is<OffDay>(d =>
+                d.Date == targetDate &&
+                d.OffDayType == OffDayType.Vacation &&
+                d.Description == "Family trip"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SaveDescriptionCommand_updates_existing_vacation_description()
+    {
+        var vacation = new OffDay
+        {
+            Id = Guid.NewGuid(),
+            Year = 2025,
+            Date = new DateOnly(2025, 7, 14),
+            OffDayType = OffDayType.Vacation,
+            Description = "Old note",
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        _offDayRepository.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([vacation]));
+        _offDayRepository.UpdateAsync(Arg.Any<OffDay>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        _offDayRepository.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var sut = CreateSubject();
+        sut.SelectedFiscalYearStart = FindFiscalYearStart(sut, 2025, 1);
+        await sut.LoadAsync();
+
+        sut.DescriptionEditDate = vacation.Date;
+        sut.CustomDescriptionInput = "Updated note";
+
+        await sut.SaveDescriptionCommand.ExecuteAsync(null);
+
+        await _offDayRepository.Received(1).UpdateAsync(
+            Arg.Is<OffDay>(d => d.Id == vacation.Id && d.Description == "Updated note"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SaveDescriptionCommand_does_not_change_public_holiday_description()
+    {
+        var holiday = new OffDay
+        {
+            Id = Guid.NewGuid(),
+            Year = 2025,
+            Date = new DateOnly(2025, 1, 1),
+            OffDayType = OffDayType.PublicHoliday,
+            Description = "New Year's Day",
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        _offDayRepository.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([holiday]));
+
+        var sut = CreateSubject();
+        sut.SelectedFiscalYearStart = FindFiscalYearStart(sut, 2025, 1);
+        await sut.LoadAsync();
+
+        sut.DescriptionEditDate = holiday.Date;
+        sut.CustomDescriptionInput = "Custom";
+        await sut.SaveDescriptionCommand.ExecuteAsync(null);
+
+        await _offDayRepository.DidNotReceive().UpdateAsync(Arg.Any<OffDay>(), Arg.Any<CancellationToken>());
+        await _offDayRepository.DidNotReceive().AddAsync(Arg.Any<OffDay>(), Arg.Any<CancellationToken>());
+        Assert.Contains("managed by import", sut.DescriptionStatusMessage);
     }
 
     // ── Import red days ──────────────────────────────────────────────────────

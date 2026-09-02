@@ -26,7 +26,7 @@ This document tracks the development progress of KjcBusinessHub.
 - [x] Add `CalendarView.axaml` with 12 mini-calendars and color-coded day cells
 - [x] Add "Import red days for {year}" action
 - [x] Add **Calendar** entry in main navigation
-- [ ] Add explicit UI flow to create/edit custom off-day descriptions (currently only shown as tooltip text)
+- [x] Add explicit UI flow to create/edit custom off-day descriptions (currently only shown as tooltip text)
 
 ### 4. Debitable days calculation
 
