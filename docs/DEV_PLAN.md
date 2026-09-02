@@ -4,57 +4,52 @@ This document tracks the development progress of KjcBusinessHub.
 
 ---
 
-## Next Priority — Year Calendar & Debitable Days (V-Next)
-
-See [V_NEXT_DEV_PLAN.md](V_NEXT_DEV_PLAN.md) for the full feature specification.
+## Completed Priority — Year Calendar & Debitable Days (merged from `V_NEXT_DEV_PLAN.md`)
 
 ### 1. Domain + persistence for `OffDay` / `CalendarYear`
 
-- [x] Add `OffDayType` enum (`PublicHoliday`, `Vacation`)
-- [x] Add `OffDay` entity
-- [x] Add `CalendarYear` aggregate with validation rules
-- [x] Add `IOffDayRepository` interface
-- [x] Add `OffDayConfiguration` (EF Core)
-- [x] Register `OffDays` `DbSet` in `AppDbContext`
-- [x] Add `OffDayRepository` implementation
-- [x] Register `IOffDayRepository` in DI
-- [x] Add EF Core migration for `OffDays` table
+- [x] Add `OffDayType` enum for `PublicHoliday` and `Vacation`
+- [x] Extend `OffDayType` with `BridgingDay` support
+- [x] Add `OffDay` entity and `CalendarYear` aggregate with validation rules
+- [x] Add `IOffDayRepository` + `OffDayRepository`
+- [x] Add `OffDayConfiguration`, `OffDays` `DbSet`, DI registration, and EF migration
 
 ### 2. Dagsmart API importer
 
-- [x] Add `ISwedishPublicHolidayImporter` interface and `PublicHolidayImportResult`
-- [x] Add `DagsmartApiPublicHolidayImporter` (Infrastructure) using `HttpClient`
+- [x] Add `ISwedishPublicHolidayImporter` and `PublicHolidayImportResult`
+- [x] Add `DagsmartApiPublicHolidayImporter` using `HttpClient`
 - [x] Register importer via `AddHttpClient` in DI
 
-### 3. Calendar UI — year view, day toggle, import action
+### 3. Calendar UI
 
-- [x] Add `CalendarViewModel` with year navigation, off-day loading, and day toggle
-- [x] Add `CalendarView.axaml` — 12 monthly mini-calendars, color-coded cells
-- [x] Add "Import red days for {year}" action wired to `ISwedishPublicHolidayImporter`
-- [x] Add **Calendar** entry to the main navigation
+- [x] Add `CalendarViewModel` with year navigation, off-day loading, import action, and day toggle
+- [x] Add `CalendarView.axaml` with 12 mini-calendars and color-coded day cells
+- [x] Add "Import red days for {year}" action
+- [x] Add **Calendar** entry in main navigation
+- [ ] Add explicit UI flow to create/edit custom off-day descriptions (currently only shown as tooltip text)
 
-### 4. Debitable days calculation (domain logic)
+### 4. Debitable days calculation
 
-- [x] Add `YearMonth` value object
-- [x] Add `DebitableDaysQuery` and `DebitableDaysResult` value objects
-- [x] Add `DebitableDaysCalculator` service
-- [x] Unit tests covering multi-year periods, all-off periods, single-month periods
+- [x] Add `YearMonth`, `DebitableDaysQuery`, and `DebitableDaysResult`
+- [x] Add `DebitableDaysCalculator`
+- [x] Support optional deduction of vacation days and bridging days
+- [x] Unit tests cover multi-year periods, all-off periods, and single-month periods
 
 ### 5. Debitable Days panel (UI)
 
-- [x] Add `DebitableDaysViewModel` with reactive recalculation on off-day change
-- [x] Add panel within Calendar view: start/end month pickers, total, per-month table
-- [x] Show "No holiday data for YYYY" warning when a year has no public holiday data
+- [x] Add embedded `DebitableDaysViewModel` with reactive recalculation on off-day changes
+- [x] Add panel in Calendar view with fiscal-year start month selector, total, and per-month table
+- [x] Show warning when one or more years in the range have no imported public holidays
 
-### 6. Tests and documentation
+### 6. Tests and docs sync
 
 - [x] Unit tests for `CalendarYear` / `OffDay` domain rules
-- [x] Repository integration tests for `OffDay` CRUD and upsert
-- [x] Update `DOMAIN.md` with new entities, value objects, and business rules
-- [x] Update `USE_CASES.md` with UC-CAL-01 to UC-CAL-06 and UC-DEB-01 to UC-DEB-03
-- [x] Update `DATABASE.md` with `OffDays` table schema
-- [x] ViewModel / UI tests for year navigation, day toggle, import confirmation
-- [x] ViewModel tests for Debitable Days start/end selection and reactive recalculation
+- [x] Repository integration tests for `OffDay` CRUD/upsert
+- [x] ViewModel/UI tests for year navigation, day toggle, and import status
+- [x] ViewModel tests for Debitable Days recalculation and warnings
+- [ ] Add dedicated importer tests for `DagsmartApiPublicHolidayImporter`
+- [ ] Align `DOMAIN.md` and `USE_CASES.md` with current implementation details (bridging-day support, fiscal-year panel behavior)
+- [x] `DATABASE.md` includes `OffDays` table schema
 
 ---
 
