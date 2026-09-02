@@ -95,6 +95,12 @@ public class MonthCalendarModel
     public IReadOnlyList<IReadOnlyList<CalendarDayCell>> WeekRows { get; init; } = [];
 }
 
+public sealed record FiscalYearStartOption(int Year, int Month)
+{
+    public string DisplayName => $"{CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(Month)} {Year}";
+    public override string ToString() => DisplayName;
+}
+
 /// <summary>
 /// ViewModel for the Calendar view — year navigation, off-day display, vacation day toggle, and holiday import.
 /// </summary>
@@ -112,15 +118,17 @@ public partial class CalendarViewModel : ViewModelBase
     /// <summary>The embedded Debitable Days panel view model.</summary>
     public DebitableDaysViewModel DebitableDays { get; }
 
+    public ObservableCollection<FiscalYearStartOption> AvailableFiscalYearStarts { get; } = [];
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ImportButtonLabel))]
-    public partial int SelectedYear { get; set; } = DateOnly.FromDateTime(DateTime.Today).Year;
+    public partial FiscalYearStartOption? SelectedFiscalYearStart { get; set; }
 
-    partial void OnSelectedYearChanged(int value)
+    partial void OnSelectedFiscalYearStartChanged(FiscalYearStartOption? value)
     {
-        // Update the year without an immediate recalculation; LoadAsync will
-        // recalculate after off-day data for the new year has been loaded.
-        DebitableDays.ApplyCalendarYear(value);
+        if (value is null) return;
+        DebitableDays.ApplyFiscalYearStart(value.Year, value.Month);
+        _ = LoadAsync();
     }
 
     [ObservableProperty]
@@ -132,7 +140,10 @@ public partial class CalendarViewModel : ViewModelBase
 
     public bool HasStatusMessage => !string.IsNullOrWhiteSpace(StatusMessage);
 
-    public string ImportButtonLabel => $"Import red days for {SelectedYear}";
+    public string ImportButtonLabel =>
+        SelectedFiscalYearStart is null
+            ? "Import red days"
+            : $"Import red days for {SelectedFiscalYearStart.DisplayName} fiscal year";
 
     public ObservableCollection<MonthCalendarModel> Months { get; } = [];
 
@@ -144,23 +155,31 @@ public partial class CalendarViewModel : ViewModelBase
         _offDayRepository = offDayRepository;
         _importer = importer;
         DebitableDays = debitableDays;
-        DebitableDays.ApplyCalendarYear(SelectedYear);
+
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var initialStart = new FiscalYearStartOption(today.Year, DebitableDays.StartMonth);
+        RebuildFiscalYearStartOptions(initialStart.Year);
+        SelectedFiscalYearStart = FindFiscalYearStartOption(initialStart.Year, initialStart.Month);
     }
 
     // ── Commands ────────────────────────────────────────────────────────────
 
     [RelayCommand]
-    private async Task PreviousYearAsync()
+    private void PreviousYear()
     {
-        SelectedYear--;
-        await LoadAsync();
+        if (SelectedFiscalYearStart is null) return;
+        var targetYear = SelectedFiscalYearStart.Year - 1;
+        EnsureFiscalYearStartOptionsInclude(targetYear);
+        SelectedFiscalYearStart = FindFiscalYearStartOption(targetYear, SelectedFiscalYearStart.Month);
     }
 
     [RelayCommand]
-    private async Task NextYearAsync()
+    private void NextYear()
     {
-        SelectedYear++;
-        await LoadAsync();
+        if (SelectedFiscalYearStart is null) return;
+        var targetYear = SelectedFiscalYearStart.Year + 1;
+        EnsureFiscalYearStartOptionsInclude(targetYear);
+        SelectedFiscalYearStart = FindFiscalYearStartOption(targetYear, SelectedFiscalYearStart.Month);
     }
 
     [RelayCommand]
@@ -178,16 +197,33 @@ public partial class CalendarViewModel : ViewModelBase
 
         try
         {
-            var result = await _importer.ImportAsync(SelectedYear, cancellationToken);
+            var years = GetRelevantYears();
+            var added = 0;
+            var updated = 0;
+            var errors = new List<string>();
 
-            if (result.IsSuccess)
+            foreach (var year in years)
+            {
+                var result = await _importer.ImportAsync(year, cancellationToken);
+                if (result.IsSuccess)
+                {
+                    added += result.Added;
+                    updated += result.Updated;
+                }
+                else
+                {
+                    errors.Add($"{year}: {result.ErrorMessage}");
+                }
+            }
+
+            if (errors.Count == 0)
             {
                 await LoadAsync(cancellationToken);
-                StatusMessage = $"Import complete: {result.Added} added, {result.Updated} updated.";
+                StatusMessage = $"Import complete ({string.Join(", ", years)}): {added} added, {updated} updated.";
             }
             else
             {
-                StatusMessage = $"Import failed: {result.ErrorMessage}";
+                StatusMessage = $"Import failed: {string.Join(" | ", errors)}";
             }
         }
         catch (OperationCanceledException)
@@ -245,17 +281,22 @@ public partial class CalendarViewModel : ViewModelBase
 
     // ── Initialization / loading ─────────────────────────────────────────────
 
-    /// <summary>Loads off-days for the selected year and rebuilds the 12-month calendar grid.</summary>
+    /// <summary>Loads off-days for the selected fiscal-year period and rebuilds the 12-month calendar grid.</summary>
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
+        if (SelectedFiscalYearStart is null) return;
+
         IsLoading = true;
         StatusMessage = null;
         try
         {
-            var offDays = await _offDayRepository.GetByYearAsync(SelectedYear, cancellationToken);
+            var years = GetRelevantYears();
+            var offDayTasks = years.Select(y => _offDayRepository.GetByYearAsync(y, cancellationToken));
+            var offDaysByYear = await Task.WhenAll(offDayTasks);
+            var offDays = offDaysByYear.SelectMany(x => x).ToList();
             _offDaysByDate = offDays.ToDictionary(d => d.Date);
 
-            var months = BuildMonthModels(SelectedYear, _offDaysByDate);
+            var months = BuildMonthModels(SelectedFiscalYearStart.Year, SelectedFiscalYearStart.Month, _offDaysByDate);
 
             Months.Clear();
             foreach (var m in months)
@@ -279,23 +320,63 @@ public partial class CalendarViewModel : ViewModelBase
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
+    private IReadOnlyList<int> GetRelevantYears()
+    {
+        if (SelectedFiscalYearStart is null) return [];
+
+        var periodStart = new DateOnly(SelectedFiscalYearStart.Year, SelectedFiscalYearStart.Month, 1);
+        var periodEnd = periodStart.AddMonths(12).AddDays(-1);
+        return Enumerable.Range(periodStart.Year, periodEnd.Year - periodStart.Year + 1).ToList();
+    }
+
+    private void EnsureFiscalYearStartOptionsInclude(int year)
+    {
+        var hasYear = AvailableFiscalYearStarts.Any(o => o.Year == year);
+        if (!hasYear)
+        {
+            RebuildFiscalYearStartOptions(year);
+        }
+    }
+
+    private void RebuildFiscalYearStartOptions(int centerYear)
+    {
+        AvailableFiscalYearStarts.Clear();
+        for (var year = centerYear - 10; year <= centerYear + 10; year++)
+        {
+            for (var month = 1; month <= 12; month++)
+            {
+                AvailableFiscalYearStarts.Add(new FiscalYearStartOption(year, month));
+            }
+        }
+    }
+
+    private FiscalYearStartOption? FindFiscalYearStartOption(int year, int month)
+    {
+        return AvailableFiscalYearStarts.FirstOrDefault(o => o.Year == year && o.Month == month);
+    }
+
     private static IReadOnlyList<MonthCalendarModel> BuildMonthModels(
-        int year,
+        int startYear,
+        int startMonth,
         IReadOnlyDictionary<DateOnly, OffDay> offDaysByDate)
     {
-        var periodStart = new DateOnly(year, 1, 1);
-        var periodEnd = new DateOnly(year, 12, 31);
+        var periodStart = new DateOnly(startYear, startMonth, 1);
+        var periodEnd = periodStart.AddMonths(12).AddDays(-1);
 
         var publicHolidays = offDaysByDate.Values
             .Where(d => d.OffDayType == OffDayType.PublicHoliday)
+            .Where(d => d.Date >= periodStart && d.Date <= periodEnd)
             .Select(d => d.Date)
             .ToHashSet();
 
         var bridgingDays = DebitableDaysCalculator.ComputeBridgingDays(publicHolidays, periodStart, periodEnd);
 
         var models = new List<MonthCalendarModel>(12);
-        for (var month = 1; month <= 12; month++)
+        for (var i = 0; i < 12; i++)
         {
+            var monthStart = periodStart.AddMonths(i);
+            var month = monthStart.Month;
+            var year = monthStart.Year;
             var cells = BuildCellsForMonth(year, month, offDaysByDate, bridgingDays);
             var weeks = SplitIntoWeeks(cells);
             models.Add(new MonthCalendarModel

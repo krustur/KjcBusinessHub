@@ -49,6 +49,10 @@ public class DebitableDaysCalculator(IOffDayRepository offDayRepository)
             .ToHashSet();
 
         var bridgingDaySet = ComputeBridgingDays(publicHolidaySet, periodStart, periodEnd);
+        var vacationDayCount = allOffDays.Count(d =>
+            d.OffDayType is OffDayType.Vacation &&
+            d.Date >= periodStart &&
+            d.Date <= periodEnd);
 
         var offDaySet = allOffDays
             .Where(d => d.OffDayType is OffDayType.PublicHoliday
@@ -75,7 +79,9 @@ public class DebitableDaysCalculator(IOffDayRepository offDayRepository)
         return new DebitableDaysResult(
             TotalDebitableDays: perMonth.Sum(m => m.DebitableDays),
             PerMonth: perMonth,
-            YearsWithoutPublicHolidays: yearsWithoutHolidays);
+            YearsWithoutPublicHolidays: yearsWithoutHolidays,
+            VacationDayCount: vacationDayCount,
+            BridgingDayCount: bridgingDaySet.Count);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

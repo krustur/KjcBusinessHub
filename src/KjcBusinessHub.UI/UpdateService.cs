@@ -34,7 +34,13 @@ public sealed class UpdateService
         try
         {
             var source = new GithubSource(RepositoryUrl, null, prerelease: channel == UpdateChannel.Prerelease);
-            var updateManager = new UpdateManager(source);
+            var updateManager = new UpdateManager(
+                source,
+                new UpdateOptions
+                {
+                    ExplicitChannel = channel == UpdateChannel.Prerelease ? "prerelease" : "stable",
+                    AllowVersionDowngrade = true,
+                });
 
             if (!updateManager.IsInstalled)
             {

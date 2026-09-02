@@ -242,6 +242,43 @@ public class DebitableDaysViewModelTests
         Assert.Equal(261, sut.TotalDebitableDays);
     }
 
+    [Fact]
+    public async Task RecalculateAsync_updates_vacation_and_bridging_day_counts_for_labels()
+    {
+        var vacation = new OffDay
+        {
+            Id = Guid.NewGuid(),
+            Year = 2025,
+            Date = new DateOnly(2025, 1, 8),
+            OffDayType = OffDayType.Vacation,
+            Description = string.Empty,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+        var holiday = new OffDay
+        {
+            Id = Guid.NewGuid(),
+            Year = 2025,
+            Date = new DateOnly(2025, 1, 7),
+            OffDayType = OffDayType.PublicHoliday,
+            Description = string.Empty,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([vacation, holiday]));
+
+        var sut = CreateSubject();
+        sut.CalendarYear = 2025;
+        sut.StartMonth = 1;
+
+        await sut.RecalculateAsync();
+
+        Assert.Equal(1, sut.VacationDayCount);
+        Assert.Equal(1, sut.BridgingDayCount);
+        Assert.Equal("Deduct vacation days (1)", sut.DeductVacationDaysLabel);
+        Assert.Equal("Deduct bridging days (1)", sut.DeductBridgingDaysLabel);
+    }
+
     // ── No public holidays warning ───────────────────────────────────────────
 
     [Fact]

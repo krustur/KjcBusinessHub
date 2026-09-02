@@ -47,20 +47,6 @@ jobs:
       - name: Test
         run: dotnet test KjcBusinessHub.slnx --configuration Release --no-restore
 
-      - name: Publish app
-        shell: pwsh
-        run: |
-          dotnet publish src/KjcBusinessHub.UI/KjcBusinessHub.UI.csproj `
-            --configuration Release `
-            --runtime win-x64 `
-            --self-contained true `
-            -p:PublishSingleFile=false `
-            -p:PublishTrimmed=false `
-            --output out/publish
-
-      - name: Install Velopack CLI
-        run: dotnet tool install --global vpk --version 1.2.0
-
       - name: Resolve release metadata
         id: meta
         shell: pwsh
@@ -77,10 +63,37 @@ jobs:
           }
 
           $tagName = "v$version"
+          $versionCore = ($version -split '-', 2)[0]
+          $versionParts = $versionCore.Split('.')
+          if ($versionParts.Length -eq 3) {
+            $assemblyFileVersion = "$versionCore.0"
+          } else {
+            $assemblyFileVersion = $versionCore
+          }
+
           "version=$version" >> $env:GITHUB_OUTPUT
+          "assembly_file_version=$assemblyFileVersion" >> $env:GITHUB_OUTPUT
           "channel=$channel" >> $env:GITHUB_OUTPUT
           "is_pre=$isPre" >> $env:GITHUB_OUTPUT
           "tag_name=$tagName" >> $env:GITHUB_OUTPUT
+
+      - name: Publish app
+        shell: pwsh
+        run: |
+          dotnet publish src/KjcBusinessHub.UI/KjcBusinessHub.UI.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=false `
+            -p:PublishTrimmed=false `
+            -p:Version=${{ steps.meta.outputs.version }} `
+            -p:AssemblyVersion=${{ steps.meta.outputs.assembly_file_version }} `
+            -p:FileVersion=${{ steps.meta.outputs.assembly_file_version }} `
+            -p:InformationalVersion=${{ steps.meta.outputs.version }} `
+            --output out/publish
+
+      - name: Install Velopack CLI
+        run: dotnet tool install --global vpk --version 1.2.0
 
       - name: Pack release with Velopack
         shell: pwsh
