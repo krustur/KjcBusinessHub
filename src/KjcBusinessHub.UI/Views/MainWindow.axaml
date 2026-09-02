@@ -6,7 +6,7 @@
         mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
         x:Class="KjcBusinessHub.UI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/kjcbusinesshub.ico"
+        Icon="/Assets/kjcbusinesshub-tray.ico"
         Title="KJC Business Hub"
         MinWidth="800" MinHeight="600">
 

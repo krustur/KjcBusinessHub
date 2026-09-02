@@ -151,24 +151,6 @@ public partial class MainWindow : Window
         var icon = new WindowIcon(
             AssetLoader.Open(new Uri("avares://KjcBusinessHub.UI/Assets/kjcbusinesshub-tray.ico")));
 
-        var settingsItem = new NativeMenuItem("Settings");
-        settingsItem.Click += (_, _) =>
-        {
-            Show();
-            WindowState = WindowState.Normal;
-            Activate();
-            _viewModel?.ShowSettings();
-        };
-
-        var calendarItem = new NativeMenuItem("Calendar");
-        calendarItem.Click += (_, _) =>
-        {
-            Show();
-            WindowState = WindowState.Normal;
-            Activate();
-            _viewModel?.ShowCalendar();
-        };
-
         _closeToTrayMenuItem = new NativeMenuItem("Close to system tray")
         {
             ToggleType = MenuItemToggleType.CheckBox,
@@ -176,14 +158,11 @@ public partial class MainWindow : Window
         };
         _closeToTrayMenuItem.Click += OnToggleCloseToTrayClicked;
 
-        var checkForUpdatesItem = new NativeMenuItem("Check for updates");
-        checkForUpdatesItem.Click += async (_, _) =>
-        {
-            if (_updateService is not null)
-            {
-                await _updateService.CheckAndApplyUpdatesInBackgroundAsync();
-            }
-        };
+        var checkForUpdatesItem = new NativeMenuItem("Check for Updates");
+        checkForUpdatesItem.Click += async (_, _) => await CheckForUpdatesAsync(UpdateChannel.Stable);
+
+        var checkForPrereleaseUpdatesItem = new NativeMenuItem("Check for Updates (pre-release)");
+        checkForPrereleaseUpdatesItem.Click += async (_, _) => await CheckForUpdatesAsync(UpdateChannel.Prerelease);
 
         var aboutItem = new NativeMenuItem("About");
         aboutItem.Click += async (_, _) => await ShowAboutDialogAsync();
@@ -195,11 +174,10 @@ public partial class MainWindow : Window
         {
             Items =
             {
-                settingsItem,
-                calendarItem,
                 _closeToTrayMenuItem,
                 new NativeMenuItemSeparator(),
                 checkForUpdatesItem,
+                checkForPrereleaseUpdatesItem,
                 aboutItem,
                 new NativeMenuItemSeparator(),
                 quitItem,
@@ -264,33 +242,108 @@ public partial class MainWindow : Window
         var aboutWindow = new Window
         {
             Width = 650,
-            Height = 300,
+            Height = 340,
             CanResize = false,
             Title = "About KJC Business Hub",
-            WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            Content = BuildAboutDialogContent(),
+            WindowStartupLocation = IsVisible
+                ? WindowStartupLocation.CenterOwner
+                : WindowStartupLocation.CenterScreen,
         };
+
+        aboutWindow.Content = BuildAboutDialogContent(aboutWindow);
 
         if (Icon is not null)
         {
             aboutWindow.Icon = Icon;
         }
 
-        if (aboutWindow.Content is Panel panel)
+        if (IsVisible)
         {
-            var closeButton = panel.Children.OfType<Button>().FirstOrDefault();
-            if (closeButton is not null)
-            {
-                closeButton.Click += (_, _) => aboutWindow.Close();
-            }
+            await aboutWindow.ShowDialog(this);
+            return;
         }
 
-        await aboutWindow.ShowDialog(this);
+        aboutWindow.Show();
     }
 
     public Task ShowAboutDialogFromUiAsync() => ShowAboutDialogAsync();
 
-    private static Panel BuildAboutDialogContent()
+    private async Task CheckForUpdatesAsync(UpdateChannel channel, Window? owner = null)
+    {
+        if (_updateService is null)
+        {
+            return;
+        }
+
+        var result = await _updateService.CheckAndApplyUpdatesAsync(channel);
+        if (result.Status == UpdateCheckStatus.UpdateApplied)
+        {
+            return;
+        }
+
+        await ShowInformationDialogAsync(
+            channel == UpdateChannel.Prerelease ? "Check for Updates (pre-release)" : "Check for Updates",
+            result.Message,
+            owner);
+    }
+
+    private async Task ShowInformationDialogAsync(string title, string message, Window? owner = null)
+    {
+        var infoWindow = new Window
+        {
+            Width = 420,
+            Height = 180,
+            CanResize = false,
+            Title = title,
+            WindowStartupLocation = owner is not null && owner.IsVisible
+                ? WindowStartupLocation.CenterOwner
+                : WindowStartupLocation.CenterScreen,
+            Content = BuildInformationDialogContent(message),
+        };
+
+        if (Icon is not null)
+        {
+            infoWindow.Icon = Icon;
+        }
+
+        if (infoWindow.Content is StackPanel panel &&
+            panel.Children.OfType<Button>().FirstOrDefault() is { } closeButton)
+        {
+            closeButton.Click += (_, _) => infoWindow.Close();
+        }
+
+        if (owner is not null && owner.IsVisible)
+        {
+            await infoWindow.ShowDialog(owner);
+            return;
+        }
+
+        infoWindow.Show();
+    }
+
+    private static StackPanel BuildInformationDialogContent(string message) =>
+        new()
+        {
+            Spacing = 18,
+            Margin = new Thickness(18),
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = message,
+                    TextWrapping = TextWrapping.Wrap,
+                    FontSize = 14,
+                },
+                new Button
+                {
+                    Content = "Close",
+                    Width = 90,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                },
+            }
+        };
+
+    private Panel BuildAboutDialogContent(Window aboutWindow)
     {
         var appFilePath = ResolveAppFilePath();
         var runtimeProfile = Program.RuntimeProfile;
@@ -339,15 +392,51 @@ public partial class MainWindow : Window
             $"Config Path: {runtimeProfile.SettingsPath}",
         });
 
-        return new Panel()
+        var checkForUpdatesButton = new Button
         {
-            Margin = new Thickness(18),
+            Content = "Check for Updates",
+            MinWidth = 170,
+        };
+        checkForUpdatesButton.Click += async (_, _) => await CheckForUpdatesAsync(UpdateChannel.Stable, aboutWindow);
+
+        var checkForPrereleaseUpdatesButton = new Button
+        {
+            Content = "Check for Updates (pre-release)",
+            MinWidth = 220,
+        };
+        checkForPrereleaseUpdatesButton.Click += async (_, _) => await CheckForUpdatesAsync(UpdateChannel.Prerelease, aboutWindow);
+
+        var closeButton = new Button
+        {
+            Content = "Close",
+            Width = 90,
+        };
+        closeButton.Click += (_, _) => aboutWindow.Close();
+
+        var actionRow = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 10,
+            HorizontalAlignment = HorizontalAlignment.Right,
             Children =
             {
+                checkForUpdatesButton,
+                checkForPrereleaseUpdatesButton,
+                closeButton,
+            }
+        };
+        DockPanel.SetDock(actionRow, Dock.Bottom);
+
+        return new DockPanel
+        {
+            Margin = new Thickness(18),
+            LastChildFill = true,
+            Children =
+            {
+                actionRow,
                 new StackPanel
                 {
                     Spacing = 12,
-                    // Margin = new Thickness(18),
                     Children =
                     {
                         new TextBlock
@@ -363,13 +452,6 @@ public partial class MainWindow : Window
                         }
                     }
                 },
-                new Button
-                {
-                    Content = "Close",
-                    Width = 90,
-                    HorizontalAlignment = HorizontalAlignment.Right,
-                    VerticalAlignment = VerticalAlignment.Bottom
-                }
             }
         };
     }
