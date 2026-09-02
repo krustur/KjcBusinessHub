@@ -88,8 +88,6 @@ public partial class App : AvalApp
                 _serviceProvider.GetRequiredService<ISettingsService>(),
                 _serviceProvider.GetRequiredService<UpdateService>());
 
-            _ = _serviceProvider.GetRequiredService<UpdateService>().CheckAndApplyUpdatesInBackgroundAsync();
-
             desktop.Exit += (_, _) =>
             {
                 _serviceProvider.GetService<FileWatcherService>()?.Stop();

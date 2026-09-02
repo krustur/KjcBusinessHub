@@ -276,7 +276,19 @@ public partial class MainWindow : Window
             return;
         }
 
-        var result = await _updateService.CheckAndApplyUpdatesAsync(channel);
+        var result = await _updateService.CheckForUpdatesAsync(channel);
+        if (result.Status == UpdateCheckStatus.UpdateAvailable &&
+            !string.IsNullOrWhiteSpace(result.AvailableVersion))
+        {
+            var shouldUpdate = await ShowUpdateConfirmationAsync(result.AvailableVersion, owner);
+            if (!shouldUpdate)
+            {
+                return;
+            }
+
+            result = await _updateService.DownloadAndApplyUpdateAsync(channel, result.AvailableVersion);
+        }
+
         if (result.Status == UpdateCheckStatus.UpdateApplied)
         {
             return;
@@ -287,6 +299,86 @@ public partial class MainWindow : Window
             result.Message,
             owner);
     }
+
+    private async Task<bool> ShowUpdateConfirmationAsync(string version, Window? owner = null)
+    {
+        var confirmWindow = new Window
+        {
+            Width = 420,
+            Height = 170,
+            CanResize = false,
+            Title = "Update available",
+            WindowStartupLocation = owner is not null && owner.IsVisible
+                ? WindowStartupLocation.CenterOwner
+                : WindowStartupLocation.CenterScreen,
+            Content = BuildUpdateConfirmationDialogContent(version),
+        };
+
+        if (Icon is not null)
+        {
+            confirmWindow.Icon = Icon;
+        }
+
+        var shouldUpdate = false;
+        if (confirmWindow.Content is StackPanel panel &&
+            panel.Children.OfType<StackPanel>().LastOrDefault() is { } buttonPanel)
+        {
+            var yesButton = (Button)buttonPanel.Children[0]!;
+            var noButton = (Button)buttonPanel.Children[1]!;
+
+            yesButton.Click += (_, _) =>
+            {
+                shouldUpdate = true;
+                confirmWindow.Close();
+            };
+            noButton.Click += (_, _) => confirmWindow.Close();
+        }
+
+        if (owner is not null && owner.IsVisible)
+        {
+            await confirmWindow.ShowDialog(owner);
+        }
+        else if (IsVisible)
+        {
+            await confirmWindow.ShowDialog(this);
+        }
+        else
+        {
+            var closed = new TaskCompletionSource<bool>();
+            confirmWindow.Closed += (_, _) => closed.TrySetResult(true);
+            confirmWindow.Show();
+            await closed.Task;
+        }
+
+        return shouldUpdate;
+    }
+
+    private static StackPanel BuildUpdateConfirmationDialogContent(string version) =>
+        new()
+        {
+            Spacing = 18,
+            Margin = new Thickness(18),
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = $"Version {version} is available. Do you want to update?",
+                    TextWrapping = TextWrapping.Wrap,
+                    FontSize = 14,
+                },
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 10,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    Children =
+                    {
+                        new Button { Content = "Yes", MinWidth = 80, Classes = { "accent" } },
+                        new Button { Content = "No", MinWidth = 80 },
+                    }
+                }
+            }
+        };
 
     private async Task ShowInformationDialogAsync(string title, string message, Window? owner = null)
     {

@@ -8,7 +8,6 @@ namespace KjcBusinessHub.UI;
 
 public sealed class UpdateService
 {
-    private const string UpdateChannelEnvironmentKey = "KJCBH_UPDATE_CHANNEL";
     private const string RepositoryUrl = "https://github.com/krustur/KjcBusinessHub";
     private readonly RuntimeProfile _runtimeProfile;
     private readonly ILogger<UpdateService> _logger;
@@ -19,12 +18,7 @@ public sealed class UpdateService
         _logger = logger;
     }
 
-    public async Task CheckAndApplyUpdatesInBackgroundAsync()
-    {
-        await CheckAndApplyUpdatesAsync(IsPrereleaseChannel() ? UpdateChannel.Prerelease : UpdateChannel.Stable);
-    }
-
-    public async Task<UpdateCheckResult> CheckAndApplyUpdatesAsync(UpdateChannel channel)
+    public async Task<UpdateCheckResult> CheckForUpdatesAsync(UpdateChannel channel)
     {
         if (_runtimeProfile.IsDevelopment)
         {
@@ -33,15 +27,7 @@ public sealed class UpdateService
 
         try
         {
-            var source = new GithubSource(RepositoryUrl, null, prerelease: channel == UpdateChannel.Prerelease);
-            var updateManager = new UpdateManager(
-                source,
-                new UpdateOptions
-                {
-                    ExplicitChannel = channel == UpdateChannel.Prerelease ? "prerelease" : "stable",
-                    AllowVersionDowngrade = true,
-                });
-
+            var updateManager = CreateUpdateManager(channel);
             if (!updateManager.IsInstalled)
             {
                 return new(UpdateCheckStatus.Unavailable, "Update checks are only available in installed builds.");
@@ -57,21 +43,83 @@ public sealed class UpdateService
                         : "No update is currently available.");
             }
 
-            await updateManager.DownloadUpdatesAsync(update);
-            updateManager.ApplyUpdatesAndRestart(update.TargetFullRelease);
-            return new(UpdateCheckStatus.UpdateApplied, "Update downloaded. Restarting to apply it.");
+            var version = update.TargetFullRelease.Version.ToString();
+            return new(
+                UpdateCheckStatus.UpdateAvailable,
+                $"Version {version} is available.",
+                version);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Update check failed.");
-            return new(UpdateCheckStatus.Failed, "Update check failed. Please try again later.");
+            return new(UpdateCheckStatus.Failed, BuildFailureMessage("check for updates", ex));
         }
     }
 
-    private static bool IsPrereleaseChannel()
+    public async Task<UpdateCheckResult> DownloadAndApplyUpdateAsync(UpdateChannel channel, string? expectedVersion = null)
     {
-        var channel = Environment.GetEnvironmentVariable(UpdateChannelEnvironmentKey);
-        return string.Equals(channel, "prerelease", StringComparison.OrdinalIgnoreCase);
+        if (_runtimeProfile.IsDevelopment)
+        {
+            return new(UpdateCheckStatus.Unavailable, "Update checks are unavailable in development mode.");
+        }
+
+        try
+        {
+            var updateManager = CreateUpdateManager(channel);
+            if (!updateManager.IsInstalled)
+            {
+                return new(UpdateCheckStatus.Unavailable, "Update checks are only available in installed builds.");
+            }
+
+            var update = await updateManager.CheckForUpdatesAsync();
+            if (update is null)
+            {
+                return new(
+                    UpdateCheckStatus.NoUpdateAvailable,
+                    channel == UpdateChannel.Prerelease
+                        ? "No pre-release update is currently available."
+                        : "No update is currently available.");
+            }
+
+            var version = update.TargetFullRelease.Version.ToString();
+            if (!string.IsNullOrWhiteSpace(expectedVersion) &&
+                !string.Equals(expectedVersion, version, StringComparison.OrdinalIgnoreCase))
+            {
+                return new(
+                    UpdateCheckStatus.UpdateAvailable,
+                    $"Version {version} is available. Please confirm the update again.",
+                    version);
+            }
+
+            await updateManager.DownloadUpdatesAsync(update);
+            updateManager.ApplyUpdatesAndRestart(update.TargetFullRelease);
+            return new(UpdateCheckStatus.UpdateApplied, $"Version {version} downloaded. Restarting to apply it.", version);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Update apply failed.");
+            return new(UpdateCheckStatus.Failed, BuildFailureMessage("apply the update", ex));
+        }
+    }
+
+    private static string BuildFailureMessage(string operation, Exception ex)
+    {
+        var detail = ex.GetBaseException().Message;
+        return string.IsNullOrWhiteSpace(detail)
+            ? $"Update failed while trying to {operation}."
+            : $"Update failed while trying to {operation}.{Environment.NewLine}{Environment.NewLine}Details:{Environment.NewLine}{detail}";
+    }
+
+    private static UpdateManager CreateUpdateManager(UpdateChannel channel)
+    {
+        var source = new GithubSource(RepositoryUrl, null, prerelease: channel == UpdateChannel.Prerelease);
+        return new UpdateManager(
+            source,
+            new UpdateOptions
+            {
+                ExplicitChannel = channel == UpdateChannel.Prerelease ? "prerelease" : "stable",
+                AllowVersionDowngrade = true,
+            });
     }
 }
 
@@ -83,10 +131,11 @@ public enum UpdateChannel
 
 public enum UpdateCheckStatus
 {
+    UpdateAvailable,
     UpdateApplied,
     NoUpdateAvailable,
     Unavailable,
     Failed,
 }
 
-public sealed record UpdateCheckResult(UpdateCheckStatus Status, string Message);
+public sealed record UpdateCheckResult(UpdateCheckStatus Status, string Message, string? AvailableVersion = null);

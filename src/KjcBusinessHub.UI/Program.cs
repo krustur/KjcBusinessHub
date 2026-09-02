@@ -28,7 +28,9 @@ sealed class Program
         Directory.CreateDirectory(RuntimeProfile.StorageRoot);
         MigrateDatabase(RuntimeProfile.DatabasePath);
 
-        VelopackApp.Build().Run();
+        VelopackApp.Build()
+            .SetAutoApplyOnStartup(false)
+            .Run();
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 
