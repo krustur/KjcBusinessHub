@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -347,6 +348,7 @@ public partial class MainWindow : Window
     {
         var appFilePath = ResolveAppFilePath();
         var runtimeProfile = Program.RuntimeProfile;
+        var appVersion = "N/A";
         var fileVersion = "N/A";
         var productVersion = "N/A";
         var copyright = "N/A";
@@ -381,8 +383,20 @@ public partial class MainWindow : Window
             }
         }
 
+        var informationalVersion =
+            typeof(MainWindow).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        if (!string.IsNullOrWhiteSpace(informationalVersion))
+        {
+            appVersion = informationalVersion;
+        }
+        else
+        {
+            appVersion = typeof(MainWindow).Assembly.GetName().Version?.ToString() ?? "N/A";
+        }
+
         var details = string.Join(Environment.NewLine, new[]
         {
+            $"Application Version: {appVersion}",
             $"File Version: {fileVersion}",
             $"Product Version: {productVersion}",
             $"Copyright: {copyright}",
