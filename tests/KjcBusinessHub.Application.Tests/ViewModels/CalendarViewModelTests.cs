@@ -81,6 +81,7 @@ public class CalendarViewModelTests
         Assert.Equal(12, sut.Months.Count);
         Assert.Equal((2025, 6), (sut.Months[0].Year, sut.Months[0].Month));
         Assert.Equal((2026, 5), (sut.Months[11].Year, sut.Months[11].Month));
+        Assert.Equal($"{sut.Months[0].MonthName} {sut.Months[0].Year}", sut.Months[0].MonthLabel);
     }
 
     [Fact]

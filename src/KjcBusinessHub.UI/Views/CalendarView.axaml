@@ -144,7 +144,7 @@
                             <StackPanel Spacing="2">
 
                                 <!-- Month name -->
-                                <TextBlock Text="{Binding MonthName}"
+                                <TextBlock Text="{Binding MonthLabel}"
                                            FontWeight="SemiBold" FontSize="13"
                                            HorizontalAlignment="Center"
                                            Margin="0,0,0,4" />
@@ -181,11 +181,11 @@
                                                                ToolTip.Tip="{Binding Description}"
                                                                Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).ToggleDayCommand}"
                                                                CommandParameter="{Binding Date}">
-                                                            <TextBlock Text="{Binding DayNumber}"
-                                                                       IsVisible="{Binding !IsEmpty}"
-                                                                       FontSize="11"
-                                                                       Foreground="{Binding ForegroundBrush}"
-                                                                       HorizontalAlignment="Center"
+                                                           <TextBlock Text="{Binding DayNumber}"
+                                                                      IsVisible="{Binding !IsEmpty}"
+                                                                      FontSize="11"
+                                                                      Foreground="{Binding ForegroundBrush}"
+                                                                      HorizontalAlignment="Center"
                                                                        VerticalAlignment="Center" />
                                                         </Button>
                                                     </DataTemplate>

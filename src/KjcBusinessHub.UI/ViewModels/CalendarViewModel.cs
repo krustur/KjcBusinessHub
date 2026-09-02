@@ -90,6 +90,7 @@ public class MonthCalendarModel
     public int Year { get; init; }
     public int Month { get; init; }
     public string MonthName { get; init; } = string.Empty;
+    public string MonthLabel => $"{MonthName} {Year}";
 
     /// <summary>Up to 6 week-rows; each row contains 7 <see cref="CalendarDayCell"/> objects (Mon–Sun).</summary>
     public IReadOnlyList<IReadOnlyList<CalendarDayCell>> WeekRows { get; init; } = [];
