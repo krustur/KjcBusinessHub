@@ -33,7 +33,7 @@ public class OffDayRepository(AppDbContext db) : IOffDayRepository
         db.OffDays.Remove(existing);
     }
 
-    public async Task<bool> UpsertPublicHolidayAsync(int year, DateOnly date, string description, CancellationToken cancellationToken = default)
+    public async Task<PublicHolidayUpsertOutcome> UpsertPublicHolidayAsync(int year, DateOnly date, string description, CancellationToken cancellationToken = default)
     {
         var existing = await db.OffDays.SingleOrDefaultAsync(
             d => d.Year == year && d.Date == date, cancellationToken);
@@ -42,12 +42,12 @@ public class OffDayRepository(AppDbContext db) : IOffDayRepository
         {
             // Only update public holidays; leave vacation entries untouched.
             if (existing.OffDayType != OffDayType.PublicHoliday)
-                return false;
+                return PublicHolidayUpsertOutcome.Skipped;
 
             existing.Description = description;
             existing.UpdatedAt = DateTimeOffset.UtcNow;
             db.OffDays.Update(existing);
-            return false;
+            return PublicHolidayUpsertOutcome.Updated;
         }
 
         await db.OffDays.AddAsync(new OffDay
@@ -60,7 +60,7 @@ public class OffDayRepository(AppDbContext db) : IOffDayRepository
             CreatedAt = DateTimeOffset.UtcNow,
         }, cancellationToken);
 
-        return true;
+        return PublicHolidayUpsertOutcome.Inserted;
     }
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default)

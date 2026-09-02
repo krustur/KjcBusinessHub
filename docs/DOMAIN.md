@@ -123,7 +123,7 @@ A single day marked as unavailable for billing purposes.
 | Id          | Guid           | Unique identifier                                    |
 | Year        | int            | Calendar year (denormalised for query convenience)   |
 | Date        | DateOnly       | The calendar date                                    |
-| OffDayType  | enum           | `PublicHoliday` or `Vacation`                        |
+| OffDayType  | enum           | `PublicHoliday`, `Vacation`, or derived `BridgingDay` |
 | Description | string         | Optional label (e.g. "Midsommar", "Summer vacation") |
 | CreatedAt   | DateTimeOffset | When the record was created                          |
 | UpdatedAt   | DateTimeOffset? | When the record was last modified                   |
@@ -135,18 +135,23 @@ A single day marked as unavailable for billing purposes.
 ### DebitableDaysQuery
 Represents a request to calculate debitable workdays over a month range.
 
-| Property   | Type      | Description                                    |
-|------------|-----------|------------------------------------------------|
-| StartMonth | YearMonth | First month of the period (inclusive)          |
-| EndMonth   | YearMonth | Last month of the period (must be ≥ StartMonth) |
+| Property            | Type      | Description                                              |
+|---------------------|-----------|----------------------------------------------------------|
+| StartMonth          | YearMonth | First month of the period (inclusive)                    |
+| EndMonth            | YearMonth | Last month of the period (must be ≥ StartMonth)          |
+| DeductVacationDays  | bool      | Whether user-marked vacation days reduce the total       |
+| DeductBridgingDays  | bool      | Whether derived bridging days reduce the total           |
 
 ### DebitableDaysResult
 Result of a debitable-days calculation.
 
-| Property          | Type                               | Description                             |
-|-------------------|------------------------------------|-----------------------------------------|
-| TotalDebitableDays | int                               | Total billable workdays across the full period |
-| PerMonth          | IReadOnlyList\<MonthDebitableDays\> | One entry per month in the range       |
+| Property                 | Type                               | Description                                      |
+|--------------------------|------------------------------------|--------------------------------------------------|
+| TotalDebitableDays       | int                                | Total billable workdays across the full period   |
+| PerMonth                 | IReadOnlyList\<MonthDebitableDays\> | One entry per month in the range                |
+| YearsWithoutPublicHolidays | IReadOnlyList\<int\>             | Years in the selected range that have no imported public holidays |
+| VacationDayCount         | int                                | Number of vacation days found in the selected range |
+| BridgingDayCount         | int                                | Number of derived bridging days found in the selected range |
 
 ### MonthDebitableDays
 
@@ -159,6 +164,7 @@ Result of a debitable-days calculation.
 ```
 PublicHoliday       // Swedish red day (röd dag)
 Vacation            // User-defined vacation day
+BridgingDay         // Derived weekday between non-working days
 ```
 
 ---
@@ -177,6 +183,8 @@ Vacation            // User-defined vacation day
 - SourceDocuments with `IsFutureTransaction == true` are excluded from monthly SourceDocument coverage totals but remain visible in the list and can still be linked to Transactions.
 - `IsFutureTransaction` is a manual flag; it is not inferred automatically from transaction data. Clearing the flag is a manual user action.
 - Debitable days calculation: iterate every day in the requested period; exclude Saturdays and Sundays; exclude dates recorded as `PublicHoliday`; exclude dates recorded as `Vacation`; count remaining days grouped by month.
+- Calendar and debitable-days views always operate on a 12-month fiscal-year range anchored by the selected start month.
+- Bridging days are derived from imported public holidays within the selected fiscal-year range and shown in the calendar/debitable-days UI without overwriting stored off-days.
 - `CalendarYear` validates that each off-day's `Date` belongs to the owned year and that no two off-days share the same date.
 - The `DagsmartApiPublicHolidayImporter` upserts `PublicHoliday` off-days for the requested year; existing `Vacation` entries are never modified.
 

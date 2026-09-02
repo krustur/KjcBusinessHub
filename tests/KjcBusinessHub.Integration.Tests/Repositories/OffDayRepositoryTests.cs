@@ -123,43 +123,43 @@ public class OffDayRepositoryTests : IDisposable
     // ── UpsertPublicHolidayAsync ─────────────────────────────────────────────
 
     [Fact]
-    public async Task UpsertPublicHolidayAsync_inserts_new_entry_and_returns_true()
+    public async Task UpsertPublicHolidayAsync_inserts_new_entry_and_returns_inserted()
     {
-        var isNew = await _repository.UpsertPublicHolidayAsync(2025, new DateOnly(2025, 1, 1), "Nyårsdagen");
+        var outcome = await _repository.UpsertPublicHolidayAsync(2025, new DateOnly(2025, 1, 1), "Nyårsdagen");
         await _repository.SaveChangesAsync();
 
-        Assert.True(isNew);
+        Assert.Equal(PublicHolidayUpsertOutcome.Inserted, outcome);
         var all = await _repository.GetByYearAsync(2025);
         Assert.Single(all);
         Assert.Equal(OffDayType.PublicHoliday, all[0].OffDayType);
     }
 
     [Fact]
-    public async Task UpsertPublicHolidayAsync_updates_existing_public_holiday_and_returns_false()
+    public async Task UpsertPublicHolidayAsync_updates_existing_public_holiday_and_returns_updated()
     {
         await _repository.UpsertPublicHolidayAsync(2025, new DateOnly(2025, 1, 1), "Old name");
         await _repository.SaveChangesAsync();
 
-        var isNew = await _repository.UpsertPublicHolidayAsync(2025, new DateOnly(2025, 1, 1), "New name");
+        var outcome = await _repository.UpsertPublicHolidayAsync(2025, new DateOnly(2025, 1, 1), "New name");
         await _repository.SaveChangesAsync();
 
-        Assert.False(isNew);
+        Assert.Equal(PublicHolidayUpsertOutcome.Updated, outcome);
         var all = await _repository.GetByYearAsync(2025);
         Assert.Single(all);
         Assert.Equal("New name", all[0].Description);
     }
 
     [Fact]
-    public async Task UpsertPublicHolidayAsync_leaves_vacation_entry_untouched_and_returns_false()
+    public async Task UpsertPublicHolidayAsync_leaves_vacation_entry_untouched_and_returns_skipped()
     {
         var vacation = MakeOffDay(2025, new DateOnly(2025, 1, 1), OffDayType.Vacation, "Summer vacation");
         await _repository.AddAsync(vacation);
         await _repository.SaveChangesAsync();
 
-        var isNew = await _repository.UpsertPublicHolidayAsync(2025, new DateOnly(2025, 1, 1), "Nyårsdagen");
+        var outcome = await _repository.UpsertPublicHolidayAsync(2025, new DateOnly(2025, 1, 1), "Nyårsdagen");
         await _repository.SaveChangesAsync();
 
-        Assert.False(isNew);
+        Assert.Equal(PublicHolidayUpsertOutcome.Skipped, outcome);
         var all = await _repository.GetByYearAsync(2025);
         Assert.Single(all);
         Assert.Equal(OffDayType.Vacation, all[0].OffDayType);

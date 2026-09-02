@@ -229,8 +229,8 @@ The user should see a view of all available Transactions top left and all availa
 
 **Acceptance Criteria:**
 - The user can navigate to a **Calendar** view from the main navigation.
-- All 12 months of the selected year are displayed in a grid.
-- Day cells are color-coded: red for public holidays, yellow/amber for vacation days, light grey for weekends, default for regular workdays.
+- A fiscal-year start selector is available and the view always displays the selected 12-month fiscal-year range in a grid.
+- Day cells are color-coded: red for public holidays, amber for derived bridging days, yellow for vacation days, light grey for weekends, default for regular workdays.
 
 ---
 
@@ -273,8 +273,8 @@ The user should see a view of all available Transactions top left and all availa
 - The Calendar view is open.
 
 **Acceptance Criteria:**
-- An explicit "Import red days for {year}" action is available.
-- The action calls the Dagsmart API and persists the results as `PublicHoliday` off-days.
+- An explicit "Import red days for {fiscal year start}" action is available.
+- The action calls the Dagsmart API for every calendar year covered by the selected fiscal-year range and persists the results as `PublicHoliday` off-days.
 - Existing `Vacation` off-days are not modified.
 - A confirmation shows how many days were added or updated.
 - A user-visible warning is shown if the import fails (e.g. network unavailable).
@@ -300,6 +300,7 @@ The user should see a view of all available Transactions top left and all availa
 
 **Acceptance Criteria:**
 - The user selects a start month and an end month.
+- The selected fiscal-year start month defines a fixed 12-month range used for the calculation.
 - The application returns a `DebitableDaysResult` derived from the off-day data for all affected years.
 - Excluded from the count: Saturdays, Sundays, public holidays, vacation days.
 
@@ -313,6 +314,7 @@ The user should see a view of all available Transactions top left and all availa
 **Acceptance Criteria:**
 - The result shows a prominent total: "Total debitable days: N".
 - A table/list shows one row per month with the month name and its debitable-day count.
+- The panel shows toggles for deducting vacation days and derived bridging days, including the current counts for each.
 - Months whose years have no holiday data display a clear warning: "No holiday data for YYYY — import red days first".
 
 ---

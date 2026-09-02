@@ -70,7 +70,7 @@ This document describes the database schema, migrations strategy, and EF Core se
 | Id          | UNIQUEIDENTIFIER | PK, NOT NULL                             |
 | Year        | INT              | NOT NULL                                 |
 | Date        | DATE             | NOT NULL                                 |
-| OffDayType  | INT              | NOT NULL (0 = PublicHoliday, 1 = Vacation) |
+| OffDayType  | INT              | NOT NULL (0 = PublicHoliday, 1 = Vacation, 2 = BridgingDay) |
 | Description | NVARCHAR(500)    | NOT NULL, default ''                     |
 | CreatedAt   | DATETIMEOFFSET   | NOT NULL                                 |
 | UpdatedAt   | DATETIMEOFFSET   | NULL                                     |

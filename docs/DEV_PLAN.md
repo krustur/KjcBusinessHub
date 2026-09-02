@@ -47,8 +47,8 @@ This document tracks the development progress of KjcBusinessHub.
 - [x] Repository integration tests for `OffDay` CRUD/upsert
 - [x] ViewModel/UI tests for year navigation, day toggle, and import status
 - [x] ViewModel tests for Debitable Days recalculation and warnings
-- [ ] Add dedicated importer tests for `DagsmartApiPublicHolidayImporter`
-- [ ] Align `DOMAIN.md` and `USE_CASES.md` with current implementation details (bridging-day support, fiscal-year panel behavior)
+- [x] Add dedicated importer tests for `DagsmartApiPublicHolidayImporter`
+- [x] Align `DOMAIN.md` and `USE_CASES.md` with current implementation details (bridging-day support, fiscal-year panel behavior)
 - [x] `DATABASE.md` includes `OffDays` table schema
 
 ---
