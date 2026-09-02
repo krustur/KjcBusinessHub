@@ -139,23 +139,7 @@ public partial class CalendarViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(HasStatusMessage))]
     public partial string? StatusMessage { get; set; }
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasDescriptionEditDate))]
-    [NotifyPropertyChangedFor(nameof(DescriptionEditDateLabel))]
-    public partial DateOnly? DescriptionEditDate { get; set; }
-
-    [ObservableProperty]
-    public partial string CustomDescriptionInput { get; set; } = string.Empty;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasDescriptionStatusMessage))]
-    public partial string? DescriptionStatusMessage { get; set; }
-
     public bool HasStatusMessage => !string.IsNullOrWhiteSpace(StatusMessage);
-    public bool HasDescriptionEditDate => DescriptionEditDate.HasValue;
-    public string DescriptionEditDateLabel =>
-        DescriptionEditDate?.ToString("yyyy-MM-dd", CultureInfo.CurrentCulture) ?? string.Empty;
-    public bool HasDescriptionStatusMessage => !string.IsNullOrWhiteSpace(DescriptionStatusMessage);
 
     public string ImportButtonLabel =>
         SelectedFiscalYearStart is null
@@ -265,9 +249,6 @@ public partial class CalendarViewModel : ViewModelBase
     [RelayCommand]
     private async Task ToggleDayAsync(DateOnly date)
     {
-        DescriptionEditDate = date;
-        DescriptionStatusMessage = null;
-
         if (_offDaysByDate.TryGetValue(date, out var existing))
         {
             if (existing.OffDayType == OffDayType.Vacation)
@@ -276,12 +257,7 @@ public partial class CalendarViewModel : ViewModelBase
                 await _offDayRepository.SaveChangesAsync();
                 _offDaysByDate.Remove(date);
                 ApplyOffDayToCell(date, null);
-                CustomDescriptionInput = string.Empty;
                 _ = DebitableDays.RecalculateAsync();
-            }
-            else
-            {
-                CustomDescriptionInput = existing.Description;
             }
             // Public holidays are not toggled by clicking — ignore.
         }
@@ -300,71 +276,8 @@ public partial class CalendarViewModel : ViewModelBase
             await _offDayRepository.SaveChangesAsync();
             _offDaysByDate[date] = offDay;
             ApplyOffDayToCell(date, offDay);
-            CustomDescriptionInput = offDay.Description;
             _ = DebitableDays.RecalculateAsync();
         }
-    }
-
-    [RelayCommand]
-    private void BeginEditDescription(DateOnly? date)
-    {
-        if (!date.HasValue) return;
-        DescriptionEditDate = date.Value;
-        DescriptionStatusMessage = null;
-        CustomDescriptionInput = _offDaysByDate.TryGetValue(date.Value, out var existing)
-            ? existing.Description
-            : string.Empty;
-    }
-
-    [RelayCommand]
-    private async Task SaveDescriptionAsync()
-    {
-        if (!DescriptionEditDate.HasValue) return;
-
-        var date = DescriptionEditDate.Value;
-        var trimmedDescription = CustomDescriptionInput.Trim();
-
-        if (_offDaysByDate.TryGetValue(date, out var existing))
-        {
-            if (existing.OffDayType == OffDayType.PublicHoliday)
-            {
-                DescriptionStatusMessage = "Public-holiday descriptions are managed by import.";
-                return;
-            }
-
-            existing.Description = trimmedDescription;
-            existing.UpdatedAt = DateTimeOffset.UtcNow;
-            await _offDayRepository.UpdateAsync(existing);
-            await _offDayRepository.SaveChangesAsync();
-            ApplyOffDayToCell(date, existing);
-            DescriptionStatusMessage = string.IsNullOrWhiteSpace(trimmedDescription)
-                ? "Description cleared."
-                : "Description saved.";
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(trimmedDescription))
-        {
-            DescriptionStatusMessage = "Enter a description to create a custom off-day.";
-            return;
-        }
-
-        var offDay = new OffDay
-        {
-            Id = Guid.NewGuid(),
-            Year = date.Year,
-            Date = date,
-            OffDayType = OffDayType.Vacation,
-            Description = trimmedDescription,
-            CreatedAt = DateTimeOffset.UtcNow,
-        };
-
-        await _offDayRepository.AddAsync(offDay);
-        await _offDayRepository.SaveChangesAsync();
-        _offDaysByDate[date] = offDay;
-        ApplyOffDayToCell(date, offDay);
-        DescriptionStatusMessage = "Custom off-day saved.";
-        _ = DebitableDays.RecalculateAsync();
     }
 
     // ── Initialization / loading ─────────────────────────────────────────────

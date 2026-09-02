@@ -51,7 +51,7 @@
 
     </UserControl.Styles>
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto">
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
 
         <!-- ── Top bar ──────────────────────────────────────────────────── -->
         <Border Grid.Row="0"
@@ -202,33 +202,8 @@
             </ItemsControl>
         </ScrollViewer>
 
-        <!-- ── Custom off-day description panel ───────────────────────────── -->
-        <Border Grid.Row="3"
-                BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4"
-                Margin="8,4,8,0" Padding="8,6"
-                IsVisible="{Binding HasDescriptionEditDate}">
-            <StackPanel Spacing="6">
-                <TextBlock Text="{Binding DescriptionEditDateLabel, StringFormat='Custom off-day description for {0}'}"
-                           FontWeight="SemiBold" />
-                <TextBox Text="{Binding CustomDescriptionInput}"
-                         PlaceholderText="Enter custom description (saves as vacation day when missing)" />
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <Button Command="{Binding SaveDescriptionCommand}" Padding="10,4">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <materialIcons:MaterialIcon Kind="ContentSaveOutline" Width="16" Height="16" />
-                            <TextBlock Text="Save description" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Button>
-                    <TextBlock Text="{Binding DescriptionStatusMessage}"
-                               IsVisible="{Binding HasDescriptionStatusMessage}"
-                               VerticalAlignment="Center"
-                               Foreground="DarkSlateGray" />
-                </StackPanel>
-            </StackPanel>
-        </Border>
-
         <!-- ── Debitable Days panel ──────────────────────────────────────── -->
-        <Expander Grid.Row="4"
+        <Expander Grid.Row="3"
                   Header="Debitable Days"
                   Margin="8,4,8,8"
                   DataContext="{Binding DebitableDays}">
