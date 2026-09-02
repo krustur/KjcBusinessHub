@@ -69,12 +69,13 @@
                     <Button Command="{Binding PreviousYearCommand}" Padding="6,4" ToolTip.Tip="Previous year">
                         <materialIcons:MaterialIcon Kind="ChevronLeft" Width="22" Height="22" />
                     </Button>
-                    <TextBlock Text="{Binding SelectedYear}"
-                               FontSize="18" FontWeight="Bold"
-                               VerticalAlignment="Center"
-                               MinWidth="54"
-                               HorizontalAlignment="Center"
-                               TextAlignment="Center" />
+                    <StackPanel Orientation="Vertical" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock Text="Fiscal year start" FontSize="11" Foreground="Gray" />
+                        <ComboBox ItemsSource="{Binding AvailableFiscalYearStarts}"
+                                  SelectedItem="{Binding SelectedFiscalYearStart}"
+                                  MinWidth="170"
+                                  FontSize="14" />
+                    </StackPanel>
                     <Button Command="{Binding NextYearCommand}" Padding="6,4" ToolTip.Tip="Next year">
                         <materialIcons:MaterialIcon Kind="ChevronRight" Width="22" Height="22" />
                     </Button>
@@ -212,23 +213,6 @@
                     <!-- Controls column -->
                     <StackPanel Grid.Column="0" Spacing="8" Margin="0,0,16,0">
 
-                        <!-- Fiscal year start month picker -->
-                        <TextBlock Text="Fiscal year start month" FontWeight="SemiBold" FontSize="13" />
-                        <StackPanel Orientation="Horizontal" Spacing="4">
-                            <Button Command="{Binding PreviousStartMonthCommand}" Padding="6,4"
-                                    ToolTip.Tip="Previous month">
-                                <materialIcons:MaterialIcon Kind="ChevronLeft" Width="20" Height="20" />
-                            </Button>
-                            <ComboBox ItemsSource="{Binding AvailableStartMonths}"
-                                      SelectedItem="{Binding SelectedStartMonth}"
-                                      MinWidth="130" FontSize="14"
-                                      VerticalAlignment="Center" />
-                            <Button Command="{Binding NextStartMonthCommand}" Padding="6,4"
-                                    ToolTip.Tip="Next month">
-                                <materialIcons:MaterialIcon Kind="ChevronRight" Width="20" Height="20" />
-                            </Button>
-                        </StackPanel>
-
                         <!-- Error / validation message -->
                         <TextBlock Text="{Binding ErrorMessage}"
                                    IsVisible="{Binding HasError}"
@@ -239,13 +223,13 @@
 
                         <!-- Deduct vacation days option -->
                         <CheckBox IsChecked="{Binding DeductVacationDays}"
-                                  Content="Deduct vacation days"
+                                  Content="{Binding DeductVacationDaysLabel}"
                                   FontSize="12"
                                   ToolTip.Tip="When checked, vacation days are subtracted from the debitable-days count" />
 
                         <!-- Deduct bridging days option -->
                         <CheckBox IsChecked="{Binding DeductBridgingDays}"
-                                  Content="Deduct bridging days"
+                                  Content="{Binding DeductBridgingDaysLabel}"
                                   FontSize="12"
                                   ToolTip.Tip="When checked, bridging days (weekdays sandwiched between non-working days) are subtracted from the debitable-days count" />
                     </StackPanel>

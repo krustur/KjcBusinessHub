@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using KjcBusinessHub.Application.Entities;
@@ -24,34 +25,35 @@ public class CalendarViewModelTests
         return new CalendarViewModel(_offDayRepository, _importer, debitableDays);
     }
 
+    private static FiscalYearStartOption FindFiscalYearStart(CalendarViewModel sut, int year, int month) =>
+        sut.AvailableFiscalYearStarts.Single(o => o.Year == year && o.Month == month);
+
     // ── Year navigation ──────────────────────────────────────────────────────
 
     [Fact]
-    public async Task PreviousYearCommand_decrements_selected_year()
+    public void PreviousYearCommand_decrements_selected_year()
     {
         _offDayRepository.GetByYearAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<OffDay>>([]));
-
         var sut = CreateSubject();
-        var initial = sut.SelectedYear;
+        var initial = sut.SelectedFiscalYearStart!.Year;
 
-        await sut.PreviousYearCommand.ExecuteAsync(null);
+        sut.PreviousYearCommand.Execute(null);
 
-        Assert.Equal(initial - 1, sut.SelectedYear);
+        Assert.Equal(initial - 1, sut.SelectedFiscalYearStart!.Year);
     }
 
     [Fact]
-    public async Task NextYearCommand_increments_selected_year()
+    public void NextYearCommand_increments_selected_year()
     {
         _offDayRepository.GetByYearAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<OffDay>>([]));
-
         var sut = CreateSubject();
-        var initial = sut.SelectedYear;
+        var initial = sut.SelectedFiscalYearStart!.Year;
 
-        await sut.NextYearCommand.ExecuteAsync(null);
+        sut.NextYearCommand.Execute(null);
 
-        Assert.Equal(initial + 1, sut.SelectedYear);
+        Assert.Equal(initial + 1, sut.SelectedFiscalYearStart!.Year);
     }
 
     // ── LoadAsync ────────────────────────────────────────────────────────────
@@ -59,13 +61,26 @@ public class CalendarViewModelTests
     [Fact]
     public async Task LoadAsync_populates_12_months()
     {
-        _offDayRepository.GetByYearAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([]));
-
         var sut = CreateSubject();
+        sut.SelectedFiscalYearStart = FindFiscalYearStart(sut, 2025, 1);
         await sut.LoadAsync();
 
         Assert.Equal(12, sut.Months.Count);
+    }
+
+    [Fact]
+    public async Task LoadAsync_shows_months_for_selected_fiscal_year_period()
+    {
+        _offDayRepository.GetByYearAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([]));
+        var sut = CreateSubject();
+        sut.SelectedFiscalYearStart = FindFiscalYearStart(sut, 2025, 6);
+
+        await sut.LoadAsync();
+
+        Assert.Equal(12, sut.Months.Count);
+        Assert.Equal((2025, 6), (sut.Months[0].Year, sut.Months[0].Month));
+        Assert.Equal((2026, 5), (sut.Months[11].Year, sut.Months[11].Month));
     }
 
     [Fact]
@@ -85,7 +100,7 @@ public class CalendarViewModelTests
             .Returns(Task.FromResult<IReadOnlyList<OffDay>>([holiday]));
 
         var sut = CreateSubject();
-        sut.SelectedYear = 2025;
+        sut.SelectedFiscalYearStart = FindFiscalYearStart(sut, 2025, 1);
         await sut.LoadAsync();
 
         // December is month 12 → index 11
@@ -127,7 +142,7 @@ public class CalendarViewModelTests
             .Returns(Task.CompletedTask);
 
         var sut = CreateSubject();
-        sut.SelectedYear = 2025;
+        sut.SelectedFiscalYearStart = FindFiscalYearStart(sut, 2025, 1);
         await sut.LoadAsync();
 
         var targetDate = new DateOnly(2025, 6, 10); // regular Tuesday
@@ -160,7 +175,7 @@ public class CalendarViewModelTests
             .Returns(Task.CompletedTask);
 
         var sut = CreateSubject();
-        sut.SelectedYear = 2025;
+        sut.SelectedFiscalYearStart = FindFiscalYearStart(sut, 2025, 1);
         await sut.LoadAsync();
 
         await sut.ToggleDayCommand.ExecuteAsync(vacation.Date);
@@ -186,7 +201,7 @@ public class CalendarViewModelTests
             .Returns(Task.FromResult<IReadOnlyList<OffDay>>([holiday]));
 
         var sut = CreateSubject();
-        sut.SelectedYear = 2025;
+        sut.SelectedFiscalYearStart = FindFiscalYearStart(sut, 2025, 1);
         await sut.LoadAsync();
 
         await sut.ToggleDayCommand.ExecuteAsync(holiday.Date);
@@ -235,10 +250,13 @@ public class CalendarViewModelTests
             .Returns(Task.FromResult<IReadOnlyList<OffDay>>([]));
 
         var sut = CreateSubject();
+        sut.SelectedFiscalYearStart = FindFiscalYearStart(sut, 2025, 6);
         await sut.ImportRedDaysCommand.ExecuteAsync(null);
 
-        // GetByYearAsync called once for the reload after import
-        await _offDayRepository.Received().GetByYearAsync(sut.SelectedYear, Arg.Any<CancellationToken>());
+        await _importer.Received().ImportAsync(2025, Arg.Any<CancellationToken>());
+        await _importer.Received().ImportAsync(2026, Arg.Any<CancellationToken>());
+        await _offDayRepository.Received().GetByYearAsync(2025, Arg.Any<CancellationToken>());
+        await _offDayRepository.Received().GetByYearAsync(2026, Arg.Any<CancellationToken>());
     }
 
     // ── GoToApp navigation ───────────────────────────────────────────────────

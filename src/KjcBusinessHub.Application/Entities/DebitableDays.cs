@@ -11,7 +11,9 @@ public sealed record MonthDebitableDays(YearMonth Month, int DebitableDays);
 public sealed record DebitableDaysResult(
     int TotalDebitableDays,
     IReadOnlyList<MonthDebitableDays> PerMonth,
-    IReadOnlyList<int> YearsWithoutPublicHolidays);
+    IReadOnlyList<int> YearsWithoutPublicHolidays,
+    int VacationDayCount,
+    int BridgingDayCount);
 
 /// <summary>
 /// Specifies the period for a debitable-days calculation.

@@ -67,6 +67,36 @@ public partial class DebitableDaysViewModel : ViewModelBase
         OnPropertyChanged(nameof(CalendarYear));
     }
 
+    internal void ApplyFiscalYearStart(int year, int month)
+    {
+        var yearChanged = _calendarYear != year;
+        var monthChanged = StartMonth != month;
+
+        _calendarYear = year;
+        if (monthChanged)
+        {
+            _suppressStartMonthRecalculate = true;
+            StartMonth = month;
+            _suppressStartMonthRecalculate = false;
+
+            if (!_isInitializing)
+            {
+                _settings.FiscalStartMonth = month;
+                _settings.Save();
+            }
+        }
+
+        if (yearChanged)
+        {
+            OnPropertyChanged(nameof(CalendarYear));
+        }
+
+        if (yearChanged || monthChanged)
+        {
+            _ = RecalculateAsync();
+        }
+    }
+
     // ── Fiscal year start month ──────────────────────────────────────────────
 
     /// <summary>All twelve months available as dropdown options.</summary>
@@ -131,6 +161,17 @@ public partial class DebitableDaysViewModel : ViewModelBase
     public partial int TotalDebitableDays { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DeductVacationDaysLabel))]
+    public partial int VacationDayCount { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DeductBridgingDaysLabel))]
+    public partial int BridgingDayCount { get; set; }
+
+    public string DeductVacationDaysLabel => $"Deduct vacation days ({VacationDayCount})";
+    public string DeductBridgingDaysLabel => $"Deduct bridging days ({BridgingDayCount})";
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasError))]
     public partial string? ErrorMessage { get; set; }
 
@@ -145,6 +186,7 @@ public partial class DebitableDaysViewModel : ViewModelBase
     public ObservableCollection<MonthDebitableDaysRow> PerMonth { get; } = [];
 
     private bool _isInitializing = true;
+    private bool _suppressStartMonthRecalculate;
 
     public DebitableDaysViewModel(DebitableDaysCalculator calculator, ISettingsService settings)
     {
@@ -162,6 +204,8 @@ public partial class DebitableDaysViewModel : ViewModelBase
 
     partial void OnStartMonthChanged(int value)
     {
+        if (_suppressStartMonthRecalculate) return;
+
         if (!_isInitializing)
         {
             _settings.FiscalStartMonth = value;
@@ -210,6 +254,8 @@ public partial class DebitableDaysViewModel : ViewModelBase
             }
 
             TotalDebitableDays = result.TotalDebitableDays;
+            VacationDayCount = result.VacationDayCount;
+            BridgingDayCount = result.BridgingDayCount;
 
             if (result.YearsWithoutPublicHolidays.Count > 0)
             {
