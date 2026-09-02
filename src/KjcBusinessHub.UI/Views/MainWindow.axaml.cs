@@ -24,6 +24,7 @@ public partial class MainWindow : Window
     private NativeMenuItem? _closeToTrayMenuItem;
     private bool _isQuitting;
     private bool _isTogglingCloseToTray;
+    private bool _startupUpdateFlowStarted;
 
     public MainWindow()
     {
@@ -43,6 +44,13 @@ public partial class MainWindow : Window
     private void OnOpened(object? sender, EventArgs e)
     {
         EnsureTrayIcon();
+        if (_startupUpdateFlowStarted)
+        {
+            return;
+        }
+
+        _startupUpdateFlowStarted = true;
+        _ = RunStartupUpdateFlowAsync();
     }
 
     private void OnClosed(object? sender, EventArgs e)
@@ -286,6 +294,26 @@ public partial class MainWindow : Window
             channel == UpdateChannel.Prerelease ? "Check for Updates (pre-release)" : "Check for Updates",
             result.Message,
             owner);
+    }
+
+    private async Task RunStartupUpdateFlowAsync()
+    {
+        if (_updateService is null)
+        {
+            return;
+        }
+
+        var pendingFailure = _updateService.ConsumePendingFailureNotification();
+        if (!string.IsNullOrWhiteSpace(pendingFailure))
+        {
+            await ShowInformationDialogAsync("Update failed", pendingFailure, this);
+        }
+
+        var result = await _updateService.CheckAndApplyUpdatesInBackgroundAsync();
+        if (result is { Status: UpdateCheckStatus.Failed })
+        {
+            await ShowInformationDialogAsync("Update failed", result.Message, this);
+        }
     }
 
     private async Task ShowInformationDialogAsync(string title, string message, Window? owner = null)
