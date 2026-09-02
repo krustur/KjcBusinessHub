@@ -1,5 +1,6 @@
 using KjcBusinessHub.Application.Entities;
 using KjcBusinessHub.Application.Enums;
+using KjcBusinessHub.Application.Interfaces;
 using KjcBusinessHub.Infrastructure.Data;
 using KjcBusinessHub.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
