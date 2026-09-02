@@ -211,7 +211,7 @@
                 <TextBlock Text="{Binding DescriptionEditDateLabel, StringFormat='Custom off-day description for {0}'}"
                            FontWeight="SemiBold" />
                 <TextBox Text="{Binding CustomDescriptionInput}"
-                         Watermark="Enter custom description (saves as vacation day when missing)" />
+                         PlaceholderText="Enter custom description (saves as vacation day when missing)" />
                 <StackPanel Orientation="Horizontal" Spacing="6">
                     <Button Command="{Binding SaveDescriptionCommand}" Padding="10,4">
                         <StackPanel Orientation="Horizontal" Spacing="6">
