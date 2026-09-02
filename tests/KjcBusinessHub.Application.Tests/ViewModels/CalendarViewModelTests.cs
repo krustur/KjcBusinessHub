@@ -21,8 +21,6 @@ public class CalendarViewModelTests
     private CalendarViewModel CreateSubject()
     {
         _settings.FiscalStartMonth.Returns(1);
-        _offDayRepository.GetByYearAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([]));
         var debitableDays = new DebitableDaysViewModel(new DebitableDaysCalculator(_offDayRepository), _settings);
         return new CalendarViewModel(_offDayRepository, _importer, debitableDays);
     }
@@ -35,6 +33,8 @@ public class CalendarViewModelTests
     [Fact]
     public void PreviousYearCommand_decrements_selected_year()
     {
+        _offDayRepository.GetByYearAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([]));
         var sut = CreateSubject();
         var initial = sut.SelectedFiscalYearStart!.Year;
 
@@ -46,6 +46,8 @@ public class CalendarViewModelTests
     [Fact]
     public void NextYearCommand_increments_selected_year()
     {
+        _offDayRepository.GetByYearAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([]));
         var sut = CreateSubject();
         var initial = sut.SelectedFiscalYearStart!.Year;
 
@@ -69,6 +71,8 @@ public class CalendarViewModelTests
     [Fact]
     public async Task LoadAsync_shows_months_for_selected_fiscal_year_period()
     {
+        _offDayRepository.GetByYearAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([]));
         var sut = CreateSubject();
         sut.SelectedFiscalYearStart = FindFiscalYearStart(sut, 2025, 6);
 
