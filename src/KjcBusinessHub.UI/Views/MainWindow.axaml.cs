@@ -321,8 +321,8 @@ public partial class MainWindow : Window
         var infoWindow = new Window
         {
             Width = 420,
-            Height = 180,
-            CanResize = false,
+            Height = 260,
+            CanResize = true,
             Title = title,
             WindowStartupLocation = owner is not null && owner.IsVisible
                 ? WindowStartupLocation.CenterOwner
@@ -335,8 +335,9 @@ public partial class MainWindow : Window
             infoWindow.Icon = Icon;
         }
 
-        if (infoWindow.Content is StackPanel panel &&
-            panel.Children.OfType<Button>().FirstOrDefault() is { } closeButton)
+        if (infoWindow.Content is DockPanel panel &&
+            panel.Children.OfType<StackPanel>().FirstOrDefault() is { } actionRow &&
+            actionRow.Children.OfType<Button>().FirstOrDefault() is { } closeButton)
         {
             closeButton.Click += (_, _) => infoWindow.Close();
         }
@@ -350,27 +351,42 @@ public partial class MainWindow : Window
         infoWindow.Show();
     }
 
-    private static StackPanel BuildInformationDialogContent(string message) =>
-        new()
+    private static DockPanel BuildInformationDialogContent(string message)
+    {
+        var closeButton = new Button
         {
-            Spacing = 18,
+            Content = "Close",
+            Width = 90,
+            HorizontalAlignment = HorizontalAlignment.Right,
+        };
+
+        var actionRow = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Children = { closeButton }
+        };
+        DockPanel.SetDock(actionRow, Dock.Bottom);
+
+        return new()
+        {
             Margin = new Thickness(18),
+            LastChildFill = true,
             Children =
             {
-                new TextBlock
+                actionRow,
+                new ScrollViewer
                 {
-                    Text = message,
-                    TextWrapping = TextWrapping.Wrap,
-                    FontSize = 14,
+                    Content = new TextBlock
+                    {
+                        Text = message,
+                        TextWrapping = TextWrapping.Wrap,
+                        FontSize = 14,
+                    }
                 },
-                new Button
-                {
-                    Content = "Close",
-                    Width = 90,
-                    HorizontalAlignment = HorizontalAlignment.Right,
-                },
-            }
+            },
         };
+    }
 
     private Panel BuildAboutDialogContent(Window aboutWindow)
     {

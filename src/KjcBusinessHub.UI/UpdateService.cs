@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -35,7 +36,8 @@ public sealed class UpdateService
         ResolvePendingUpdateAttempt();
 
         var result = await CheckAndApplyUpdatesCoreAsync(
-            IsPrereleaseChannel() ? UpdateChannel.Prerelease : UpdateChannel.Stable);
+            IsPrereleaseChannel() ? UpdateChannel.Prerelease : UpdateChannel.Stable,
+            suppressKnownFailureMessage: true);
 
         return result.Status == UpdateCheckStatus.Failed ? result : null;
     }
@@ -43,10 +45,12 @@ public sealed class UpdateService
     public async Task<UpdateCheckResult> CheckAndApplyUpdatesAsync(UpdateChannel channel)
     {
         ResolvePendingUpdateAttempt();
-        return await CheckAndApplyUpdatesCoreAsync(channel);
+        return await CheckAndApplyUpdatesCoreAsync(channel, suppressKnownFailureMessage: false);
     }
 
-    private async Task<UpdateCheckResult> CheckAndApplyUpdatesCoreAsync(UpdateChannel channel)
+    private async Task<UpdateCheckResult> CheckAndApplyUpdatesCoreAsync(
+        UpdateChannel channel,
+        bool suppressKnownFailureMessage)
     {
         if (_runtimeProfile.IsDevelopment)
         {
@@ -87,7 +91,9 @@ public sealed class UpdateService
             if (!string.IsNullOrWhiteSpace(previousFailure))
             {
                 _logger.LogWarning("Skipping previously failed update attempt for version {TargetVersion}.", targetVersion);
-                return new(UpdateCheckStatus.Failed, previousFailure);
+                return suppressKnownFailureMessage
+                    ? new(UpdateCheckStatus.NoUpdateAvailable, previousFailure)
+                    : new(UpdateCheckStatus.Failed, previousFailure);
             }
 
             operation = $"downloading update {targetVersion}";
@@ -146,7 +152,13 @@ public sealed class UpdateService
     {
         try
         {
-            var logPath = Path.Combine(VelopackLocator.Current.AppTempDir, VelopackLogFileName);
+            var appTempDir = VelopackLocator.Current.AppTempDir;
+            if (string.IsNullOrWhiteSpace(appTempDir))
+            {
+                return null;
+            }
+
+            var logPath = Path.Combine(appTempDir, VelopackLogFileName);
             if (!File.Exists(logPath))
             {
                 return null;
