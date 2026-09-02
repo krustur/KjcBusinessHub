@@ -30,7 +30,6 @@ sealed class Program
 
         VelopackApp.Build()
             .SetAutoApplyOnStartup(false)
-            .OnRestarted(version => UpdateAttemptTracker.MarkRestarted(RuntimeProfile.StorageRoot, version.ToString()))
             .Run();
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }

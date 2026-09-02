@@ -24,7 +24,6 @@ public partial class MainWindow : Window
     private NativeMenuItem? _closeToTrayMenuItem;
     private bool _isQuitting;
     private bool _isTogglingCloseToTray;
-    private bool _startupUpdateFlowStarted;
 
     public MainWindow()
     {
@@ -44,13 +43,6 @@ public partial class MainWindow : Window
     private void OnOpened(object? sender, EventArgs e)
     {
         EnsureTrayIcon();
-        if (_startupUpdateFlowStarted)
-        {
-            return;
-        }
-
-        _startupUpdateFlowStarted = true;
-        _ = RunStartupUpdateFlowAsync();
     }
 
     private void OnClosed(object? sender, EventArgs e)
@@ -284,7 +276,19 @@ public partial class MainWindow : Window
             return;
         }
 
-        var result = await _updateService.CheckAndApplyUpdatesAsync(channel);
+        var result = await _updateService.CheckForUpdatesAsync(channel);
+        if (result.Status == UpdateCheckStatus.UpdateAvailable &&
+            !string.IsNullOrWhiteSpace(result.AvailableVersion))
+        {
+            var shouldUpdate = await ShowUpdateConfirmationAsync(result.AvailableVersion, owner);
+            if (!shouldUpdate)
+            {
+                return;
+            }
+
+            result = await _updateService.DownloadAndApplyUpdateAsync(channel, result.AvailableVersion);
+        }
+
         if (result.Status == UpdateCheckStatus.UpdateApplied)
         {
             return;
@@ -296,33 +300,93 @@ public partial class MainWindow : Window
             owner);
     }
 
-    private async Task RunStartupUpdateFlowAsync()
+    private async Task<bool> ShowUpdateConfirmationAsync(string version, Window? owner = null)
     {
-        if (_updateService is null)
+        var confirmWindow = new Window
         {
-            return;
+            Width = 420,
+            Height = 170,
+            CanResize = false,
+            Title = "Update available",
+            WindowStartupLocation = owner is not null && owner.IsVisible
+                ? WindowStartupLocation.CenterOwner
+                : WindowStartupLocation.CenterScreen,
+            Content = BuildUpdateConfirmationDialogContent(version),
+        };
+
+        if (Icon is not null)
+        {
+            confirmWindow.Icon = Icon;
         }
 
-        var pendingFailure = _updateService.ConsumePendingFailureNotification();
-        if (!string.IsNullOrWhiteSpace(pendingFailure))
+        var shouldUpdate = false;
+        if (confirmWindow.Content is StackPanel panel &&
+            panel.Children.OfType<StackPanel>().LastOrDefault() is { } buttonPanel)
         {
-            await ShowInformationDialogAsync("Update failed", pendingFailure, this);
+            var yesButton = (Button)buttonPanel.Children[0]!;
+            var noButton = (Button)buttonPanel.Children[1]!;
+
+            yesButton.Click += (_, _) =>
+            {
+                shouldUpdate = true;
+                confirmWindow.Close();
+            };
+            noButton.Click += (_, _) => confirmWindow.Close();
         }
 
-        var result = await _updateService.CheckAndApplyUpdatesInBackgroundAsync();
-        if (result is { Status: UpdateCheckStatus.Failed })
+        if (owner is not null && owner.IsVisible)
         {
-            await ShowInformationDialogAsync("Update failed", result.Message, this);
+            await confirmWindow.ShowDialog(owner);
         }
+        else if (IsVisible)
+        {
+            await confirmWindow.ShowDialog(this);
+        }
+        else
+        {
+            var closed = new TaskCompletionSource<bool>();
+            confirmWindow.Closed += (_, _) => closed.TrySetResult(true);
+            confirmWindow.Show();
+            await closed.Task;
+        }
+
+        return shouldUpdate;
     }
+
+    private static StackPanel BuildUpdateConfirmationDialogContent(string version) =>
+        new()
+        {
+            Spacing = 18,
+            Margin = new Thickness(18),
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = $"Version {version} is available. Do you want to update?",
+                    TextWrapping = TextWrapping.Wrap,
+                    FontSize = 14,
+                },
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 10,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    Children =
+                    {
+                        new Button { Content = "Yes", MinWidth = 80, Classes = { "accent" } },
+                        new Button { Content = "No", MinWidth = 80 },
+                    }
+                }
+            }
+        };
 
     private async Task ShowInformationDialogAsync(string title, string message, Window? owner = null)
     {
         var infoWindow = new Window
         {
             Width = 420,
-            Height = 260,
-            CanResize = true,
+            Height = 180,
+            CanResize = false,
             Title = title,
             WindowStartupLocation = owner is not null && owner.IsVisible
                 ? WindowStartupLocation.CenterOwner
@@ -335,9 +399,8 @@ public partial class MainWindow : Window
             infoWindow.Icon = Icon;
         }
 
-        if (infoWindow.Content is DockPanel panel &&
-            panel.Children.OfType<StackPanel>().FirstOrDefault() is { } actionRow &&
-            actionRow.Children.OfType<Button>().FirstOrDefault() is { } closeButton)
+        if (infoWindow.Content is StackPanel panel &&
+            panel.Children.OfType<Button>().FirstOrDefault() is { } closeButton)
         {
             closeButton.Click += (_, _) => infoWindow.Close();
         }
@@ -351,42 +414,27 @@ public partial class MainWindow : Window
         infoWindow.Show();
     }
 
-    private static DockPanel BuildInformationDialogContent(string message)
-    {
-        var closeButton = new Button
+    private static StackPanel BuildInformationDialogContent(string message) =>
+        new()
         {
-            Content = "Close",
-            Width = 90,
-            HorizontalAlignment = HorizontalAlignment.Right,
-        };
-
-        var actionRow = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            Children = { closeButton }
-        };
-        DockPanel.SetDock(actionRow, Dock.Bottom);
-
-        return new()
-        {
+            Spacing = 18,
             Margin = new Thickness(18),
-            LastChildFill = true,
             Children =
             {
-                actionRow,
-                new ScrollViewer
+                new TextBlock
                 {
-                    Content = new TextBlock
-                    {
-                        Text = message,
-                        TextWrapping = TextWrapping.Wrap,
-                        FontSize = 14,
-                    }
+                    Text = message,
+                    TextWrapping = TextWrapping.Wrap,
+                    FontSize = 14,
                 },
-            },
+                new Button
+                {
+                    Content = "Close",
+                    Width = 90,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                },
+            }
         };
-    }
 
     private Panel BuildAboutDialogContent(Window aboutWindow)
     {
