@@ -312,6 +312,37 @@ public class CalendarViewModelTests
         Assert.Contains("public holiday", cell.ToolTipText);
     }
 
+    [Fact]
+    public void BuildCellsForMonth_marks_weekend_plus_vacation_combo_with_public_holiday_error_style()
+    {
+        var date = new DateOnly(2025, 1, 4);
+        var cells = CalendarViewModel.BuildCellsForMonth(
+            2025,
+            1,
+            new Dictionary<DateOnly, OffDay>
+            {
+                [date] = new()
+                {
+                    Id = Guid.NewGuid(),
+                    Year = 2025,
+                    Date = date,
+                    IsVacation = true,
+                    IsPublicHoliday = false,
+                    PublicHolidayDescription = string.Empty,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                }
+            });
+
+        var cell = Assert.Single(cells, c => c.Date == date);
+
+        Assert.True(cell.IsVacation);
+        Assert.True(cell.IsWeekend);
+        Assert.Equal("#FFF9C4", cell.CellBackground);
+        Assert.Equal("#C62828", cell.BorderBrush);
+        Assert.Equal(new Avalonia.Thickness(2), cell.BorderThickness);
+        Assert.Equal("Vacation + weekend", cell.ToolTipText);
+    }
+
     // ── Import red days ──────────────────────────────────────────────────────
 
     [Fact]

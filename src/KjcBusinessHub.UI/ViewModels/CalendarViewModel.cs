@@ -103,17 +103,20 @@ public class CalendarDayCell : ObservableObject
 
     public string BorderBrush =>
         IsVacation && IsPublicHoliday ? "#C62828" :
+        IsVacation && IsWeekend ? "#C62828" :
         IsVacation && IsBridgingDay ? "#E65100" :
         "Transparent";
 
     public Thickness BorderThickness =>
-        IsVacation && (IsPublicHoliday || IsBridgingDay) ? new Thickness(2) : new Thickness(0);
+        IsVacation && (IsPublicHoliday || IsBridgingDay || IsWeekend) ? new Thickness(2) : new Thickness(0);
 
     public string? ToolTipText =>
         IsVacation && IsPublicHoliday
             ? string.IsNullOrWhiteSpace(PublicHolidayDescription)
                 ? "Vacation + public holiday"
                 : $"Vacation + public holiday: {PublicHolidayDescription}"
+            : IsVacation && IsWeekend
+                ? "Vacation + weekend"
             : IsVacation && IsBridgingDay
                 ? "Vacation + bridging day"
                 : IsVacation
