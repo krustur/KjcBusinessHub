@@ -1,13 +1,10 @@
 using KjcBusinessHub.Application.Entities;
-using KjcBusinessHub.Application.Enums;
-
 namespace KjcBusinessHub.Application.Interfaces;
 
 public enum PublicHolidayUpsertOutcome
 {
     Inserted,
     Updated,
-    Skipped,
 }
 
 public interface IOffDayRepository
@@ -29,9 +26,9 @@ public interface IOffDayRepository
 
     /// <summary>
     /// Upserts a public-holiday off-day for the given date.
-    /// If an entry with the same date already exists and is a <see cref="OffDayType.PublicHoliday"/>,
-    /// its description is updated. Vacation entries are left untouched.
-    /// Returns whether the public holiday was inserted, updated, or skipped.
+    /// If an entry with the same date already exists, its public-holiday flag and description are updated
+    /// while preserving any existing vacation flag.
+    /// Returns whether the public holiday was inserted or updated.
     /// </summary>
     Task<PublicHolidayUpsertOutcome> UpsertPublicHolidayAsync(int year, DateOnly date, string description, CancellationToken cancellationToken = default);
 

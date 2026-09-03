@@ -176,9 +176,11 @@
                                                         <Button Classes="day-cell"
                                                                Width="28" Height="24"
                                                                Background="{Binding CellBackground}"
+                                                               BorderBrush="{Binding BorderBrush}"
+                                                               BorderThickness="{Binding BorderThickness}"
                                                                IsEnabled="{Binding IsCurrentMonth}"
                                                                IsHitTestVisible="{Binding !IsEmpty}"
-                                                               ToolTip.Tip="{Binding Description}"
+                                                               ToolTip.Tip="{Binding ToolTipText}"
                                                                Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).ToggleDayCommand}"
                                                                CommandParameter="{Binding Date}">
                                                            <TextBlock Text="{Binding DayNumber}"
@@ -227,11 +229,6 @@
                                   FontSize="12"
                                   ToolTip.Tip="When checked, vacation days are subtracted from the debitable-days count" />
 
-                        <!-- Deduct bridging days option -->
-                        <CheckBox IsChecked="{Binding DeductBridgingDays}"
-                                  Content="{Binding DeductBridgingDaysLabel}"
-                                  FontSize="12"
-                                  ToolTip.Tip="When checked, bridging days (weekdays sandwiched between non-working days) are subtracted from the debitable-days count" />
                     </StackPanel>
 
                     <!-- Results column -->

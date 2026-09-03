@@ -231,6 +231,7 @@ The user should see a view of all available Transactions top left and all availa
 - The user can navigate to a **Calendar** view from the main navigation.
 - A fiscal-year start selector is available and the view always displays the selected 12-month fiscal-year range in a grid.
 - Day cells are color-coded: red for public holidays, amber for derived bridging days, yellow for vacation days, light grey for weekends, default for regular workdays.
+- If a vacation day overlaps a bridging day or public holiday, the vacation color wins and the secondary state is still indicated visually.
 
 ---
 
@@ -275,7 +276,7 @@ The user should see a view of all available Transactions top left and all availa
 **Acceptance Criteria:**
 - An explicit "Import red days for {fiscal year start}" action is available.
 - The action calls the Dagsmart API for every calendar year covered by the selected fiscal-year range and persists the results as `PublicHoliday` off-days.
-- Existing `Vacation` off-days are not modified.
+- Existing vacation flags on the same dates are preserved.
 - A confirmation shows how many days were added or updated.
 - A user-visible warning is shown if the import fails (e.g. network unavailable).
 
@@ -314,7 +315,7 @@ The user should see a view of all available Transactions top left and all availa
 **Acceptance Criteria:**
 - The result shows a prominent total: "Total debitable days: N".
 - A table/list shows one row per month with the month name and its debitable-day count.
-- The panel shows toggles for deducting vacation days and derived bridging days, including the current counts for each.
+- The panel shows a toggle for deducting vacation days, including the current count.
 - Months whose years have no holiday data display a clear warning: "No holiday data for YYYY — import red days first".
 
 ---

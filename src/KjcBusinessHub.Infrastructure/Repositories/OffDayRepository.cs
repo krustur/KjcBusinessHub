@@ -1,5 +1,4 @@
 using KjcBusinessHub.Application.Entities;
-using KjcBusinessHub.Application.Enums;
 using KjcBusinessHub.Application.Interfaces;
 using KjcBusinessHub.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -40,11 +39,8 @@ public class OffDayRepository(AppDbContext db) : IOffDayRepository
 
         if (existing is not null)
         {
-            // Only update public holidays; leave vacation entries untouched.
-            if (existing.OffDayType != OffDayType.PublicHoliday)
-                return PublicHolidayUpsertOutcome.Skipped;
-
-            existing.Description = description;
+            existing.IsPublicHoliday = true;
+            existing.PublicHolidayDescription = description;
             existing.UpdatedAt = DateTimeOffset.UtcNow;
             db.OffDays.Update(existing);
             return PublicHolidayUpsertOutcome.Updated;
@@ -55,8 +51,9 @@ public class OffDayRepository(AppDbContext db) : IOffDayRepository
             Id = Guid.NewGuid(),
             Year = year,
             Date = date,
-            OffDayType = OffDayType.PublicHoliday,
-            Description = description,
+            IsPublicHoliday = true,
+            PublicHolidayDescription = description,
+            IsVacation = false,
             CreatedAt = DateTimeOffset.UtcNow,
         }, cancellationToken);
 

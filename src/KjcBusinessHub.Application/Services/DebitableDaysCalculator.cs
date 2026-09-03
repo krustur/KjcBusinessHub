@@ -6,7 +6,7 @@ namespace KjcBusinessHub.Application.Services;
 
 /// <summary>
 /// Calculates the number of debitable (billable) days in a given period,
-/// excluding weekends, public holidays, and optionally vacation and bridging days.
+/// excluding weekends, public holidays, and optionally vacation days.
 /// </summary>
 public class DebitableDaysCalculator(IOffDayRepository offDayRepository)
 {
@@ -37,34 +37,26 @@ public class DebitableDaysCalculator(IOffDayRepository offDayRepository)
                 var from = yStart > periodStart ? yStart : periodStart;
                 var to = yEnd < periodEnd ? yEnd : periodEnd;
                 return !allOffDays.Any(d =>
-                    d.OffDayType is OffDayType.PublicHoliday &&
+                    d.IsPublicHoliday &&
                     d.Date >= from &&
                     d.Date <= to);
             })
             .ToList();
 
         var publicHolidaySet = allOffDays
-            .Where(d => d.OffDayType is OffDayType.PublicHoliday)
+            .Where(d => d.IsPublicHoliday)
             .Select(d => d.Date)
             .ToHashSet();
 
-        var bridgingDaySet = ComputeBridgingDays(publicHolidaySet, periodStart, periodEnd);
         var vacationDayCount = allOffDays.Count(d =>
-            d.OffDayType is OffDayType.Vacation &&
+            d.IsVacation &&
             d.Date >= periodStart &&
             d.Date <= periodEnd);
 
         var offDaySet = allOffDays
-            .Where(d => d.OffDayType is OffDayType.PublicHoliday
-                        || (query.DeductVacationDays && d.OffDayType is OffDayType.Vacation))
+            .Where(d => d.IsPublicHoliday || (query.DeductVacationDays && d.IsVacation))
             .Select(d => d.Date)
             .ToHashSet();
-
-        if (query.DeductBridgingDays)
-        {
-            foreach (var bd in bridgingDaySet)
-                offDaySet.Add(bd);
-        }
 
         var perMonth = new List<MonthDebitableDays>();
         var current = query.StartMonth;
@@ -80,8 +72,7 @@ public class DebitableDaysCalculator(IOffDayRepository offDayRepository)
             TotalDebitableDays: perMonth.Sum(m => m.DebitableDays),
             PerMonth: perMonth,
             YearsWithoutPublicHolidays: yearsWithoutHolidays,
-            VacationDayCount: vacationDayCount,
-            BridgingDayCount: bridgingDaySet.Count);
+            VacationDayCount: vacationDayCount);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

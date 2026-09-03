@@ -1,7 +1,6 @@
 using System.Net;
 using System.Text;
 using KjcBusinessHub.Application.Entities;
-using KjcBusinessHub.Application.Enums;
 using KjcBusinessHub.Infrastructure.Data;
 using KjcBusinessHub.Infrastructure.PublicHolidays;
 using KjcBusinessHub.Infrastructure.Repositories;
@@ -33,8 +32,9 @@ public sealed class DagsmartApiPublicHolidayImporterTests : IDisposable
             Id = Guid.NewGuid(),
             Year = 2025,
             Date = new DateOnly(2025, 1, 1),
-            OffDayType = OffDayType.PublicHoliday,
-            Description = "Old name",
+            IsPublicHoliday = true,
+            PublicHolidayDescription = "Old name",
+            IsVacation = false,
             CreatedAt = DateTimeOffset.UtcNow,
         });
 
@@ -43,8 +43,9 @@ public sealed class DagsmartApiPublicHolidayImporterTests : IDisposable
             Id = Guid.NewGuid(),
             Year = 2025,
             Date = new DateOnly(2025, 6, 20),
-            OffDayType = OffDayType.Vacation,
-            Description = "Vacation",
+            IsPublicHoliday = false,
+            PublicHolidayDescription = string.Empty,
+            IsVacation = true,
             CreatedAt = DateTimeOffset.UtcNow,
         });
 
@@ -64,11 +65,11 @@ public sealed class DagsmartApiPublicHolidayImporterTests : IDisposable
 
         Assert.True(result.IsSuccess);
         Assert.Equal(1, result.Added);
-        Assert.Equal(1, result.Updated);
+        Assert.Equal(2, result.Updated);
         Assert.Equal(3, offDays.Count);
-        Assert.Contains(offDays, d => d.Date == new DateOnly(2025, 1, 1) && d.Description == "Nyårsdagen");
-        Assert.Contains(offDays, d => d.Date == new DateOnly(2025, 6, 6) && d.OffDayType == OffDayType.PublicHoliday);
-        Assert.Contains(offDays, d => d.Date == new DateOnly(2025, 6, 20) && d.OffDayType == OffDayType.Vacation && d.Description == "Vacation");
+        Assert.Contains(offDays, d => d.Date == new DateOnly(2025, 1, 1) && d.PublicHolidayDescription == "Nyårsdagen" && d.IsPublicHoliday);
+        Assert.Contains(offDays, d => d.Date == new DateOnly(2025, 6, 6) && d.IsPublicHoliday);
+        Assert.Contains(offDays, d => d.Date == new DateOnly(2025, 6, 20) && d.IsVacation && d.IsPublicHoliday && d.PublicHolidayDescription == "Midsommarafton");
     }
 
     [Fact]

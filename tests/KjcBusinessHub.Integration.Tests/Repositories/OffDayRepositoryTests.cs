@@ -1,5 +1,4 @@
 using KjcBusinessHub.Application.Entities;
-using KjcBusinessHub.Application.Enums;
 using KjcBusinessHub.Application.Interfaces;
 using KjcBusinessHub.Infrastructure.Data;
 using KjcBusinessHub.Infrastructure.Repositories;
@@ -62,7 +61,7 @@ public class OffDayRepositoryTests : IDisposable
     [Fact]
     public async Task AddAsync_and_GetByIdAsync_round_trips()
     {
-        var offDay = MakeOffDay(2025, new DateOnly(2025, 6, 6), OffDayType.PublicHoliday, "Sveriges nationaldag");
+        var offDay = MakeOffDay(2025, new DateOnly(2025, 6, 6), isPublicHoliday: true, description: "Sveriges nationaldag");
         await _repository.AddAsync(offDay);
         await _repository.SaveChangesAsync();
 
@@ -70,8 +69,9 @@ public class OffDayRepositoryTests : IDisposable
 
         Assert.NotNull(found);
         Assert.Equal(offDay.Id, found.Id);
-        Assert.Equal(OffDayType.PublicHoliday, found.OffDayType);
-        Assert.Equal("Sveriges nationaldag", found.Description);
+        Assert.True(found.IsPublicHoliday);
+        Assert.False(found.IsVacation);
+        Assert.Equal("Sveriges nationaldag", found.PublicHolidayDescription);
     }
 
     [Fact]
@@ -90,12 +90,14 @@ public class OffDayRepositoryTests : IDisposable
         await _repository.AddAsync(offDay);
         await _repository.SaveChangesAsync();
 
-        offDay.Description = "Updated description";
+        offDay.IsVacation = true;
+        offDay.PublicHolidayDescription = "Updated description";
         await _repository.UpdateAsync(offDay);
         await _repository.SaveChangesAsync();
 
         var found = await _repository.GetByIdAsync(offDay.Id);
-        Assert.Equal("Updated description", found!.Description);
+        Assert.True(found!.IsVacation);
+        Assert.Equal("Updated description", found.PublicHolidayDescription);
     }
 
     // ── DeleteAsync ──────────────────────────────────────────────────────────
@@ -132,7 +134,8 @@ public class OffDayRepositoryTests : IDisposable
         Assert.Equal(PublicHolidayUpsertOutcome.Inserted, outcome);
         var all = await _repository.GetByYearAsync(2025);
         Assert.Single(all);
-        Assert.Equal(OffDayType.PublicHoliday, all[0].OffDayType);
+        Assert.True(all[0].IsPublicHoliday);
+        Assert.False(all[0].IsVacation);
     }
 
     [Fact]
@@ -147,39 +150,42 @@ public class OffDayRepositoryTests : IDisposable
         Assert.Equal(PublicHolidayUpsertOutcome.Updated, outcome);
         var all = await _repository.GetByYearAsync(2025);
         Assert.Single(all);
-        Assert.Equal("New name", all[0].Description);
+        Assert.Equal("New name", all[0].PublicHolidayDescription);
     }
 
     [Fact]
-    public async Task UpsertPublicHolidayAsync_leaves_vacation_entry_untouched_and_returns_skipped()
+    public async Task UpsertPublicHolidayAsync_promotes_vacation_entry_to_combined_holiday_and_vacation()
     {
-        var vacation = MakeOffDay(2025, new DateOnly(2025, 1, 1), OffDayType.Vacation, "Summer vacation");
+        var vacation = MakeOffDay(2025, new DateOnly(2025, 1, 1), isVacation: true);
         await _repository.AddAsync(vacation);
         await _repository.SaveChangesAsync();
 
         var outcome = await _repository.UpsertPublicHolidayAsync(2025, new DateOnly(2025, 1, 1), "Nyårsdagen");
         await _repository.SaveChangesAsync();
 
-        Assert.Equal(PublicHolidayUpsertOutcome.Skipped, outcome);
+        Assert.Equal(PublicHolidayUpsertOutcome.Updated, outcome);
         var all = await _repository.GetByYearAsync(2025);
         Assert.Single(all);
-        Assert.Equal(OffDayType.Vacation, all[0].OffDayType);
-        Assert.Equal("Summer vacation", all[0].Description);
+        Assert.True(all[0].IsVacation);
+        Assert.True(all[0].IsPublicHoliday);
+        Assert.Equal("Nyårsdagen", all[0].PublicHolidayDescription);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private static OffDay MakeOffDay(
         int year, DateOnly date,
-        OffDayType type = OffDayType.PublicHoliday,
+        bool isPublicHoliday = true,
+        bool isVacation = false,
         string description = "") =>
         new()
         {
             Id = Guid.NewGuid(),
             Year = year,
             Date = date,
-            OffDayType = type,
-            Description = description,
+            IsPublicHoliday = isPublicHoliday,
+            PublicHolidayDescription = isPublicHoliday ? description : string.Empty,
+            IsVacation = isVacation,
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
