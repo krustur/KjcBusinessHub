@@ -17,13 +17,16 @@ public class OffDayConfiguration : IEntityTypeConfiguration<OffDay>
             .IsRequired();
 
         builder.Property(d => d.IsPublicHoliday)
+            .HasDefaultValue(false)
             .IsRequired();
 
         builder.Property(d => d.PublicHolidayDescription)
             .HasMaxLength(500)
+            .HasDefaultValue(string.Empty)
             .IsRequired();
 
         builder.Property(d => d.IsVacation)
+            .HasDefaultValue(false)
             .IsRequired();
 
         builder.Property(d => d.CreatedAt)

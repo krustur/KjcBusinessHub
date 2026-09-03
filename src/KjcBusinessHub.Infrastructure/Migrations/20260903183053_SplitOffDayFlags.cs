@@ -63,6 +63,13 @@ END;
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.Sql("""
+SELECT CASE
+    WHEN EXISTS (SELECT 1 FROM OffDays WHERE IsVacation = 0 AND IsPublicHoliday = 0)
+    THEN RAISE(ABORT, 'Zero-flag OffDay rows cannot be rolled back to the legacy OffDayType schema automatically.')
+END;
+""");
+
+            migrationBuilder.Sql("""
 UPDATE OffDays
 SET PublicHolidayDescription = CASE
     WHEN IsPublicHoliday = 1 THEN PublicHolidayDescription

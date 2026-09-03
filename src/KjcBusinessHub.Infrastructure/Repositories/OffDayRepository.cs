@@ -17,10 +17,14 @@ public class OffDayRepository(AppDbContext db) : IOffDayRepository
         => await db.OffDays.SingleOrDefaultAsync(d => d.Id == id, cancellationToken);
 
     public async Task AddAsync(OffDay offDay, CancellationToken cancellationToken = default)
-        => await db.OffDays.AddAsync(offDay, cancellationToken);
+    {
+        offDay.Validate();
+        await db.OffDays.AddAsync(offDay, cancellationToken);
+    }
 
     public Task UpdateAsync(OffDay offDay, CancellationToken cancellationToken = default)
     {
+        offDay.Validate();
         db.OffDays.Update(offDay);
         return Task.CompletedTask;
     }

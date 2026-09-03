@@ -54,13 +54,7 @@ public class CalendarYear
             throw new ArgumentException(
                 $"OffDay date {offDay.Date} does not belong to year {Year}.", nameof(offDay));
 
-        if (!offDay.IsPublicHoliday && !offDay.IsVacation)
-            throw new ArgumentException(
-                $"OffDay {offDay.Date} must be either a public holiday or a vacation day.", nameof(offDay));
-
-        if (!offDay.IsPublicHoliday && !string.IsNullOrWhiteSpace(offDay.PublicHolidayDescription))
-            throw new ArgumentException(
-                $"OffDay {offDay.Date} cannot have a public-holiday description without being a public holiday.", nameof(offDay));
+        offDay.Validate();
 
         var conflict = _offDays.FirstOrDefault(d => d.Date == offDay.Date && d.Id != offDay.Id);
         if (conflict is not null)
