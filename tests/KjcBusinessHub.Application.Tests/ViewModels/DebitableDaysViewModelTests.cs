@@ -264,7 +264,7 @@ public class DebitableDaysViewModelTests
             Date = new DateOnly(2025, 1, 7),
             IsVacation = false,
             IsPublicHoliday = true,
-            PublicHolidayDescription = string.Empty,
+            PublicHolidayDescription = "Holiday",
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
@@ -308,7 +308,7 @@ public class DebitableDaysViewModelTests
             Date = new DateOnly(2025, 1, 1),
             IsVacation = false,
             IsPublicHoliday = true,
-            PublicHolidayDescription = string.Empty,
+            PublicHolidayDescription = "Holiday",
             CreatedAt = DateTimeOffset.UtcNow,
         };
         _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
@@ -335,7 +335,7 @@ public class DebitableDaysViewModelTests
             Date = new DateOnly(2025, 6, 6),
             IsVacation = false,
             IsPublicHoliday = true,
-            PublicHolidayDescription = string.Empty,
+            PublicHolidayDescription = "Holiday",
             CreatedAt = DateTimeOffset.UtcNow,
         };
         _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())

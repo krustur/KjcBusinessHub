@@ -177,7 +177,7 @@ public class OffDayRepositoryTests : IDisposable
         int year, DateOnly date,
         bool isPublicHoliday = true,
         bool isVacation = false,
-        string description = "") =>
+        string description = "Holiday") =>
         new()
         {
             Id = Guid.NewGuid(),

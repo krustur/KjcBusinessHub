@@ -176,7 +176,7 @@ public class CalendarYearTests
         Assert.Throws<ArgumentException>(() => year.AddOffDay(offDay));
     }
 
-    private static OffDay MakePublicHoliday(DateOnly date, string description = "") =>
+    private static OffDay MakePublicHoliday(DateOnly date, string description = "Holiday") =>
         new()
         {
             Id = Guid.NewGuid(),

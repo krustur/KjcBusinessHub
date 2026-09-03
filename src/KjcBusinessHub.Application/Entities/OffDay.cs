@@ -16,6 +16,9 @@ public class OffDay
         if (!IsPublicHoliday && !IsVacation)
             throw new ArgumentException($"OffDay {Date} must be either a public holiday or a vacation day.", nameof(OffDay));
 
+        if (IsPublicHoliday && string.IsNullOrWhiteSpace(PublicHolidayDescription))
+            throw new ArgumentException($"OffDay {Date} must have a public-holiday description.", nameof(OffDay));
+
         if (!IsPublicHoliday && !string.IsNullOrWhiteSpace(PublicHolidayDescription))
             throw new ArgumentException($"OffDay {Date} cannot have a public-holiday description without being a public holiday.", nameof(OffDay));
     }

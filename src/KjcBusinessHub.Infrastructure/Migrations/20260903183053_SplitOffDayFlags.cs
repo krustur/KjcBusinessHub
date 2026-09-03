@@ -34,6 +34,13 @@ namespace KjcBusinessHub.Infrastructure.Migrations
 
             migrationBuilder.Sql("""
 SELECT CASE
+    WHEN EXISTS (SELECT 1 FROM OffDays WHERE OffDayType NOT IN (0, 1, 2))
+    THEN RAISE(ABORT, 'Unsupported OffDayType values cannot be migrated automatically.')
+END;
+""");
+
+            migrationBuilder.Sql("""
+SELECT CASE
     WHEN EXISTS (SELECT 1 FROM OffDays WHERE OffDayType = 2)
     THEN RAISE(ABORT, 'Stored BridgingDay rows cannot be migrated automatically. Clear them before applying SplitOffDayFlags.')
 END;

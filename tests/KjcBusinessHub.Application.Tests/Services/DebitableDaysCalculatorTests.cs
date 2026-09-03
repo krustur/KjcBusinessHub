@@ -367,7 +367,7 @@ public class DebitableDaysCalculatorTests
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
-    private static OffDay MakePublicHoliday(DateOnly date, string description = "") =>
+    private static OffDay MakePublicHoliday(DateOnly date, string description = "Holiday") =>
         new()
         {
             Id = Guid.NewGuid(),
