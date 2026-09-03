@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -10,6 +11,9 @@ namespace KjcBusinessHub.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            if (!ActiveProvider.Contains("Sqlite", StringComparison.OrdinalIgnoreCase))
+                throw new NotSupportedException("SplitOffDayFlags currently supports SQLite only.");
+
             migrationBuilder.AddColumn<bool>(
                 name: "IsPublicHolidayTemp",
                 table: "OffDays",
@@ -97,6 +101,9 @@ END;
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            if (!ActiveProvider.Contains("Sqlite", StringComparison.OrdinalIgnoreCase))
+                throw new NotSupportedException("SplitOffDayFlags rollback currently supports SQLite only.");
+
             migrationBuilder.Sql("""
 SELECT CASE
     WHEN EXISTS (SELECT 1 FROM OffDays WHERE IsVacation = 1 AND IsPublicHoliday = 1)

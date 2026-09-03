@@ -110,22 +110,38 @@ public class CalendarDayCell : ObservableObject
     public Thickness BorderThickness =>
         IsVacation && (IsPublicHoliday || IsBridgingDay || IsWeekend) ? new Thickness(2) : new Thickness(0);
 
-    public string? ToolTipText =>
-        IsVacation && IsPublicHoliday
-            ? string.IsNullOrWhiteSpace(PublicHolidayDescription)
-                ? "Vacation + public holiday"
-                : $"Vacation + public holiday: {PublicHolidayDescription}"
-            : IsVacation && IsWeekend
-                ? "Vacation + weekend"
-            : IsVacation && IsBridgingDay
-                ? "Vacation + bridging day"
-                : IsVacation
-                    ? "Vacation"
-                    : IsPublicHoliday
-                        ? (string.IsNullOrWhiteSpace(PublicHolidayDescription) ? "Public holiday" : PublicHolidayDescription)
-                        : IsBridgingDay
-                            ? "Bridging day"
-                            : null;
+    public string? ToolTipText
+    {
+        get
+        {
+            if (IsVacation)
+            {
+                var parts = new List<string> { "Vacation" };
+                if (IsPublicHoliday)
+                {
+                    parts.Add(string.IsNullOrWhiteSpace(PublicHolidayDescription)
+                        ? "public holiday"
+                        : $"public holiday: {PublicHolidayDescription}");
+                }
+
+                if (IsBridgingDay)
+                    parts.Add("bridging day");
+
+                if (IsWeekend)
+                    parts.Add("weekend");
+
+                return string.Join(" + ", parts);
+            }
+
+            if (IsPublicHoliday)
+                return string.IsNullOrWhiteSpace(PublicHolidayDescription) ? "Public holiday" : PublicHolidayDescription;
+
+            if (IsBridgingDay)
+                return "Bridging day";
+
+            return null;
+        }
+    }
 
     private void OnVisualStateChanged()
     {
