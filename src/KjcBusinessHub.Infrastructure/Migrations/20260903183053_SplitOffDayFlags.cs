@@ -28,8 +28,10 @@ namespace KjcBusinessHub.Infrastructure.Migrations
                 defaultValue: false);
 
             migrationBuilder.Sql("""
-DELETE FROM OffDays
-WHERE IsVacation = 2;
+SELECT CASE
+    WHEN EXISTS (SELECT 1 FROM OffDays WHERE IsVacation = 2)
+    THEN RAISE(ABORT, 'Stored BridgingDay rows cannot be migrated automatically. Clear them before applying SplitOffDayFlags.')
+END;
 """);
 
             migrationBuilder.Sql("""
@@ -73,7 +75,7 @@ UPDATE OffDays
 SET IsVacation = CASE
     WHEN IsVacation = 1 THEN 1
     WHEN IsPublicHoliday = 1 THEN 0
-    ELSE 1
+    ELSE 2
 END;
 """);
 
