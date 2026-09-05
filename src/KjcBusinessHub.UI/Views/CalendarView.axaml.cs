@@ -14,7 +14,7 @@ public partial class CalendarView : UserControl
 
     private async void OnDayCellPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (!e.GetCurrentPoint(this).Properties.IsRightButtonPressed)
+        if (sender is not Control source || !e.GetCurrentPoint(source).Properties.IsRightButtonPressed)
             return;
 
         if (sender is not Button { DataContext: CalendarDayCell { Date: { } date } })
