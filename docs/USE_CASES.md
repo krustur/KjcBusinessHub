@@ -263,7 +263,8 @@ The user should see a view of all available Transactions top left and all availa
 - The Calendar view is open and at least one day has `Vacation` or `Sick leave` selected.
 
 **Acceptance Criteria:**
-- Repeated clicking eventually returns the day to `No absence`.
+- Right-clicking a date cell with `Vacation` or `Sick leave` resets the day to `No absence` immediately.
+- Repeated clicking still eventually returns the day to `No absence`.
 - The change is saved immediately.
 
 ---

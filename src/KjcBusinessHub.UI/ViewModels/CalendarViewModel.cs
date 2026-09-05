@@ -386,6 +386,31 @@ public partial class CalendarViewModel : ViewModelBase
         await DebitableDays.RecalculateAsync();
     }
 
+    [RelayCommand]
+    private async Task ResetAbsenceAsync(DateOnly date)
+    {
+        if (!_offDaysByDate.TryGetValue(date, out var existing) || existing.AbsenceType == AbsenceType.None)
+            return;
+
+        if (existing.IsPublicHoliday)
+        {
+            existing.AbsenceType = AbsenceType.None;
+            existing.UpdatedAt = DateTimeOffset.UtcNow;
+            await _offDayRepository.UpdateAsync(existing);
+            await _offDayRepository.SaveChangesAsync();
+            ApplyOffDayToCell(date, existing);
+        }
+        else
+        {
+            await _offDayRepository.DeleteAsync(existing.Id);
+            await _offDayRepository.SaveChangesAsync();
+            _offDaysByDate.Remove(date);
+            ApplyOffDayToCell(date, null);
+        }
+
+        await DebitableDays.RecalculateAsync();
+    }
+
     private static AbsenceType GetNextAbsenceType(AbsenceType current) =>
         current switch
         {
