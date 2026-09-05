@@ -25,8 +25,8 @@ public class OffDayConfiguration : IEntityTypeConfiguration<OffDay>
             .HasDefaultValue(string.Empty)
             .IsRequired();
 
-        builder.Property(d => d.IsVacation)
-            .HasDefaultValue(false)
+        builder.Property(d => d.AbsenceType)
+            .HasDefaultValue(Application.Enums.AbsenceType.None)
             .IsRequired();
 
         builder.Property(d => d.CreatedAt)

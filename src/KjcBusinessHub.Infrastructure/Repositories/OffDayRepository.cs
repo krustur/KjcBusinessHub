@@ -1,4 +1,5 @@
 using KjcBusinessHub.Application.Entities;
+using KjcBusinessHub.Application.Enums;
 using KjcBusinessHub.Application.Interfaces;
 using KjcBusinessHub.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -57,7 +58,7 @@ public class OffDayRepository(AppDbContext db) : IOffDayRepository
             Date = date,
             IsPublicHoliday = true,
             PublicHolidayDescription = description,
-            IsVacation = false,
+            AbsenceType = AbsenceType.None,
             CreatedAt = DateTimeOffset.UtcNow,
         }, cancellationToken);
 

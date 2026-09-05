@@ -1,4 +1,5 @@
 using KjcBusinessHub.Application.Entities;
+using KjcBusinessHub.Application.Enums;
 
 namespace KjcBusinessHub.Application.Tests.Entities;
 
@@ -124,7 +125,7 @@ public class CalendarYearTests
     // ── helpers ──────────────────────────────────────────────────────────────
 
     [Fact]
-    public void Constructor_allows_combined_public_holiday_and_vacation_flags()
+    public void Constructor_allows_combined_public_holiday_and_absence_flags()
     {
         var offDay = new OffDay
         {
@@ -133,7 +134,7 @@ public class CalendarYearTests
             Date = new DateOnly(2025, 1, 1),
             IsPublicHoliday = true,
             PublicHolidayDescription = "Nyårsdagen",
-            IsVacation = true,
+            AbsenceType = AbsenceType.SickLeave,
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
@@ -141,7 +142,7 @@ public class CalendarYearTests
 
         Assert.Single(year.OffDays);
         Assert.True(year.OffDays[0].IsPublicHoliday);
-        Assert.True(year.OffDays[0].IsVacation);
+        Assert.Equal(AbsenceType.SickLeave, year.OffDays[0].AbsenceType);
     }
 
     [Fact]
@@ -169,7 +170,7 @@ public class CalendarYearTests
             Year = 2025,
             Date = new DateOnly(2025, 7, 14),
             PublicHolidayDescription = "Invalid",
-            IsVacation = true,
+            AbsenceType = AbsenceType.Vacation,
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
@@ -184,7 +185,7 @@ public class CalendarYearTests
             Date = date,
             IsPublicHoliday = true,
             PublicHolidayDescription = description,
-            IsVacation = false,
+            AbsenceType = AbsenceType.None,
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
@@ -196,7 +197,19 @@ public class CalendarYearTests
             Date = date,
             IsPublicHoliday = false,
             PublicHolidayDescription = string.Empty,
-            IsVacation = true,
+            AbsenceType = AbsenceType.Vacation,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+    private static OffDay MakeSickLeave(DateOnly date) =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            Year = date.Year,
+            Date = date,
+            IsPublicHoliday = false,
+            PublicHolidayDescription = string.Empty,
+            AbsenceType = AbsenceType.SickLeave,
             CreatedAt = DateTimeOffset.UtcNow,
         };
 }

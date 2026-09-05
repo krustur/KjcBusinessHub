@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
 using KjcBusinessHub.Application.Entities;
+using KjcBusinessHub.Application.Enums;
 using KjcBusinessHub.Application.Interfaces;
 using KjcBusinessHub.Application.Services;
 using KjcBusinessHub.UI.ViewModels;
@@ -93,7 +95,7 @@ public class CalendarViewModelTests
             Date = new DateOnly(2025, 12, 25),
             IsPublicHoliday = true,
             PublicHolidayDescription = "Christmas Day",
-            IsVacation = false,
+            AbsenceType = AbsenceType.None,
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
@@ -150,13 +152,13 @@ public class CalendarViewModelTests
         await sut.ToggleDayCommand.ExecuteAsync(targetDate);
 
         await _offDayRepository.Received(1).AddAsync(
-            Arg.Is<OffDay>(d => d.Date == targetDate && d.IsVacation && !d.IsPublicHoliday),
+            Arg.Is<OffDay>(d => d.Date == targetDate && d.AbsenceType == AbsenceType.Vacation && !d.IsPublicHoliday),
             Arg.Any<CancellationToken>());
         await _offDayRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task ToggleDayCommand_removes_existing_vacation_day()
+    public async Task ToggleDayCommand_cycles_existing_vacation_day_to_sick_leave()
     {
         var vacation = new OffDay
         {
@@ -165,13 +167,13 @@ public class CalendarViewModelTests
             Date = new DateOnly(2025, 7, 14),
             IsPublicHoliday = false,
             PublicHolidayDescription = string.Empty,
-            IsVacation = true,
+            AbsenceType = AbsenceType.Vacation,
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
         _offDayRepository.GetByYearAsync(2025, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<OffDay>>([vacation]));
-        _offDayRepository.DeleteAsync(vacation.Id, Arg.Any<CancellationToken>())
+        _offDayRepository.UpdateAsync(Arg.Any<OffDay>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
         _offDayRepository.SaveChangesAsync(Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
@@ -182,12 +184,14 @@ public class CalendarViewModelTests
 
         await sut.ToggleDayCommand.ExecuteAsync(vacation.Date);
 
-        await _offDayRepository.Received(1).DeleteAsync(vacation.Id, Arg.Any<CancellationToken>());
+        await _offDayRepository.Received(1).UpdateAsync(
+            Arg.Is<OffDay>(d => d.Id == vacation.Id && d.AbsenceType == AbsenceType.SickLeave),
+            Arg.Any<CancellationToken>());
         await _offDayRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task ToggleDayCommand_adds_vacation_flag_to_public_holiday()
+    public async Task ToggleDayCommand_adds_vacation_to_public_holiday()
     {
         var holiday = new OffDay
         {
@@ -196,7 +200,7 @@ public class CalendarViewModelTests
             Date = new DateOnly(2025, 1, 1),
             IsPublicHoliday = true,
             PublicHolidayDescription = "New Year's Day",
-            IsVacation = false,
+            AbsenceType = AbsenceType.None,
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
@@ -214,12 +218,12 @@ public class CalendarViewModelTests
         await sut.ToggleDayCommand.ExecuteAsync(holiday.Date);
 
         await _offDayRepository.Received(1).UpdateAsync(
-            Arg.Is<OffDay>(d => d.Id == holiday.Id && d.IsPublicHoliday && d.IsVacation && d.PublicHolidayDescription == "New Year's Day"),
+            Arg.Is<OffDay>(d => d.Id == holiday.Id && d.IsPublicHoliday && d.AbsenceType == AbsenceType.Vacation && d.PublicHolidayDescription == "New Year's Day"),
             Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task ToggleDayCommand_removes_only_vacation_flag_from_public_holiday_combo()
+    public async Task ToggleDayCommand_cycles_public_holiday_vacation_combo_to_sick_leave()
     {
         var holiday = new OffDay
         {
@@ -228,7 +232,7 @@ public class CalendarViewModelTests
             Date = new DateOnly(2025, 1, 1),
             IsPublicHoliday = true,
             PublicHolidayDescription = "New Year's Day",
-            IsVacation = true,
+            AbsenceType = AbsenceType.Vacation,
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
@@ -246,7 +250,70 @@ public class CalendarViewModelTests
         await sut.ToggleDayCommand.ExecuteAsync(holiday.Date);
 
         await _offDayRepository.Received(1).UpdateAsync(
-            Arg.Is<OffDay>(d => d.Id == holiday.Id && d.IsPublicHoliday && !d.IsVacation && d.PublicHolidayDescription == "New Year's Day"),
+            Arg.Is<OffDay>(d => d.Id == holiday.Id && d.IsPublicHoliday && d.AbsenceType == AbsenceType.SickLeave && d.PublicHolidayDescription == "New Year's Day"),
+            Arg.Any<CancellationToken>());
+        await _offDayRepository.DidNotReceive().DeleteAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ToggleDayCommand_removes_sick_leave_entry_on_third_click()
+    {
+        var absence = new OffDay
+        {
+            Id = Guid.NewGuid(),
+            Year = 2025,
+            Date = new DateOnly(2025, 7, 14),
+            IsPublicHoliday = false,
+            PublicHolidayDescription = string.Empty,
+            AbsenceType = AbsenceType.SickLeave,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        _offDayRepository.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([absence]));
+        _offDayRepository.DeleteAsync(absence.Id, Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        _offDayRepository.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var sut = CreateSubject();
+        sut.SelectedFiscalYearStart = FindFiscalYearStart(sut, 2025, 1);
+        await sut.LoadAsync();
+
+        await sut.ToggleDayCommand.ExecuteAsync(absence.Date);
+
+        await _offDayRepository.Received(1).DeleteAsync(absence.Id, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ToggleDayCommand_clears_public_holiday_absence_on_third_click_but_keeps_holiday()
+    {
+        var holiday = new OffDay
+        {
+            Id = Guid.NewGuid(),
+            Year = 2025,
+            Date = new DateOnly(2025, 1, 1),
+            IsPublicHoliday = true,
+            PublicHolidayDescription = "New Year's Day",
+            AbsenceType = AbsenceType.SickLeave,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        _offDayRepository.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([holiday]));
+        _offDayRepository.UpdateAsync(Arg.Any<OffDay>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        _offDayRepository.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var sut = CreateSubject();
+        sut.SelectedFiscalYearStart = FindFiscalYearStart(sut, 2025, 1);
+        await sut.LoadAsync();
+
+        await sut.ToggleDayCommand.ExecuteAsync(holiday.Date);
+
+        await _offDayRepository.Received(1).UpdateAsync(
+            Arg.Is<OffDay>(d => d.Id == holiday.Id && d.IsPublicHoliday && d.AbsenceType == AbsenceType.None),
             Arg.Any<CancellationToken>());
         await _offDayRepository.DidNotReceive().DeleteAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
@@ -265,9 +332,9 @@ public class CalendarViewModelTests
                     Id = Guid.NewGuid(),
                     Year = 2025,
                     Date = date,
-                    IsVacation = true,
                     IsPublicHoliday = false,
                     PublicHolidayDescription = string.Empty,
+                    AbsenceType = AbsenceType.Vacation,
                     CreatedAt = DateTimeOffset.UtcNow,
                 }
             },
@@ -280,6 +347,34 @@ public class CalendarViewModelTests
         Assert.False(cell.IsPublicHoliday);
         Assert.Equal("#FFF9C4", cell.CellBackground);
         Assert.Equal("#E65100", cell.BorderBrush);
+    }
+
+    [Fact]
+    public void BuildCellsForMonth_marks_sick_leave_with_distinct_color()
+    {
+        var date = new DateOnly(2025, 5, 2);
+        var cells = CalendarViewModel.BuildCellsForMonth(
+            2025,
+            5,
+            new Dictionary<DateOnly, OffDay>
+            {
+                [date] = new()
+                {
+                    Id = Guid.NewGuid(),
+                    Year = 2025,
+                    Date = date,
+                    IsPublicHoliday = false,
+                    PublicHolidayDescription = string.Empty,
+                    AbsenceType = AbsenceType.SickLeave,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                }
+            });
+
+        var cell = Assert.Single(cells, c => c.Date == date);
+
+        Assert.True(cell.IsSickLeave);
+        Assert.Equal("#BBDEFB", cell.CellBackground);
+        Assert.Equal("Sick leave", cell.ToolTipText);
     }
 
     [Fact]
@@ -296,9 +391,9 @@ public class CalendarViewModelTests
                     Id = Guid.NewGuid(),
                     Year = 2025,
                     Date = date,
-                    IsVacation = true,
                     IsPublicHoliday = true,
                     PublicHolidayDescription = "New Year's Day",
+                    AbsenceType = AbsenceType.Vacation,
                     CreatedAt = DateTimeOffset.UtcNow,
                 }
             });
@@ -326,9 +421,9 @@ public class CalendarViewModelTests
                     Id = Guid.NewGuid(),
                     Year = 2025,
                     Date = date,
-                    IsVacation = true,
                     IsPublicHoliday = false,
                     PublicHolidayDescription = string.Empty,
+                    AbsenceType = AbsenceType.Vacation,
                     CreatedAt = DateTimeOffset.UtcNow,
                 }
             });

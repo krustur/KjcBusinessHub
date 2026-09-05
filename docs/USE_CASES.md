@@ -230,8 +230,8 @@ The user should see a view of all available Transactions top left and all availa
 **Acceptance Criteria:**
 - The user can navigate to a **Calendar** view from the main navigation.
 - A fiscal-year start selector is available and the view always displays the selected 12-month fiscal-year range in a grid.
-- Day cells are color-coded: red for public holidays, amber for derived bridging days, yellow for vacation days, light grey for weekends, default for regular workdays.
-- If a vacation day overlaps a bridging day or public holiday, the vacation color wins and the secondary state is still indicated visually.
+- Day cells are color-coded: red for public holidays, amber for derived bridging days, yellow for vacation days, blue for sick-leave days, light grey for weekends, default for regular workdays.
+- If an absence overlaps a bridging day or public holiday, the absence color wins and the secondary state is still indicated visually.
 
 ---
 
@@ -246,24 +246,24 @@ The user should see a view of all available Transactions top left and all availa
 
 ---
 
-### UC-CAL-03 Add Vacation Day
+### UC-CAL-03 Cycle Absence Day State
 
 **Pre-Conditions:**
 - The Calendar view is open.
 
 **Acceptance Criteria:**
-- The user can click a date cell to toggle it as a vacation day.
-- The vacation day is saved immediately.
+- The user can click a date cell to cycle the absence state as `No absence` → `Vacation` → `Sick leave` → `No absence`.
+- The selected absence state is saved immediately.
 
 ---
 
-### UC-CAL-04 Remove Vacation Day
+### UC-CAL-04 Clear Absence Day State
 
 **Pre-Conditions:**
-- The Calendar view is open and at least one vacation day exists.
+- The Calendar view is open and at least one day has `Vacation` or `Sick leave` selected.
 
 **Acceptance Criteria:**
-- The user can click an existing vacation day to remove it.
+- Repeated clicking eventually returns the day to `No absence`.
 - The change is saved immediately.
 
 ---
@@ -303,7 +303,7 @@ The user should see a view of all available Transactions top left and all availa
 - The user selects a start month and an end month.
 - The selected fiscal-year start month defines a fixed 12-month range used for the calculation.
 - The application returns a `DebitableDaysResult` derived from the off-day data for all affected years.
-- Excluded from the count: Saturdays, Sundays, public holidays, vacation days.
+- Excluded from the count: Saturdays, Sundays, public holidays, and absence days when absence deduction is enabled.
 
 ---
 
@@ -315,7 +315,7 @@ The user should see a view of all available Transactions top left and all availa
 **Acceptance Criteria:**
 - The result shows a prominent total: "Total debitable days: N".
 - A table/list shows one row per month with the month name and its debitable-day count.
-- The panel shows a toggle for deducting vacation days, including the current count.
+- The panel shows a toggle for deducting absence days, including the current count.
 - Months whose years have no holiday data display a clear warning: "No holiday data for YYYY — import red days first".
 
 ---

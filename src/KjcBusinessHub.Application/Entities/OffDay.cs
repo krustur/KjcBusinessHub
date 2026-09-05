@@ -1,3 +1,5 @@
+using KjcBusinessHub.Application.Enums;
+
 namespace KjcBusinessHub.Application.Entities;
 
 public class OffDay
@@ -7,14 +9,17 @@ public class OffDay
     public DateOnly Date { get; set; }
     public bool IsPublicHoliday { get; set; }
     public string PublicHolidayDescription { get; set; } = string.Empty;
-    public bool IsVacation { get; set; }
+    public AbsenceType AbsenceType { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
 
     public void Validate()
     {
-        if (!IsPublicHoliday && !IsVacation)
-            throw new ArgumentException($"OffDay {Date} must be either a public holiday or a vacation day.", nameof(OffDay));
+        if (!Enum.IsDefined(AbsenceType))
+            throw new ArgumentException($"OffDay {Date} has an unsupported absence type.", nameof(OffDay));
+
+        if (!IsPublicHoliday && AbsenceType == AbsenceType.None)
+            throw new ArgumentException($"OffDay {Date} must be either a public holiday or an absence day.", nameof(OffDay));
 
         if (IsPublicHoliday && string.IsNullOrWhiteSpace(PublicHolidayDescription))
             throw new ArgumentException($"OffDay {Date} must have a public-holiday description.", nameof(OffDay));

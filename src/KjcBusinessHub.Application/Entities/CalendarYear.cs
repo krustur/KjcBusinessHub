@@ -1,5 +1,3 @@
-using KjcBusinessHub.Application.Enums;
-
 namespace KjcBusinessHub.Application.Entities;
 
 /// <summary>
@@ -23,7 +21,7 @@ public class CalendarYear
 
     /// <summary>Adds a new off-day to this calendar year.</summary>
     /// <exception cref="ArgumentException">
-    /// Thrown when the date does not belong to this year, no day flags are set, or a conflicting entry already exists for that date.
+    /// Thrown when the date does not belong to this year, no holiday/absence flags are set, or a conflicting entry already exists for that date.
     /// </exception>
     public void AddOffDay(OffDay offDay)
     {

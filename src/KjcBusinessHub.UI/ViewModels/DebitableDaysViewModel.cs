@@ -138,11 +138,11 @@ public partial class DebitableDaysViewModel : ViewModelBase
     // ── Options ──────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// When <c>true</c> (the default), vacation days are deducted from the debitable-days count.
-    /// When <c>false</c>, vacation days are treated as ordinary working days.
+    /// When <c>true</c> (the default), absence days are deducted from the debitable-days count.
+    /// When <c>false</c>, absences are treated as ordinary working days.
     /// </summary>
     [ObservableProperty]
-    public partial bool DeductVacationDays { get; set; } = true;
+    public partial bool DeductAbsenceDays { get; set; } = true;
 
     // ── Results ──────────────────────────────────────────────────────────────
 
@@ -153,10 +153,10 @@ public partial class DebitableDaysViewModel : ViewModelBase
     public partial int TotalDebitableDays { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(DeductVacationDaysLabel))]
-    public partial int VacationDayCount { get; set; }
+    [NotifyPropertyChangedFor(nameof(DeductAbsenceDaysLabel))]
+    public partial int AbsenceDayCount { get; set; }
 
-    public string DeductVacationDaysLabel => $"Deduct vacation days ({VacationDayCount})";
+    public string DeductAbsenceDaysLabel => $"Deduct absence days ({AbsenceDayCount})";
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasError))]
@@ -201,7 +201,7 @@ public partial class DebitableDaysViewModel : ViewModelBase
         _ = RecalculateAsync();
     }
 
-    partial void OnDeductVacationDaysChanged(bool value) => _ = RecalculateAsync();
+    partial void OnDeductAbsenceDaysChanged(bool value) => _ = RecalculateAsync();
 
     // ── Commands ─────────────────────────────────────────────────────────────
 
@@ -228,7 +228,7 @@ public partial class DebitableDaysViewModel : ViewModelBase
         try
         {
             var start = new YearMonth(CalendarYear, StartMonth);
-            var query = new DebitableDaysQuery(start, EndMonth, DeductVacationDays);
+            var query = new DebitableDaysQuery(start, EndMonth, DeductAbsenceDays);
 
             var result = await _calculator.CalculateAsync(query, cancellationToken);
 
@@ -240,7 +240,7 @@ public partial class DebitableDaysViewModel : ViewModelBase
             }
 
             TotalDebitableDays = result.TotalDebitableDays;
-            VacationDayCount = result.VacationDayCount;
+            AbsenceDayCount = result.AbsenceDayCount;
 
             if (result.YearsWithoutPublicHolidays.Count > 0)
             {

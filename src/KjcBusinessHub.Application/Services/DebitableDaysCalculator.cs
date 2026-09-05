@@ -6,7 +6,7 @@ namespace KjcBusinessHub.Application.Services;
 
 /// <summary>
 /// Calculates the number of debitable (billable) days in a given period,
-/// excluding weekends, public holidays, and optionally vacation days.
+/// excluding weekends, public holidays, and optionally absence days.
 /// </summary>
 public class DebitableDaysCalculator(IOffDayRepository offDayRepository)
 {
@@ -48,13 +48,13 @@ public class DebitableDaysCalculator(IOffDayRepository offDayRepository)
             .Select(d => d.Date)
             .ToHashSet();
 
-        var vacationDayCount = allOffDays.Count(d =>
-            d.IsVacation &&
+        var absenceDayCount = allOffDays.Count(d =>
+            d.AbsenceType != AbsenceType.None &&
             d.Date >= periodStart &&
             d.Date <= periodEnd);
 
         var offDaySet = allOffDays
-            .Where(d => d.IsPublicHoliday || (query.DeductVacationDays && d.IsVacation))
+            .Where(d => d.IsPublicHoliday || (query.DeductAbsenceDays && d.AbsenceType != AbsenceType.None))
             .Select(d => d.Date)
             .ToHashSet();
 
@@ -72,7 +72,7 @@ public class DebitableDaysCalculator(IOffDayRepository offDayRepository)
             TotalDebitableDays: perMonth.Sum(m => m.DebitableDays),
             PerMonth: perMonth,
             YearsWithoutPublicHolidays: yearsWithoutHolidays,
-            VacationDayCount: vacationDayCount);
+            AbsenceDayCount: absenceDayCount);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using KjcBusinessHub.Application.Entities;
+using KjcBusinessHub.Application.Enums;
 using KjcBusinessHub.Application.Interfaces;
 using KjcBusinessHub.Application.Services;
 using NSubstitute;
@@ -61,6 +62,20 @@ public class DebitableDaysCalculatorTests
             new DebitableDaysQuery(new YearMonth(2025, 6), new YearMonth(2025, 6)));
 
         // June 2025 has 21 weekdays; minus vacation → 20
+        Assert.Equal(20, result.TotalDebitableDays);
+    }
+
+    [Fact]
+    public async Task SingleMonth_sick_leave_day_reduces_count()
+    {
+        var sickLeave = MakeSickLeave(new DateOnly(2025, 6, 10));
+        _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([sickLeave]));
+
+        var sut = CreateSubject();
+        var result = await sut.CalculateAsync(
+            new DebitableDaysQuery(new YearMonth(2025, 6), new YearMonth(2025, 6)));
+
         Assert.Equal(20, result.TotalDebitableDays);
     }
 
@@ -150,10 +165,10 @@ public class DebitableDaysCalculatorTests
         Assert.Equal((22 - 1) + (23 - 1), result.TotalDebitableDays);
     }
 
-    // ── DeductVacationDays flag ──────────────────────────────────────────────
+    // ── DeductAbsenceDays flag ───────────────────────────────────────────────
 
     [Fact]
-    public async Task DeductVacationDays_false_does_not_subtract_vacation_days()
+    public async Task DeductAbsenceDays_false_does_not_subtract_absence_days()
     {
         var vacation = MakeVacation(new DateOnly(2025, 6, 10));
         _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
@@ -161,14 +176,14 @@ public class DebitableDaysCalculatorTests
 
         var sut = CreateSubject();
         var result = await sut.CalculateAsync(
-            new DebitableDaysQuery(new YearMonth(2025, 6), new YearMonth(2025, 6), deductVacationDays: false));
+            new DebitableDaysQuery(new YearMonth(2025, 6), new YearMonth(2025, 6), deductAbsenceDays: false));
 
         // June 2025 has 21 weekdays; vacation not deducted → still 21
         Assert.Equal(21, result.TotalDebitableDays);
     }
 
     [Fact]
-    public async Task DeductVacationDays_true_still_subtracts_vacation_days()
+    public async Task DeductAbsenceDays_true_still_subtracts_vacation_days()
     {
         var vacation = MakeVacation(new DateOnly(2025, 6, 10));
         _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
@@ -176,7 +191,21 @@ public class DebitableDaysCalculatorTests
 
         var sut = CreateSubject();
         var result = await sut.CalculateAsync(
-            new DebitableDaysQuery(new YearMonth(2025, 6), new YearMonth(2025, 6), deductVacationDays: true));
+            new DebitableDaysQuery(new YearMonth(2025, 6), new YearMonth(2025, 6), deductAbsenceDays: true));
+
+        Assert.Equal(20, result.TotalDebitableDays);
+    }
+
+    [Fact]
+    public async Task DeductAbsenceDays_true_subtracts_sick_leave_days()
+    {
+        var sickLeave = MakeSickLeave(new DateOnly(2025, 6, 10));
+        _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([sickLeave]));
+
+        var sut = CreateSubject();
+        var result = await sut.CalculateAsync(
+            new DebitableDaysQuery(new YearMonth(2025, 6), new YearMonth(2025, 6), deductAbsenceDays: true));
 
         Assert.Equal(20, result.TotalDebitableDays);
     }
@@ -211,9 +240,9 @@ public class DebitableDaysCalculatorTests
     }
 
     [Fact]
-    public async Task YearsWithoutPublicHolidays_contains_year_when_only_vacation_days_exist()
+    public async Task YearsWithoutPublicHolidays_contains_year_when_only_absence_days_exist()
     {
-        var vacation = MakeVacation(new DateOnly(2025, 6, 10));
+        var vacation = MakeSickLeave(new DateOnly(2025, 6, 10));
         _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<OffDay>>([vacation]));
 
@@ -333,7 +362,7 @@ public class DebitableDaysCalculatorTests
             Date = new DateOnly(2025, 1, 1),
             IsPublicHoliday = true,
             PublicHolidayDescription = "Nyårsdagen",
-            IsVacation = true,
+            AbsenceType = AbsenceType.Vacation,
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
@@ -345,7 +374,7 @@ public class DebitableDaysCalculatorTests
             new DebitableDaysQuery(new YearMonth(2025, 1), new YearMonth(2025, 1)));
 
         Assert.Equal(22, result.TotalDebitableDays);
-        Assert.Equal(1, result.VacationDayCount);
+        Assert.Equal(1, result.AbsenceDayCount);
     }
 
     // ── DebitableDaysQuery validation ────────────────────────────────────────
@@ -375,7 +404,7 @@ public class DebitableDaysCalculatorTests
             Date = date,
             IsPublicHoliday = true,
             PublicHolidayDescription = description,
-            IsVacation = false,
+            AbsenceType = AbsenceType.None,
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
@@ -387,7 +416,19 @@ public class DebitableDaysCalculatorTests
             Date = date,
             IsPublicHoliday = false,
             PublicHolidayDescription = string.Empty,
-            IsVacation = true,
+            AbsenceType = AbsenceType.Vacation,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+    private static OffDay MakeSickLeave(DateOnly date) =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            Year = date.Year,
+            Date = date,
+            IsPublicHoliday = false,
+            PublicHolidayDescription = string.Empty,
+            AbsenceType = AbsenceType.SickLeave,
             CreatedAt = DateTimeOffset.UtcNow,
         };
 }

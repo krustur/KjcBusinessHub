@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using KjcBusinessHub.Application.Entities;
+using KjcBusinessHub.Application.Enums;
 using KjcBusinessHub.Infrastructure.Data;
 using KjcBusinessHub.Infrastructure.PublicHolidays;
 using KjcBusinessHub.Infrastructure.Repositories;
@@ -34,7 +35,7 @@ public sealed class DagsmartApiPublicHolidayImporterTests : IDisposable
             Date = new DateOnly(2025, 1, 1),
             IsPublicHoliday = true,
             PublicHolidayDescription = "Old name",
-            IsVacation = false,
+            AbsenceType = AbsenceType.None,
             CreatedAt = DateTimeOffset.UtcNow,
         });
 
@@ -45,7 +46,7 @@ public sealed class DagsmartApiPublicHolidayImporterTests : IDisposable
             Date = new DateOnly(2025, 6, 20),
             IsPublicHoliday = false,
             PublicHolidayDescription = string.Empty,
-            IsVacation = true,
+            AbsenceType = AbsenceType.Vacation,
             CreatedAt = DateTimeOffset.UtcNow,
         });
 
@@ -69,7 +70,7 @@ public sealed class DagsmartApiPublicHolidayImporterTests : IDisposable
         Assert.Equal(3, offDays.Count);
         Assert.Contains(offDays, d => d.Date == new DateOnly(2025, 1, 1) && d.PublicHolidayDescription == "Nyårsdagen" && d.IsPublicHoliday);
         Assert.Contains(offDays, d => d.Date == new DateOnly(2025, 6, 6) && d.IsPublicHoliday);
-        Assert.Contains(offDays, d => d.Date == new DateOnly(2025, 6, 20) && d.IsVacation && d.IsPublicHoliday && d.PublicHolidayDescription == "Midsommarafton");
+        Assert.Contains(offDays, d => d.Date == new DateOnly(2025, 6, 20) && d.AbsenceType == AbsenceType.Vacation && d.IsPublicHoliday && d.PublicHolidayDescription == "Midsommarafton");
     }
 
     [Fact]
