@@ -39,6 +39,21 @@ public class CalendarYearTests
         Assert.Throws<ArgumentException>(() => new CalendarYear(2025, [a, b]));
     }
 
+    [Fact]
+    public void Constructor_with_unsupported_absence_type_throws()
+    {
+        var invalidOffDay = new OffDay
+        {
+            Id = Guid.NewGuid(),
+            Year = 2025,
+            Date = new DateOnly(2025, 1, 2),
+            AbsenceType = (AbsenceType)99,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        Assert.Throws<ArgumentException>(() => new CalendarYear(2025, [invalidOffDay]));
+    }
+
     // ── AddOffDay ────────────────────────────────────────────────────────────
 
     [Fact]

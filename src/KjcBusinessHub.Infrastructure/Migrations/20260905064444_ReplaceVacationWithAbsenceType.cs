@@ -90,7 +90,7 @@ END;
             migrationBuilder.Sql("""
 SELECT CASE
     WHEN EXISTS (SELECT 1 FROM OffDays WHERE AbsenceType NOT IN (0, 1))
-    THEN RAISE(ABORT, 'Sick-leave rows cannot be rolled back to the legacy vacation-only schema automatically.')
+    THEN RAISE(ABORT, 'Absence rows with unsupported legacy values cannot be rolled back to the vacation-only schema automatically.')
 END;
 """);
 

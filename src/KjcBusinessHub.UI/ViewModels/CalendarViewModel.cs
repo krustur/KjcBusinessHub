@@ -384,7 +384,7 @@ public partial class CalendarViewModel : ViewModelBase
             ApplyOffDayToCell(date, offDay);
         }
 
-        _ = DebitableDays.RecalculateAsync();
+        await DebitableDays.RecalculateAsync();
     }
 
     private static AbsenceType GetNextAbsenceType(AbsenceType current) =>

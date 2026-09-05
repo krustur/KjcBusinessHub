@@ -15,7 +15,7 @@ public class OffDay
 
     public void Validate()
     {
-        if (!Enum.IsDefined(AbsenceType))
+        if (!Enum.IsDefined(this.AbsenceType))
             throw new ArgumentException($"OffDay {Date} has an unsupported absence type.", nameof(OffDay));
 
         if (!IsPublicHoliday && AbsenceType == AbsenceType.None)
