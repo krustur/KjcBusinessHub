@@ -103,14 +103,14 @@ public class CalendarDayCell : ObservableObject
     public string ForegroundBrush =>
         !IsCurrentMonth ? "#BDBDBD" :
         IsPublicHoliday && !HasAbsence ? "#C62828" :
-        IsBridgingDay && !HasAbsence ? "#E65100" :
+        IsBridgingDay && !HasAbsence ? "#FB8C00" :
         IsSickLeave ? "#1565C0" :
         "#212121";
 
     public string BorderBrush =>
         HasAbsence && IsPublicHoliday ? "#C62828" :
         HasAbsence && IsWeekend ? "#C62828" :
-        IsBridgingDay ? "#E65100" :
+        IsBridgingDay ? "#FB8C00" :
         "Transparent";
 
     public Thickness BorderThickness =>

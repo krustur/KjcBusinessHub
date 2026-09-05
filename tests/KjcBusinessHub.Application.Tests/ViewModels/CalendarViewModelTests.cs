@@ -346,7 +346,7 @@ public class CalendarViewModelTests
         Assert.True(cell.IsBridgingDay);
         Assert.False(cell.IsPublicHoliday);
         Assert.Equal("#FFF9C4", cell.CellBackground);
-        Assert.Equal("#E65100", cell.BorderBrush);
+        Assert.Equal("#FB8C00", cell.BorderBrush);
         Assert.Equal(new Avalonia.Thickness(2), cell.BorderThickness);
     }
 
@@ -365,7 +365,7 @@ public class CalendarViewModelTests
         Assert.False(cell.HasAbsence);
         Assert.True(cell.IsBridgingDay);
         Assert.Equal("Transparent", cell.CellBackground);
-        Assert.Equal("#E65100", cell.BorderBrush);
+        Assert.Equal("#FB8C00", cell.BorderBrush);
         Assert.Equal(new Avalonia.Thickness(2), cell.BorderThickness);
     }
 
@@ -424,7 +424,7 @@ public class CalendarViewModelTests
         Assert.True(cell.IsSickLeave);
         Assert.True(cell.IsBridgingDay);
         Assert.Equal("#BBDEFB", cell.CellBackground);
-        Assert.Equal("#E65100", cell.BorderBrush);
+        Assert.Equal("#FB8C00", cell.BorderBrush);
         Assert.Equal(new Avalonia.Thickness(2), cell.BorderThickness);
     }
 

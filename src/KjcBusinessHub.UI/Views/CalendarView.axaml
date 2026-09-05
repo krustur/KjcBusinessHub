@@ -113,7 +113,7 @@
                     <TextBlock Text="Public holiday" VerticalAlignment="Center" FontSize="12" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="4">
-                    <Border Width="14" Height="14" CornerRadius="2" Background="Transparent" BorderBrush="#E65100" BorderThickness="2" />
+                    <Border Width="14" Height="14" CornerRadius="2" Background="Transparent" BorderBrush="#FB8C00" BorderThickness="2" />
                     <TextBlock Text="Bridging day" VerticalAlignment="Center" FontSize="12" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="4">
