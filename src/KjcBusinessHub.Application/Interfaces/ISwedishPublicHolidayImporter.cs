@@ -10,8 +10,8 @@ public interface ISwedishPublicHolidayImporter
 {
     /// <summary>
     /// Fetches Swedish public holidays (röda dagar) for the given year from an external source,
-    /// persists them as <c>PublicHoliday</c> off-days, and returns a summary.
-    /// Existing vacation flags for the same dates are preserved.
+    /// persists them as off-days with the public-holiday flag set, and returns a summary.
+    /// Existing absence states for the same dates are preserved.
     /// </summary>
     Task<PublicHolidayImportResult> ImportAsync(int year, CancellationToken cancellationToken = default);
 }

@@ -27,7 +27,7 @@ public interface IOffDayRepository
     /// <summary>
     /// Upserts a public-holiday off-day for the given date.
     /// If an entry with the same date already exists, its public-holiday flag and description are updated
-    /// while preserving any existing vacation flag.
+    /// while preserving any existing absence state.
     /// Returns whether the public holiday was inserted or updated.
     /// </summary>
     Task<PublicHolidayUpsertOutcome> UpsertPublicHolidayAsync(int year, DateOnly date, string description, CancellationToken cancellationToken = default);
