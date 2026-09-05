@@ -1,3 +1,4 @@
+using System;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
@@ -24,6 +25,13 @@ public partial class CalendarView : UserControl
             return;
 
         e.Handled = true;
-        await viewModel.ResetAbsenceCommand.ExecuteAsync(date);
+        try
+        {
+            await viewModel.ResetAbsenceCommand.ExecuteAsync(date);
+        }
+        catch (Exception ex)
+        {
+            viewModel.StatusMessage = $"Could not reset absence: {ex.Message}";
+        }
     }
 }
