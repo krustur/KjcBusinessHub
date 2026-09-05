@@ -276,7 +276,7 @@ The user should see a view of all available Transactions top left and all availa
 **Acceptance Criteria:**
 - An explicit "Import red days for {fiscal year start}" action is available.
 - The action calls the Dagsmart API for every calendar year covered by the selected fiscal-year range and persists the results as `PublicHoliday` off-days.
-- Existing vacation flags on the same dates are preserved.
+- Existing absence states on the same dates are preserved.
 - A confirmation shows how many days were added or updated.
 - A user-visible warning is shown if the import fails (e.g. network unavailable).
 

@@ -182,6 +182,6 @@ A bridging day is a derived weekday between non-working days. It is not stored i
 - Calendar and debitable-days views always operate on a 12-month fiscal-year range anchored by the selected start month.
 - Bridging days are derived from imported public holidays within the selected fiscal-year range and shown in the calendar UI without overwriting stored off-days.
 - `CalendarYear` validates that each off-day's `Date` belongs to the owned year and that no two off-days share the same date.
-- The `DagsmartApiPublicHolidayImporter` sets the public-holiday flag and description for the requested year while preserving any existing vacation flag on the same date.
+- The `DagsmartApiPublicHolidayImporter` sets the public-holiday flag and description for the requested year while preserving any existing absence state on the same date.
 
 ---
