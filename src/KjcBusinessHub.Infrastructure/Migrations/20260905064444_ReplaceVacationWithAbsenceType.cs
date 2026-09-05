@@ -11,9 +11,6 @@ namespace KjcBusinessHub.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            if (!ActiveProvider.Contains("Sqlite", StringComparison.OrdinalIgnoreCase))
-                throw new NotSupportedException("ReplaceVacationWithAbsenceType currently supports SQLite only.");
-
             migrationBuilder.AlterColumn<string>(
                 name: "PublicHolidayDescription",
                 table: "OffDays",
@@ -57,9 +54,6 @@ END;
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            if (!ActiveProvider.Contains("Sqlite", StringComparison.OrdinalIgnoreCase))
-                throw new NotSupportedException("ReplaceVacationWithAbsenceType rollback currently supports SQLite only.");
-
             migrationBuilder.AlterColumn<string>(
                 name: "PublicHolidayDescription",
                 table: "OffDays",
@@ -87,12 +81,15 @@ END;
                 nullable: false,
                 defaultValue: false);
 
-            migrationBuilder.Sql("""
+            if (IsSqlite())
+            {
+                migrationBuilder.Sql("""
 SELECT CASE
     WHEN EXISTS (SELECT 1 FROM OffDays WHERE AbsenceType NOT IN (0, 1))
     THEN RAISE(ABORT, 'Absence rows with unsupported legacy values cannot be rolled back to the vacation-only schema automatically.')
 END;
 """);
+            }
 
             migrationBuilder.Sql("""
 UPDATE OffDays
@@ -106,5 +103,8 @@ END;
                 name: "AbsenceType",
                 table: "OffDays");
         }
+
+        private bool IsSqlite() =>
+            ActiveProvider.Contains("Sqlite", StringComparison.OrdinalIgnoreCase);
     }
 }

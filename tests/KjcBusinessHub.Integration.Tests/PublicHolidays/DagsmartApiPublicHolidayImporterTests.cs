@@ -26,7 +26,7 @@ public sealed class DagsmartApiPublicHolidayImporterTests : IDisposable
     }
 
     [Fact]
-    public async Task ImportAsync_inserts_updates_and_skips_vacation_entries()
+    public async Task ImportAsync_inserts_and_updates_holidays_while_preserving_existing_absence_state()
     {
         await _repository.AddAsync(new OffDay
         {

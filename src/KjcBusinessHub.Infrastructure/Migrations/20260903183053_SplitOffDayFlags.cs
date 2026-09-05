@@ -11,9 +11,6 @@ namespace KjcBusinessHub.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            if (!ActiveProvider.Contains("Sqlite", StringComparison.OrdinalIgnoreCase))
-                throw new NotSupportedException("SplitOffDayFlags currently supports SQLite only.");
-
             migrationBuilder.AddColumn<bool>(
                 name: "IsPublicHolidayTemp",
                 table: "OffDays",
@@ -36,19 +33,22 @@ namespace KjcBusinessHub.Infrastructure.Migrations
                 nullable: false,
                 defaultValue: "");
 
-            migrationBuilder.Sql("""
+            if (IsSqlite())
+            {
+                migrationBuilder.Sql("""
 SELECT CASE
     WHEN EXISTS (SELECT 1 FROM OffDays WHERE OffDayType NOT IN (0, 1, 2))
     THEN RAISE(ABORT, 'Unsupported OffDayType values cannot be migrated automatically.')
 END;
 """);
 
-            migrationBuilder.Sql("""
+                migrationBuilder.Sql("""
 SELECT CASE
     WHEN EXISTS (SELECT 1 FROM OffDays WHERE OffDayType = 2)
     THEN RAISE(ABORT, 'Stored BridgingDay rows cannot be migrated automatically. Clear them before applying SplitOffDayFlags.')
 END;
 """);
+            }
 
             migrationBuilder.Sql("""
 UPDATE OffDays
@@ -101,22 +101,22 @@ END;
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            if (!ActiveProvider.Contains("Sqlite", StringComparison.OrdinalIgnoreCase))
-                throw new NotSupportedException("SplitOffDayFlags rollback currently supports SQLite only.");
-
-            migrationBuilder.Sql("""
+            if (IsSqlite())
+            {
+                migrationBuilder.Sql("""
 SELECT CASE
     WHEN EXISTS (SELECT 1 FROM OffDays WHERE IsVacation = 1 AND IsPublicHoliday = 1)
     THEN RAISE(ABORT, 'Combined public-holiday and vacation rows cannot be rolled back to the legacy OffDayType schema automatically.')
 END;
 """);
 
-            migrationBuilder.Sql("""
+                migrationBuilder.Sql("""
 SELECT CASE
     WHEN EXISTS (SELECT 1 FROM OffDays WHERE IsVacation = 0 AND IsPublicHoliday = 0)
     THEN RAISE(ABORT, 'Zero-flag OffDay rows cannot be rolled back to the legacy OffDayType schema automatically.')
 END;
 """);
+            }
 
             migrationBuilder.AddColumn<int>(
                 name: "OffDayTypeTemp",
@@ -172,5 +172,8 @@ END;
                 table: "OffDays",
                 newName: "Description");
         }
+
+        private bool IsSqlite() =>
+            ActiveProvider.Contains("Sqlite", StringComparison.OrdinalIgnoreCase);
     }
 }
