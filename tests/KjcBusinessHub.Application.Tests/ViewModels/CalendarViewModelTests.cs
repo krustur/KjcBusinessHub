@@ -347,6 +347,26 @@ public class CalendarViewModelTests
         Assert.False(cell.IsPublicHoliday);
         Assert.Equal("#FFF9C4", cell.CellBackground);
         Assert.Equal("#E65100", cell.BorderBrush);
+        Assert.Equal(new Avalonia.Thickness(2), cell.BorderThickness);
+    }
+
+    [Fact]
+    public void BuildCellsForMonth_marks_bridging_day_without_absence_as_outline_only()
+    {
+        var date = new DateOnly(2025, 5, 2);
+        var cells = CalendarViewModel.BuildCellsForMonth(
+            2025,
+            5,
+            null,
+            new HashSet<DateOnly> { date });
+
+        var cell = Assert.Single(cells, c => c.Date == date);
+
+        Assert.False(cell.HasAbsence);
+        Assert.True(cell.IsBridgingDay);
+        Assert.Equal("Transparent", cell.CellBackground);
+        Assert.Equal("#E65100", cell.BorderBrush);
+        Assert.Equal(new Avalonia.Thickness(2), cell.BorderThickness);
     }
 
     [Fact]
@@ -375,6 +395,37 @@ public class CalendarViewModelTests
         Assert.True(cell.IsSickLeave);
         Assert.Equal("#BBDEFB", cell.CellBackground);
         Assert.Equal("Sick leave", cell.ToolTipText);
+    }
+
+    [Fact]
+    public void BuildCellsForMonth_marks_bridging_day_plus_sick_leave_combo_with_orange_outline()
+    {
+        var date = new DateOnly(2025, 5, 2);
+        var cells = CalendarViewModel.BuildCellsForMonth(
+            2025,
+            5,
+            new Dictionary<DateOnly, OffDay>
+            {
+                [date] = new()
+                {
+                    Id = Guid.NewGuid(),
+                    Year = 2025,
+                    Date = date,
+                    IsPublicHoliday = false,
+                    PublicHolidayDescription = string.Empty,
+                    AbsenceType = AbsenceType.SickLeave,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                }
+            },
+            new HashSet<DateOnly> { date });
+
+        var cell = Assert.Single(cells, c => c.Date == date);
+
+        Assert.True(cell.IsSickLeave);
+        Assert.True(cell.IsBridgingDay);
+        Assert.Equal("#BBDEFB", cell.CellBackground);
+        Assert.Equal("#E65100", cell.BorderBrush);
+        Assert.Equal(new Avalonia.Thickness(2), cell.BorderThickness);
     }
 
     [Fact]

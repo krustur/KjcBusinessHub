@@ -96,7 +96,6 @@ public class CalendarDayCell : ObservableObject
         IsVacation ? "#FFF9C4" :
         IsSickLeave ? "#BBDEFB" :
         IsPublicHoliday ? "#FFCDD2" :
-        IsBridgingDay ? "#FFE0B2" :
         IsWeekend ? "#F5F5F5" :
         "Transparent";
 
@@ -111,11 +110,11 @@ public class CalendarDayCell : ObservableObject
     public string BorderBrush =>
         HasAbsence && IsPublicHoliday ? "#C62828" :
         HasAbsence && IsWeekend ? "#C62828" :
-        HasAbsence && IsBridgingDay ? "#E65100" :
+        IsBridgingDay ? "#E65100" :
         "Transparent";
 
     public Thickness BorderThickness =>
-        HasAbsence && (IsPublicHoliday || IsBridgingDay || IsWeekend) ? new Thickness(2) : new Thickness(0);
+        IsBridgingDay || (HasAbsence && (IsPublicHoliday || IsWeekend)) ? new Thickness(2) : new Thickness(0);
 
     public string? ToolTipText
     {
