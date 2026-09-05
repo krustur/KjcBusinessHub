@@ -319,6 +319,70 @@ public class CalendarViewModelTests
     }
 
     [Fact]
+    public async Task ResetAbsenceCommand_removes_regular_absence_entry()
+    {
+        var absence = new OffDay
+        {
+            Id = Guid.NewGuid(),
+            Year = 2025,
+            Date = new DateOnly(2025, 7, 14),
+            IsPublicHoliday = false,
+            PublicHolidayDescription = string.Empty,
+            AbsenceType = AbsenceType.Vacation,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        _offDayRepository.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([absence]));
+        _offDayRepository.DeleteAsync(absence.Id, Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        _offDayRepository.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var sut = CreateSubject();
+        sut.SelectedFiscalYearStart = FindFiscalYearStart(sut, 2025, 1);
+        await sut.LoadAsync();
+
+        await sut.ResetAbsenceCommand.ExecuteAsync(absence.Date);
+
+        await _offDayRepository.Received(1).DeleteAsync(absence.Id, Arg.Any<CancellationToken>());
+        await _offDayRepository.DidNotReceive().UpdateAsync(Arg.Any<OffDay>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ResetAbsenceCommand_clears_public_holiday_absence_but_keeps_holiday()
+    {
+        var holiday = new OffDay
+        {
+            Id = Guid.NewGuid(),
+            Year = 2025,
+            Date = new DateOnly(2025, 1, 1),
+            IsPublicHoliday = true,
+            PublicHolidayDescription = "New Year's Day",
+            AbsenceType = AbsenceType.SickLeave,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        _offDayRepository.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([holiday]));
+        _offDayRepository.UpdateAsync(Arg.Any<OffDay>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        _offDayRepository.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var sut = CreateSubject();
+        sut.SelectedFiscalYearStart = FindFiscalYearStart(sut, 2025, 1);
+        await sut.LoadAsync();
+
+        await sut.ResetAbsenceCommand.ExecuteAsync(holiday.Date);
+
+        await _offDayRepository.Received(1).UpdateAsync(
+            Arg.Is<OffDay>(d => d.Id == holiday.Id && d.IsPublicHoliday && d.AbsenceType == AbsenceType.None),
+            Arg.Any<CancellationToken>());
+        await _offDayRepository.DidNotReceive().DeleteAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public void BuildCellsForMonth_marks_bridging_day_plus_vacation_combo_with_vacation_priority()
     {
         var date = new DateOnly(2025, 5, 2);

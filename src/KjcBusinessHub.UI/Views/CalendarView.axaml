@@ -128,7 +128,7 @@
                     <Border Width="14" Height="14" CornerRadius="2" Background="#F5F5F5" BorderBrush="#E0E0E0" BorderThickness="1" />
                     <TextBlock Text="Weekend" VerticalAlignment="Center" FontSize="12" />
                 </StackPanel>
-                <TextBlock Text="Click a day to cycle absence" VerticalAlignment="Center"
+                <TextBlock Text="Click to cycle absence, right-click to clear it" VerticalAlignment="Center"
                            FontSize="11" Foreground="Gray" />
             </StackPanel>
         </Border>
@@ -184,6 +184,7 @@
                                                                BorderThickness="{Binding BorderThickness}"
                                                                IsEnabled="{Binding IsCurrentMonth}"
                                                                IsHitTestVisible="{Binding !IsEmpty}"
+                                                               PointerPressed="OnDayCellPointerPressed"
                                                                ToolTip.Tip="{Binding ToolTipText}"
                                                                Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).ToggleDayCommand}"
                                                                CommandParameter="{Binding Date}">
