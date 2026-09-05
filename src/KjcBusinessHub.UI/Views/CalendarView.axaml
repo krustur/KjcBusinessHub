@@ -113,7 +113,7 @@
                     <TextBlock Text="Public holiday" VerticalAlignment="Center" FontSize="12" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="4">
-                    <Border Width="14" Height="14" CornerRadius="2" Background="#FFE0B2" />
+                    <Border Width="14" Height="14" CornerRadius="2" Background="Transparent" BorderBrush="#FB8C00" BorderThickness="2" />
                     <TextBlock Text="Bridging day" VerticalAlignment="Center" FontSize="12" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="4">
@@ -121,10 +121,14 @@
                     <TextBlock Text="Vacation" VerticalAlignment="Center" FontSize="12" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Border Width="14" Height="14" CornerRadius="2" Background="#BBDEFB" />
+                    <TextBlock Text="Sick leave" VerticalAlignment="Center" FontSize="12" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4">
                     <Border Width="14" Height="14" CornerRadius="2" Background="#F5F5F5" BorderBrush="#E0E0E0" BorderThickness="1" />
                     <TextBlock Text="Weekend" VerticalAlignment="Center" FontSize="12" />
                 </StackPanel>
-                <TextBlock Text="Click a day to toggle vacation" VerticalAlignment="Center"
+                <TextBlock Text="Click a day to cycle absence" VerticalAlignment="Center"
                            FontSize="11" Foreground="Gray" />
             </StackPanel>
         </Border>
@@ -176,9 +180,11 @@
                                                         <Button Classes="day-cell"
                                                                Width="28" Height="24"
                                                                Background="{Binding CellBackground}"
+                                                               BorderBrush="{Binding BorderBrush}"
+                                                               BorderThickness="{Binding BorderThickness}"
                                                                IsEnabled="{Binding IsCurrentMonth}"
                                                                IsHitTestVisible="{Binding !IsEmpty}"
-                                                               ToolTip.Tip="{Binding Description}"
+                                                               ToolTip.Tip="{Binding ToolTipText}"
                                                                Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).ToggleDayCommand}"
                                                                CommandParameter="{Binding Date}">
                                                            <TextBlock Text="{Binding DayNumber}"
@@ -221,17 +227,11 @@
                                    TextWrapping="Wrap"
                                    MaxWidth="200" />
 
-                        <!-- Deduct vacation days option -->
-                        <CheckBox IsChecked="{Binding DeductVacationDays}"
-                                  Content="{Binding DeductVacationDaysLabel}"
+                        <!-- Deduct absence days option -->
+                        <CheckBox IsChecked="{Binding DeductAbsenceDays}"
+                                  Content="{Binding DeductAbsenceDaysLabel}"
                                   FontSize="12"
-                                  ToolTip.Tip="When checked, vacation days are subtracted from the debitable-days count" />
-
-                        <!-- Deduct bridging days option -->
-                        <CheckBox IsChecked="{Binding DeductBridgingDays}"
-                                  Content="{Binding DeductBridgingDaysLabel}"
-                                  FontSize="12"
-                                  ToolTip.Tip="When checked, bridging days (weekdays sandwiched between non-working days) are subtracted from the debitable-days count" />
+                                  ToolTip.Tip="When checked, vacation and sick-leave days are subtracted from the debitable-days count" />
                     </StackPanel>
 
                     <!-- Results column -->

@@ -158,10 +158,10 @@ public class DebitableDaysViewModelTests
         Assert.Contains("2025", sut.PerMonth[0].MonthLabel); // first row is January 2025
     }
 
-    // ── DeductVacationDays option ────────────────────────────────────────────
+    // ── DeductAbsenceDays option ─────────────────────────────────────────────
 
     [Fact]
-    public async Task DeductVacationDays_false_excludes_vacation_from_total()
+    public async Task DeductAbsenceDays_false_excludes_absence_from_total()
     {
         // Jan 6 2025 is a Monday vacation day; CalendarYear=2025, StartMonth=1 spans Jan–Dec 2025
         var vacation = new OffDay
@@ -169,8 +169,9 @@ public class DebitableDaysViewModelTests
             Id = Guid.NewGuid(),
             Year = 2025,
             Date = new DateOnly(2025, 1, 6),
-            OffDayType = OffDayType.Vacation,
-            Description = string.Empty,
+            IsPublicHoliday = false,
+            PublicHolidayDescription = string.Empty,
+            AbsenceType = AbsenceType.Vacation,
             CreatedAt = DateTimeOffset.UtcNow,
         };
         _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
@@ -179,7 +180,7 @@ public class DebitableDaysViewModelTests
         var sut = CreateSubject();
         sut.CalendarYear = 2025;
         sut.StartMonth = 1;
-        sut.DeductVacationDays = false;
+        sut.DeductAbsenceDays = false;
 
         await sut.RecalculateAsync();
 
@@ -188,7 +189,7 @@ public class DebitableDaysViewModelTests
     }
 
     [Fact]
-    public async Task DeductVacationDays_true_subtracts_vacation_from_total()
+    public async Task DeductAbsenceDays_true_subtracts_vacation_from_total()
     {
         // Jan 6 2025 is a Monday vacation day
         var vacation = new OffDay
@@ -196,8 +197,9 @@ public class DebitableDaysViewModelTests
             Id = Guid.NewGuid(),
             Year = 2025,
             Date = new DateOnly(2025, 1, 6),
-            OffDayType = OffDayType.Vacation,
-            Description = string.Empty,
+            IsPublicHoliday = false,
+            PublicHolidayDescription = string.Empty,
+            AbsenceType = AbsenceType.Vacation,
             CreatedAt = DateTimeOffset.UtcNow,
         };
         _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
@@ -206,7 +208,7 @@ public class DebitableDaysViewModelTests
         var sut = CreateSubject();
         sut.CalendarYear = 2025;
         sut.StartMonth = 1;
-        sut.DeductVacationDays = true;
+        sut.DeductAbsenceDays = true;
 
         await sut.RecalculateAsync();
 
@@ -214,15 +216,16 @@ public class DebitableDaysViewModelTests
     }
 
     [Fact]
-    public async Task DeductVacationDays_change_triggers_recalculation()
+    public async Task DeductAbsenceDays_change_triggers_recalculation()
     {
         var vacation = new OffDay
         {
             Id = Guid.NewGuid(),
             Year = 2025,
             Date = new DateOnly(2025, 1, 6),
-            OffDayType = OffDayType.Vacation,
-            Description = string.Empty,
+            IsPublicHoliday = false,
+            PublicHolidayDescription = string.Empty,
+            AbsenceType = AbsenceType.Vacation,
             CreatedAt = DateTimeOffset.UtcNow,
         };
         _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
@@ -237,21 +240,22 @@ public class DebitableDaysViewModelTests
         Assert.Equal(260, sut.TotalDebitableDays);
 
         // Without deduction
-        sut.DeductVacationDays = false;
+        sut.DeductAbsenceDays = false;
         await sut.RecalculateAsync();
         Assert.Equal(261, sut.TotalDebitableDays);
     }
 
     [Fact]
-    public async Task RecalculateAsync_updates_vacation_and_bridging_day_counts_for_labels()
+    public async Task RecalculateAsync_updates_absence_count_for_label()
     {
         var vacation = new OffDay
         {
             Id = Guid.NewGuid(),
             Year = 2025,
             Date = new DateOnly(2025, 1, 8),
-            OffDayType = OffDayType.Vacation,
-            Description = string.Empty,
+            IsPublicHoliday = false,
+            PublicHolidayDescription = string.Empty,
+            AbsenceType = AbsenceType.SickLeave,
             CreatedAt = DateTimeOffset.UtcNow,
         };
         var holiday = new OffDay
@@ -259,8 +263,9 @@ public class DebitableDaysViewModelTests
             Id = Guid.NewGuid(),
             Year = 2025,
             Date = new DateOnly(2025, 1, 7),
-            OffDayType = OffDayType.PublicHoliday,
-            Description = string.Empty,
+            IsPublicHoliday = true,
+            PublicHolidayDescription = "Holiday",
+            AbsenceType = AbsenceType.None,
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
@@ -273,10 +278,8 @@ public class DebitableDaysViewModelTests
 
         await sut.RecalculateAsync();
 
-        Assert.Equal(1, sut.VacationDayCount);
-        Assert.Equal(1, sut.BridgingDayCount);
-        Assert.Equal("Deduct vacation days (1)", sut.DeductVacationDaysLabel);
-        Assert.Equal("Deduct bridging days (1)", sut.DeductBridgingDaysLabel);
+        Assert.Equal(1, sut.AbsenceDayCount);
+        Assert.Equal("Deduct absence days (1)", sut.DeductAbsenceDaysLabel);
     }
 
     // ── No public holidays warning ───────────────────────────────────────────
@@ -304,8 +307,9 @@ public class DebitableDaysViewModelTests
             Id = Guid.NewGuid(),
             Year = 2025,
             Date = new DateOnly(2025, 1, 1),
-            OffDayType = OffDayType.PublicHoliday,
-            Description = string.Empty,
+            IsPublicHoliday = true,
+            PublicHolidayDescription = "Holiday",
+            AbsenceType = AbsenceType.None,
             CreatedAt = DateTimeOffset.UtcNow,
         };
         _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())
@@ -330,8 +334,9 @@ public class DebitableDaysViewModelTests
             Id = Guid.NewGuid(),
             Year = 2025,
             Date = new DateOnly(2025, 6, 6),
-            OffDayType = OffDayType.PublicHoliday,
-            Description = string.Empty,
+            IsPublicHoliday = true,
+            PublicHolidayDescription = "Holiday",
+            AbsenceType = AbsenceType.None,
             CreatedAt = DateTimeOffset.UtcNow,
         };
         _repo.GetByYearAsync(2025, Arg.Any<CancellationToken>())

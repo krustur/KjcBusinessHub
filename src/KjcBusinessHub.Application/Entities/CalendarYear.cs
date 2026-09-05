@@ -1,5 +1,3 @@
-using KjcBusinessHub.Application.Enums;
-
 namespace KjcBusinessHub.Application.Entities;
 
 /// <summary>
@@ -23,7 +21,7 @@ public class CalendarYear
 
     /// <summary>Adds a new off-day to this calendar year.</summary>
     /// <exception cref="ArgumentException">
-    /// Thrown when the date does not belong to this year or a conflicting entry already exists for that date.
+    /// Thrown when the date does not belong to this year, no holiday/absence flags are set, or a conflicting entry already exists for that date.
     /// </exception>
     public void AddOffDay(OffDay offDay)
     {
@@ -53,6 +51,8 @@ public class CalendarYear
         if (offDay.Date.Year != Year)
             throw new ArgumentException(
                 $"OffDay date {offDay.Date} does not belong to year {Year}.", nameof(offDay));
+
+        offDay.Validate();
 
         var conflict = _offDays.FirstOrDefault(d => d.Date == offDay.Date && d.Id != offDay.Id);
         if (conflict is not null)

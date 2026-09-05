@@ -1,8 +1,8 @@
 namespace KjcBusinessHub.Application.Enums;
 
-public enum OffDayType
+public enum AbsenceType
 {
-    PublicHoliday = 0,
+    None = 0,
     Vacation = 1,
-    BridgingDay = 2,
+    SickLeave = 2,
 }

@@ -46,8 +46,16 @@ public class DagsmartApiPublicHolidayImporter(
             }
 
             var name = day.Name?.Sv ?? string.Empty;
-            var isNew = await repository.UpsertPublicHolidayAsync(year, date, name, cancellationToken);
-            if (isNew) added++; else updated++;
+            var outcome = await repository.UpsertPublicHolidayAsync(year, date, name, cancellationToken);
+            switch (outcome)
+            {
+                case PublicHolidayUpsertOutcome.Inserted:
+                    added++;
+                    break;
+                case PublicHolidayUpsertOutcome.Updated:
+                    updated++;
+                    break;
+            }
         }
 
         await repository.SaveChangesAsync(cancellationToken);

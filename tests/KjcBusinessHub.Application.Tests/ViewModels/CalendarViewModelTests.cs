@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
 using KjcBusinessHub.Application.Entities;
 using KjcBusinessHub.Application.Enums;
 using KjcBusinessHub.Application.Interfaces;
@@ -92,8 +93,9 @@ public class CalendarViewModelTests
             Id = Guid.NewGuid(),
             Year = 2025,
             Date = new DateOnly(2025, 12, 25),
-            OffDayType = OffDayType.PublicHoliday,
-            Description = "Christmas Day",
+            IsPublicHoliday = true,
+            PublicHolidayDescription = "Christmas Day",
+            AbsenceType = AbsenceType.None,
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
@@ -113,8 +115,8 @@ public class CalendarViewModelTests
                     cell = c;
 
         Assert.NotNull(cell);
-        Assert.Equal(OffDayType.PublicHoliday, cell.OffDayType);
         Assert.True(cell.IsPublicHoliday);
+        Assert.Equal("Christmas Day", cell.PublicHolidayDescription);
     }
 
     [Fact]
@@ -150,27 +152,28 @@ public class CalendarViewModelTests
         await sut.ToggleDayCommand.ExecuteAsync(targetDate);
 
         await _offDayRepository.Received(1).AddAsync(
-            Arg.Is<OffDay>(d => d.Date == targetDate && d.OffDayType == OffDayType.Vacation),
+            Arg.Is<OffDay>(d => d.Date == targetDate && d.AbsenceType == AbsenceType.Vacation && !d.IsPublicHoliday),
             Arg.Any<CancellationToken>());
         await _offDayRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task ToggleDayCommand_removes_existing_vacation_day()
+    public async Task ToggleDayCommand_cycles_existing_vacation_day_to_sick_leave()
     {
         var vacation = new OffDay
         {
             Id = Guid.NewGuid(),
             Year = 2025,
             Date = new DateOnly(2025, 7, 14),
-            OffDayType = OffDayType.Vacation,
-            Description = string.Empty,
+            IsPublicHoliday = false,
+            PublicHolidayDescription = string.Empty,
+            AbsenceType = AbsenceType.Vacation,
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
         _offDayRepository.GetByYearAsync(2025, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<OffDay>>([vacation]));
-        _offDayRepository.DeleteAsync(vacation.Id, Arg.Any<CancellationToken>())
+        _offDayRepository.UpdateAsync(Arg.Any<OffDay>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
         _offDayRepository.SaveChangesAsync(Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
@@ -181,25 +184,32 @@ public class CalendarViewModelTests
 
         await sut.ToggleDayCommand.ExecuteAsync(vacation.Date);
 
-        await _offDayRepository.Received(1).DeleteAsync(vacation.Id, Arg.Any<CancellationToken>());
+        await _offDayRepository.Received(1).UpdateAsync(
+            Arg.Is<OffDay>(d => d.Id == vacation.Id && d.AbsenceType == AbsenceType.SickLeave),
+            Arg.Any<CancellationToken>());
         await _offDayRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task ToggleDayCommand_does_not_modify_public_holiday()
+    public async Task ToggleDayCommand_adds_vacation_to_public_holiday()
     {
         var holiday = new OffDay
         {
             Id = Guid.NewGuid(),
             Year = 2025,
             Date = new DateOnly(2025, 1, 1),
-            OffDayType = OffDayType.PublicHoliday,
-            Description = "New Year's Day",
+            IsPublicHoliday = true,
+            PublicHolidayDescription = "New Year's Day",
+            AbsenceType = AbsenceType.None,
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
         _offDayRepository.GetByYearAsync(2025, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<OffDay>>([holiday]));
+        _offDayRepository.UpdateAsync(Arg.Any<OffDay>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        _offDayRepository.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
 
         var sut = CreateSubject();
         sut.SelectedFiscalYearStart = FindFiscalYearStart(sut, 2025, 1);
@@ -207,8 +217,276 @@ public class CalendarViewModelTests
 
         await sut.ToggleDayCommand.ExecuteAsync(holiday.Date);
 
+        await _offDayRepository.Received(1).UpdateAsync(
+            Arg.Is<OffDay>(d => d.Id == holiday.Id && d.IsPublicHoliday && d.AbsenceType == AbsenceType.Vacation && d.PublicHolidayDescription == "New Year's Day"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ToggleDayCommand_cycles_public_holiday_vacation_combo_to_sick_leave()
+    {
+        var holiday = new OffDay
+        {
+            Id = Guid.NewGuid(),
+            Year = 2025,
+            Date = new DateOnly(2025, 1, 1),
+            IsPublicHoliday = true,
+            PublicHolidayDescription = "New Year's Day",
+            AbsenceType = AbsenceType.Vacation,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        _offDayRepository.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([holiday]));
+        _offDayRepository.UpdateAsync(Arg.Any<OffDay>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        _offDayRepository.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var sut = CreateSubject();
+        sut.SelectedFiscalYearStart = FindFiscalYearStart(sut, 2025, 1);
+        await sut.LoadAsync();
+
+        await sut.ToggleDayCommand.ExecuteAsync(holiday.Date);
+
+        await _offDayRepository.Received(1).UpdateAsync(
+            Arg.Is<OffDay>(d => d.Id == holiday.Id && d.IsPublicHoliday && d.AbsenceType == AbsenceType.SickLeave && d.PublicHolidayDescription == "New Year's Day"),
+            Arg.Any<CancellationToken>());
         await _offDayRepository.DidNotReceive().DeleteAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
-        await _offDayRepository.DidNotReceive().AddAsync(Arg.Any<OffDay>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ToggleDayCommand_removes_sick_leave_entry_on_third_click()
+    {
+        var absence = new OffDay
+        {
+            Id = Guid.NewGuid(),
+            Year = 2025,
+            Date = new DateOnly(2025, 7, 14),
+            IsPublicHoliday = false,
+            PublicHolidayDescription = string.Empty,
+            AbsenceType = AbsenceType.SickLeave,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        _offDayRepository.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([absence]));
+        _offDayRepository.DeleteAsync(absence.Id, Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        _offDayRepository.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var sut = CreateSubject();
+        sut.SelectedFiscalYearStart = FindFiscalYearStart(sut, 2025, 1);
+        await sut.LoadAsync();
+
+        await sut.ToggleDayCommand.ExecuteAsync(absence.Date);
+
+        await _offDayRepository.Received(1).DeleteAsync(absence.Id, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ToggleDayCommand_clears_public_holiday_absence_on_third_click_but_keeps_holiday()
+    {
+        var holiday = new OffDay
+        {
+            Id = Guid.NewGuid(),
+            Year = 2025,
+            Date = new DateOnly(2025, 1, 1),
+            IsPublicHoliday = true,
+            PublicHolidayDescription = "New Year's Day",
+            AbsenceType = AbsenceType.SickLeave,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        _offDayRepository.GetByYearAsync(2025, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<OffDay>>([holiday]));
+        _offDayRepository.UpdateAsync(Arg.Any<OffDay>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        _offDayRepository.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var sut = CreateSubject();
+        sut.SelectedFiscalYearStart = FindFiscalYearStart(sut, 2025, 1);
+        await sut.LoadAsync();
+
+        await sut.ToggleDayCommand.ExecuteAsync(holiday.Date);
+
+        await _offDayRepository.Received(1).UpdateAsync(
+            Arg.Is<OffDay>(d => d.Id == holiday.Id && d.IsPublicHoliday && d.AbsenceType == AbsenceType.None),
+            Arg.Any<CancellationToken>());
+        await _offDayRepository.DidNotReceive().DeleteAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public void BuildCellsForMonth_marks_bridging_day_plus_vacation_combo_with_vacation_priority()
+    {
+        var date = new DateOnly(2025, 5, 2);
+        var cells = CalendarViewModel.BuildCellsForMonth(
+            2025,
+            5,
+            new Dictionary<DateOnly, OffDay>
+            {
+                [date] = new()
+                {
+                    Id = Guid.NewGuid(),
+                    Year = 2025,
+                    Date = date,
+                    IsPublicHoliday = false,
+                    PublicHolidayDescription = string.Empty,
+                    AbsenceType = AbsenceType.Vacation,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                }
+            },
+            new HashSet<DateOnly> { date });
+
+        var cell = Assert.Single(cells, c => c.Date == date);
+
+        Assert.True(cell.IsVacation);
+        Assert.True(cell.IsBridgingDay);
+        Assert.False(cell.IsPublicHoliday);
+        Assert.Equal("#FFF9C4", cell.CellBackground);
+        Assert.Equal("#FB8C00", cell.BorderBrush);
+        Assert.Equal(new Avalonia.Thickness(2), cell.BorderThickness);
+    }
+
+    [Fact]
+    public void BuildCellsForMonth_marks_bridging_day_without_absence_as_outline_only()
+    {
+        var date = new DateOnly(2025, 5, 2);
+        var cells = CalendarViewModel.BuildCellsForMonth(
+            2025,
+            5,
+            null,
+            new HashSet<DateOnly> { date });
+
+        var cell = Assert.Single(cells, c => c.Date == date);
+
+        Assert.False(cell.HasAbsence);
+        Assert.True(cell.IsBridgingDay);
+        Assert.Equal("Transparent", cell.CellBackground);
+        Assert.Equal("#FB8C00", cell.BorderBrush);
+        Assert.Equal(new Avalonia.Thickness(2), cell.BorderThickness);
+    }
+
+    [Fact]
+    public void BuildCellsForMonth_marks_sick_leave_with_distinct_color()
+    {
+        var date = new DateOnly(2025, 5, 2);
+        var cells = CalendarViewModel.BuildCellsForMonth(
+            2025,
+            5,
+            new Dictionary<DateOnly, OffDay>
+            {
+                [date] = new()
+                {
+                    Id = Guid.NewGuid(),
+                    Year = 2025,
+                    Date = date,
+                    IsPublicHoliday = false,
+                    PublicHolidayDescription = string.Empty,
+                    AbsenceType = AbsenceType.SickLeave,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                }
+            });
+
+        var cell = Assert.Single(cells, c => c.Date == date);
+
+        Assert.True(cell.IsSickLeave);
+        Assert.Equal("#BBDEFB", cell.CellBackground);
+        Assert.Equal("Sick leave", cell.ToolTipText);
+    }
+
+    [Fact]
+    public void BuildCellsForMonth_marks_bridging_day_plus_sick_leave_combo_with_orange_outline()
+    {
+        var date = new DateOnly(2025, 5, 2);
+        var cells = CalendarViewModel.BuildCellsForMonth(
+            2025,
+            5,
+            new Dictionary<DateOnly, OffDay>
+            {
+                [date] = new()
+                {
+                    Id = Guid.NewGuid(),
+                    Year = 2025,
+                    Date = date,
+                    IsPublicHoliday = false,
+                    PublicHolidayDescription = string.Empty,
+                    AbsenceType = AbsenceType.SickLeave,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                }
+            },
+            new HashSet<DateOnly> { date });
+
+        var cell = Assert.Single(cells, c => c.Date == date);
+
+        Assert.True(cell.IsSickLeave);
+        Assert.True(cell.IsBridgingDay);
+        Assert.Equal("#BBDEFB", cell.CellBackground);
+        Assert.Equal("#FB8C00", cell.BorderBrush);
+        Assert.Equal(new Avalonia.Thickness(2), cell.BorderThickness);
+    }
+
+    [Fact]
+    public void BuildCellsForMonth_marks_public_holiday_plus_vacation_combo_with_vacation_priority()
+    {
+        var date = new DateOnly(2025, 1, 1);
+        var cells = CalendarViewModel.BuildCellsForMonth(
+            2025,
+            1,
+            new Dictionary<DateOnly, OffDay>
+            {
+                [date] = new()
+                {
+                    Id = Guid.NewGuid(),
+                    Year = 2025,
+                    Date = date,
+                    IsPublicHoliday = true,
+                    PublicHolidayDescription = "New Year's Day",
+                    AbsenceType = AbsenceType.Vacation,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                }
+            });
+
+        var cell = Assert.Single(cells, c => c.Date == date);
+
+        Assert.True(cell.IsVacation);
+        Assert.True(cell.IsPublicHoliday);
+        Assert.Equal("#FFF9C4", cell.CellBackground);
+        Assert.Equal("#C62828", cell.BorderBrush);
+        Assert.Contains("public holiday", cell.ToolTipText);
+    }
+
+    [Fact]
+    public void BuildCellsForMonth_marks_weekend_plus_vacation_combo_with_public_holiday_error_style()
+    {
+        var date = new DateOnly(2025, 1, 4);
+        var cells = CalendarViewModel.BuildCellsForMonth(
+            2025,
+            1,
+            new Dictionary<DateOnly, OffDay>
+            {
+                [date] = new()
+                {
+                    Id = Guid.NewGuid(),
+                    Year = 2025,
+                    Date = date,
+                    IsPublicHoliday = false,
+                    PublicHolidayDescription = string.Empty,
+                    AbsenceType = AbsenceType.Vacation,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                }
+            });
+
+        var cell = Assert.Single(cells, c => c.Date == date);
+
+        Assert.True(cell.IsVacation);
+        Assert.True(cell.IsWeekend);
+        Assert.Equal("#FFF9C4", cell.CellBackground);
+        Assert.Equal("#C62828", cell.BorderBrush);
+        Assert.Equal(new Avalonia.Thickness(2), cell.BorderThickness);
+        Assert.Equal("Vacation + weekend", cell.ToolTipText);
     }
 
     // ── Import red days ──────────────────────────────────────────────────────

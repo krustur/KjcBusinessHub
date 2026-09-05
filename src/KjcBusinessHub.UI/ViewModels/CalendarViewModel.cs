@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KjcBusinessHub.Application.Entities;
@@ -19,8 +20,10 @@ namespace KjcBusinessHub.UI.ViewModels;
 /// </summary>
 public class CalendarDayCell : ObservableObject
 {
-    private OffDayType? _offDayType;
-    private string? _description;
+    private bool _isPublicHoliday;
+    private AbsenceType _absenceType;
+    private bool _isBridgingDay;
+    private string _publicHolidayDescription = string.Empty;
 
     /// <summary>The calendar date, or <c>null</c> for empty padding cells.</summary>
     public DateOnly? Date { get; init; }
@@ -36,50 +39,135 @@ public class CalendarDayCell : ObservableObject
         Date.HasValue &&
         (Date.Value.DayOfWeek == DayOfWeek.Saturday || Date.Value.DayOfWeek == DayOfWeek.Sunday);
 
-    public OffDayType? OffDayType
+    public bool IsPublicHoliday
     {
-        get => _offDayType;
+        get => _isPublicHoliday;
         set
         {
-            if (SetProperty(ref _offDayType, value))
+            if (SetProperty(ref _isPublicHoliday, value))
             {
-                OnPropertyChanged(nameof(IsPublicHoliday));
-                OnPropertyChanged(nameof(IsVacation));
-                OnPropertyChanged(nameof(IsBridgingDay));
-                OnPropertyChanged(nameof(CellBackground));
-                OnPropertyChanged(nameof(ForegroundBrush));
+                OnVisualStateChanged();
             }
         }
     }
 
-    public string? Description
+    public AbsenceType AbsenceType
     {
-        get => _description;
-        set => SetProperty(ref _description, value);
+        get => _absenceType;
+        set
+        {
+            if (SetProperty(ref _absenceType, value))
+            {
+                OnVisualStateChanged();
+            }
+        }
     }
 
-    public bool IsPublicHoliday => OffDayType == Application.Enums.OffDayType.PublicHoliday;
-    public bool IsVacation => OffDayType == Application.Enums.OffDayType.Vacation;
-    public bool IsBridgingDay => OffDayType == Application.Enums.OffDayType.BridgingDay;
+    public bool IsBridgingDay
+    {
+        get => _isBridgingDay;
+        set
+        {
+            if (SetProperty(ref _isBridgingDay, value))
+            {
+                OnVisualStateChanged();
+            }
+        }
+    }
+
+    public string PublicHolidayDescription
+    {
+        get => _publicHolidayDescription;
+        set
+        {
+            if (SetProperty(ref _publicHolidayDescription, value))
+            {
+                OnVisualStateChanged();
+            }
+        }
+    }
+
+    public bool HasAbsence => AbsenceType != AbsenceType.None;
+    public bool IsVacation => AbsenceType == AbsenceType.Vacation;
+    public bool IsSickLeave => AbsenceType == AbsenceType.SickLeave;
 
     /// <summary>Background brush name for color-coding the cell.</summary>
     public string CellBackground =>
-        OffDayType switch
-        {
-            Application.Enums.OffDayType.PublicHoliday => "#FFCDD2",   // Red/Pink
-            Application.Enums.OffDayType.Vacation      => "#FFF9C4",   // Yellow/Amber
-            Application.Enums.OffDayType.BridgingDay   => "#FFE0B2",   // Orange/Peach
-            _ when IsWeekend                            => "#F5F5F5",   // Light grey
-            _                                           => "Transparent",
-        };
+        IsVacation ? "#FFF9C4" :
+        IsSickLeave ? "#BBDEFB" :
+        IsPublicHoliday ? "#FFCDD2" :
+        IsWeekend ? "#F5F5F5" :
+        "Transparent";
 
     /// <summary>Foreground brush for day number text.</summary>
     public string ForegroundBrush =>
-        OffDayType == Application.Enums.OffDayType.PublicHoliday
-            ? "#C62828"
-            : OffDayType == Application.Enums.OffDayType.BridgingDay
-                ? "#E65100"
-                : IsCurrentMonth ? "#212121" : "#BDBDBD";
+        !IsCurrentMonth ? "#BDBDBD" :
+        IsPublicHoliday && !HasAbsence ? "#C62828" :
+        IsBridgingDay && !HasAbsence ? "#FB8C00" :
+        IsSickLeave ? "#1565C0" :
+        "#212121";
+
+    public string BorderBrush =>
+        HasAbsence && IsPublicHoliday ? "#C62828" :
+        HasAbsence && IsWeekend ? "#C62828" :
+        IsBridgingDay ? "#FB8C00" :
+        "Transparent";
+
+    public Thickness BorderThickness =>
+        IsBridgingDay || (HasAbsence && (IsPublicHoliday || IsWeekend)) ? new Thickness(2) : new Thickness(0);
+
+    public string? ToolTipText
+    {
+        get
+        {
+            if (HasAbsence)
+            {
+                var parts = new List<string> { GetAbsenceLabel(AbsenceType) };
+                if (IsPublicHoliday)
+                {
+                    parts.Add(string.IsNullOrWhiteSpace(PublicHolidayDescription)
+                        ? "public holiday"
+                        : $"public holiday: {PublicHolidayDescription}");
+                }
+
+                if (IsBridgingDay)
+                    parts.Add("bridging day");
+
+                if (IsWeekend)
+                    parts.Add("weekend");
+
+                return string.Join(" + ", parts);
+            }
+
+            if (IsPublicHoliday)
+                return string.IsNullOrWhiteSpace(PublicHolidayDescription) ? "Public holiday" : PublicHolidayDescription;
+
+            if (IsBridgingDay)
+                return "Bridging day";
+
+            return null;
+        }
+    }
+
+    private static string GetAbsenceLabel(AbsenceType absenceType) =>
+        absenceType switch
+        {
+            AbsenceType.Vacation => "Vacation",
+            AbsenceType.SickLeave => "Sick leave",
+            _ => "No absence",
+        };
+
+    private void OnVisualStateChanged()
+    {
+        OnPropertyChanged(nameof(HasAbsence));
+        OnPropertyChanged(nameof(IsVacation));
+        OnPropertyChanged(nameof(IsSickLeave));
+        OnPropertyChanged(nameof(CellBackground));
+        OnPropertyChanged(nameof(ForegroundBrush));
+        OnPropertyChanged(nameof(BorderBrush));
+        OnPropertyChanged(nameof(BorderThickness));
+        OnPropertyChanged(nameof(ToolTipText));
+    }
 }
 
 /// <summary>
@@ -103,7 +191,7 @@ public sealed record FiscalYearStartOption(int Year, int Month)
 }
 
 /// <summary>
-/// ViewModel for the Calendar view — year navigation, off-day display, vacation day toggle, and holiday import.
+/// ViewModel for the Calendar view — year navigation, off-day display, absence cycling, and holiday import.
 /// </summary>
 public partial class CalendarViewModel : ViewModelBase
 {
@@ -242,24 +330,40 @@ public partial class CalendarViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Toggles a date as a vacation day.
-    /// Clicking a regular or weekend day marks it as Vacation; clicking an existing Vacation day removes it.
-    /// Public holidays cannot be toggled via this command.
+    /// Cycles a date through no absence, vacation, and sick leave.
+    /// Any existing public-holiday metadata for that date is preserved.
     /// </summary>
     [RelayCommand]
     private async Task ToggleDayAsync(DateOnly date)
     {
         if (_offDaysByDate.TryGetValue(date, out var existing))
         {
-            if (existing.OffDayType == OffDayType.Vacation)
+            existing.AbsenceType = GetNextAbsenceType(existing.AbsenceType);
+
+            if (existing.AbsenceType == AbsenceType.None)
             {
-                await _offDayRepository.DeleteAsync(existing.Id);
-                await _offDayRepository.SaveChangesAsync();
-                _offDaysByDate.Remove(date);
-                ApplyOffDayToCell(date, null);
-                _ = DebitableDays.RecalculateAsync();
+                if (existing.IsPublicHoliday)
+                {
+                    existing.UpdatedAt = DateTimeOffset.UtcNow;
+                    await _offDayRepository.UpdateAsync(existing);
+                    await _offDayRepository.SaveChangesAsync();
+                    ApplyOffDayToCell(date, existing);
+                }
+                else
+                {
+                    await _offDayRepository.DeleteAsync(existing.Id);
+                    await _offDayRepository.SaveChangesAsync();
+                    _offDaysByDate.Remove(date);
+                    ApplyOffDayToCell(date, null);
+                }
             }
-            // Public holidays are not toggled by clicking — ignore.
+            else
+            {
+                existing.UpdatedAt = DateTimeOffset.UtcNow;
+                await _offDayRepository.UpdateAsync(existing);
+                await _offDayRepository.SaveChangesAsync();
+                ApplyOffDayToCell(date, existing);
+            }
         }
         else
         {
@@ -268,17 +372,27 @@ public partial class CalendarViewModel : ViewModelBase
                 Id = Guid.NewGuid(),
                 Year = date.Year,
                 Date = date,
-                OffDayType = OffDayType.Vacation,
-                Description = string.Empty,
+                IsPublicHoliday = false,
+                PublicHolidayDescription = string.Empty,
+                AbsenceType = AbsenceType.Vacation,
                 CreatedAt = DateTimeOffset.UtcNow,
             };
             await _offDayRepository.AddAsync(offDay);
             await _offDayRepository.SaveChangesAsync();
             _offDaysByDate[date] = offDay;
             ApplyOffDayToCell(date, offDay);
-            _ = DebitableDays.RecalculateAsync();
         }
+
+        await DebitableDays.RecalculateAsync();
     }
+
+    private static AbsenceType GetNextAbsenceType(AbsenceType current) =>
+        current switch
+        {
+            AbsenceType.None => AbsenceType.Vacation,
+            AbsenceType.Vacation => AbsenceType.SickLeave,
+            _ => AbsenceType.None,
+        };
 
     // ── Initialization / loading ─────────────────────────────────────────────
 
@@ -365,7 +479,7 @@ public partial class CalendarViewModel : ViewModelBase
         var periodEnd = periodStart.AddMonths(12).AddDays(-1);
 
         var publicHolidays = offDaysByDate.Values
-            .Where(d => d.OffDayType == OffDayType.PublicHoliday)
+            .Where(d => d.IsPublicHoliday)
             .Where(d => d.Date >= periodStart && d.Date <= periodEnd)
             .Select(d => d.Date)
             .ToHashSet();
@@ -421,22 +535,14 @@ public partial class CalendarViewModel : ViewModelBase
             OffDay? offDay = null;
             offDaysByDate?.TryGetValue(date, out offDay);
 
-            OffDayType? offDayType = offDay?.OffDayType;
-            string? description = offDay?.Description;
-
-            // Mark as bridging day when not already an explicit off-day
-            if (offDayType is null && bridgingDays is not null && bridgingDays.Contains(date))
-            {
-                offDayType = OffDayType.BridgingDay;
-                description = "Bridging day";
-            }
-
             cells.Add(new CalendarDayCell
             {
                 Date = date,
                 IsCurrentMonth = true,
-                OffDayType = offDayType,
-                Description = description,
+                IsPublicHoliday = offDay?.IsPublicHoliday ?? false,
+                AbsenceType = offDay?.AbsenceType ?? AbsenceType.None,
+                IsBridgingDay = bridgingDays?.Contains(date) ?? false,
+                PublicHolidayDescription = offDay?.PublicHolidayDescription ?? string.Empty,
             });
         }
 
@@ -458,7 +564,7 @@ public partial class CalendarViewModel : ViewModelBase
 
     /// <summary>
     /// Finds the cell for <paramref name="date"/> in the current <see cref="Months"/> collection
-    /// and updates its <see cref="CalendarDayCell.OffDayType"/> and <see cref="CalendarDayCell.Description"/>.
+    /// and updates its stored public-holiday/vacation state while preserving the derived bridging-day state.
     /// </summary>
     private void ApplyOffDayToCell(DateOnly date, OffDay? offDay)
     {
@@ -469,8 +575,9 @@ public partial class CalendarViewModel : ViewModelBase
         {
             var cell = week.FirstOrDefault(c => c.Date == date);
             if (cell is null) continue;
-            cell.OffDayType = offDay?.OffDayType;
-            cell.Description = offDay?.Description;
+            cell.IsPublicHoliday = offDay?.IsPublicHoliday ?? false;
+            cell.AbsenceType = offDay?.AbsenceType ?? AbsenceType.None;
+            cell.PublicHolidayDescription = offDay?.PublicHolidayDescription ?? string.Empty;
             return;
         }
     }

@@ -110,23 +110,25 @@ Aggregate that owns all tracked off-days for a single calendar year.
 | OffDays  | IReadOnlyList\<OffDay\> | All off-day entries for this year  |
 
 **Validation Rules:**
-- Each date may appear at most once across all `OffDay` entries; a day cannot be both a `PublicHoliday` and a `Vacation` simultaneously.
+- Each date may appear at most once across all `OffDay` entries.
 - The `Date` of every `OffDay` must belong to the year represented by the aggregate.
+- Each `OffDay` must be marked as a public holiday, an absence day, or both.
 
 ---
 
 ### OffDay
 A single day marked as unavailable for billing purposes.
 
-| Property    | Type           | Description                                          |
-|-------------|----------------|------------------------------------------------------|
-| Id          | Guid           | Unique identifier                                    |
-| Year        | int            | Calendar year (denormalised for query convenience)   |
-| Date        | DateOnly       | The calendar date                                    |
-| OffDayType  | enum           | `PublicHoliday` or `Vacation`                        |
-| Description | string         | Optional label (e.g. "Midsommar", "Summer vacation") |
-| CreatedAt   | DateTimeOffset | When the record was created                          |
-| UpdatedAt   | DateTimeOffset? | When the record was last modified                   |
+| Property                 | Type           | Description                                                   |
+|--------------------------|----------------|---------------------------------------------------------------|
+| Id                       | Guid           | Unique identifier                                             |
+| Year                     | int            | Calendar year (denormalised for query convenience)            |
+| Date                     | DateOnly       | The calendar date                                             |
+| IsPublicHoliday          | bool           | Whether the date is a public holiday                          |
+| PublicHolidayDescription | string         | Public-holiday label (for example "Midsommar")                |
+| AbsenceType              | enum           | `None`, `Vacation`, or `SickLeave`                            |
+| CreatedAt                | DateTimeOffset | When the record was created                                   |
+| UpdatedAt                | DateTimeOffset? | When the record was last modified                            |
 
 ---
 
@@ -135,18 +137,21 @@ A single day marked as unavailable for billing purposes.
 ### DebitableDaysQuery
 Represents a request to calculate debitable workdays over a month range.
 
-| Property   | Type      | Description                                    |
-|------------|-----------|------------------------------------------------|
-| StartMonth | YearMonth | First month of the period (inclusive)          |
-| EndMonth   | YearMonth | Last month of the period (must be ≥ StartMonth) |
+| Property            | Type      | Description                                              |
+|---------------------|-----------|----------------------------------------------------------|
+| StartMonth          | YearMonth | First month of the period (inclusive)                    |
+| EndMonth            | YearMonth | Last month of the period (must be ≥ StartMonth)          |
+| DeductAbsenceDays   | bool      | Whether user-marked absence days reduce the total        |
 
 ### DebitableDaysResult
 Result of a debitable-days calculation.
 
-| Property          | Type                               | Description                             |
-|-------------------|------------------------------------|-----------------------------------------|
-| TotalDebitableDays | int                               | Total billable workdays across the full period |
-| PerMonth          | IReadOnlyList\<MonthDebitableDays\> | One entry per month in the range       |
+| Property                   | Type                               | Description                                      |
+|----------------------------|------------------------------------|--------------------------------------------------|
+| TotalDebitableDays         | int                                | Total billable workdays across the full period   |
+| PerMonth                   | IReadOnlyList\<MonthDebitableDays\> | One entry per month in the range                |
+| YearsWithoutPublicHolidays | IReadOnlyList\<int\>               | Years in the selected range that have no imported public holidays |
+| AbsenceDayCount            | int                                | Number of absence days found in the selected range |
 
 ### MonthDebitableDays
 
@@ -155,11 +160,8 @@ Result of a debitable-days calculation.
 | Month          | YearMonth | The calendar month              |
 | DebitableDays  | int       | Number of billable days in this month |
 
-### OffDayType
-```
-PublicHoliday       // Swedish red day (röd dag)
-Vacation            // User-defined vacation day
-```
+### Bridging Day
+A bridging day is a derived weekday between non-working days. It is not stored in the database and is only shown as a calendar visual aid.
 
 ---
 
@@ -176,8 +178,10 @@ Vacation            // User-defined vacation day
 - Monthly SourceDocument coverage scope includes only month-filtered items; always-visible `Annual` items do not affect the `Month complete` indicator.
 - SourceDocuments with `IsFutureTransaction == true` are excluded from monthly SourceDocument coverage totals but remain visible in the list and can still be linked to Transactions.
 - `IsFutureTransaction` is a manual flag; it is not inferred automatically from transaction data. Clearing the flag is a manual user action.
-- Debitable days calculation: iterate every day in the requested period; exclude Saturdays and Sundays; exclude dates recorded as `PublicHoliday`; exclude dates recorded as `Vacation`; count remaining days grouped by month.
+- Debitable days calculation: iterate every day in the requested period; exclude Saturdays and Sundays; exclude dates marked as `IsPublicHoliday`; exclude dates whose `AbsenceType` is not `None` only when absence deduction is enabled; count remaining days grouped by month.
+- Calendar and debitable-days views always operate on a 12-month fiscal-year range anchored by the selected start month.
+- Bridging days are derived from imported public holidays within the selected fiscal-year range and shown in the calendar UI without overwriting stored off-days.
 - `CalendarYear` validates that each off-day's `Date` belongs to the owned year and that no two off-days share the same date.
-- The `DagsmartApiPublicHolidayImporter` upserts `PublicHoliday` off-days for the requested year; existing `Vacation` entries are never modified.
+- The `DagsmartApiPublicHolidayImporter` sets the public-holiday flag and description for the requested year while preserving any existing absence state on the same date.
 
 ---

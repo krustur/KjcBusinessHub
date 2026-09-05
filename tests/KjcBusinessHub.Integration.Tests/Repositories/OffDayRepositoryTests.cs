@@ -1,9 +1,10 @@
 using KjcBusinessHub.Application.Entities;
-using KjcBusinessHub.Application.Enums;
+using KjcBusinessHub.Application.Interfaces;
 using KjcBusinessHub.Infrastructure.Data;
 using KjcBusinessHub.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
+using KjcBusinessHub.Application.Enums;
 
 namespace KjcBusinessHub.Integration.Tests.Repositories;
 
@@ -61,7 +62,7 @@ public class OffDayRepositoryTests : IDisposable
     [Fact]
     public async Task AddAsync_and_GetByIdAsync_round_trips()
     {
-        var offDay = MakeOffDay(2025, new DateOnly(2025, 6, 6), OffDayType.PublicHoliday, "Sveriges nationaldag");
+        var offDay = MakeOffDay(2025, new DateOnly(2025, 6, 6), isPublicHoliday: true, description: "Sveriges nationaldag");
         await _repository.AddAsync(offDay);
         await _repository.SaveChangesAsync();
 
@@ -69,8 +70,9 @@ public class OffDayRepositoryTests : IDisposable
 
         Assert.NotNull(found);
         Assert.Equal(offDay.Id, found.Id);
-        Assert.Equal(OffDayType.PublicHoliday, found.OffDayType);
-        Assert.Equal("Sveriges nationaldag", found.Description);
+        Assert.True(found.IsPublicHoliday);
+        Assert.Equal(AbsenceType.None, found.AbsenceType);
+        Assert.Equal("Sveriges nationaldag", found.PublicHolidayDescription);
     }
 
     [Fact]
@@ -89,12 +91,14 @@ public class OffDayRepositoryTests : IDisposable
         await _repository.AddAsync(offDay);
         await _repository.SaveChangesAsync();
 
-        offDay.Description = "Updated description";
+        offDay.AbsenceType = AbsenceType.SickLeave;
+        offDay.PublicHolidayDescription = "Updated description";
         await _repository.UpdateAsync(offDay);
         await _repository.SaveChangesAsync();
 
         var found = await _repository.GetByIdAsync(offDay.Id);
-        Assert.Equal("Updated description", found!.Description);
+        Assert.Equal(AbsenceType.SickLeave, found!.AbsenceType);
+        Assert.Equal("Updated description", found.PublicHolidayDescription);
     }
 
     // ── DeleteAsync ──────────────────────────────────────────────────────────
@@ -123,62 +127,66 @@ public class OffDayRepositoryTests : IDisposable
     // ── UpsertPublicHolidayAsync ─────────────────────────────────────────────
 
     [Fact]
-    public async Task UpsertPublicHolidayAsync_inserts_new_entry_and_returns_true()
+    public async Task UpsertPublicHolidayAsync_inserts_new_entry_and_returns_inserted()
     {
-        var isNew = await _repository.UpsertPublicHolidayAsync(2025, new DateOnly(2025, 1, 1), "Nyårsdagen");
+        var outcome = await _repository.UpsertPublicHolidayAsync(2025, new DateOnly(2025, 1, 1), "Nyårsdagen");
         await _repository.SaveChangesAsync();
 
-        Assert.True(isNew);
+        Assert.Equal(PublicHolidayUpsertOutcome.Inserted, outcome);
         var all = await _repository.GetByYearAsync(2025);
         Assert.Single(all);
-        Assert.Equal(OffDayType.PublicHoliday, all[0].OffDayType);
+        Assert.True(all[0].IsPublicHoliday);
+        Assert.Equal(AbsenceType.None, all[0].AbsenceType);
     }
 
     [Fact]
-    public async Task UpsertPublicHolidayAsync_updates_existing_public_holiday_and_returns_false()
+    public async Task UpsertPublicHolidayAsync_updates_existing_public_holiday_and_returns_updated()
     {
         await _repository.UpsertPublicHolidayAsync(2025, new DateOnly(2025, 1, 1), "Old name");
         await _repository.SaveChangesAsync();
 
-        var isNew = await _repository.UpsertPublicHolidayAsync(2025, new DateOnly(2025, 1, 1), "New name");
+        var outcome = await _repository.UpsertPublicHolidayAsync(2025, new DateOnly(2025, 1, 1), "New name");
         await _repository.SaveChangesAsync();
 
-        Assert.False(isNew);
+        Assert.Equal(PublicHolidayUpsertOutcome.Updated, outcome);
         var all = await _repository.GetByYearAsync(2025);
         Assert.Single(all);
-        Assert.Equal("New name", all[0].Description);
+        Assert.Equal("New name", all[0].PublicHolidayDescription);
     }
 
     [Fact]
-    public async Task UpsertPublicHolidayAsync_leaves_vacation_entry_untouched_and_returns_false()
+    public async Task UpsertPublicHolidayAsync_preserves_existing_absence_type()
     {
-        var vacation = MakeOffDay(2025, new DateOnly(2025, 1, 1), OffDayType.Vacation, "Summer vacation");
-        await _repository.AddAsync(vacation);
+        var offDay = MakeOffDay(2025, new DateOnly(2025, 1, 1), absenceType: AbsenceType.SickLeave);
+        await _repository.AddAsync(offDay);
         await _repository.SaveChangesAsync();
 
-        var isNew = await _repository.UpsertPublicHolidayAsync(2025, new DateOnly(2025, 1, 1), "Nyårsdagen");
+        var outcome = await _repository.UpsertPublicHolidayAsync(2025, new DateOnly(2025, 1, 1), "Nyårsdagen");
         await _repository.SaveChangesAsync();
 
-        Assert.False(isNew);
+        Assert.Equal(PublicHolidayUpsertOutcome.Updated, outcome);
         var all = await _repository.GetByYearAsync(2025);
         Assert.Single(all);
-        Assert.Equal(OffDayType.Vacation, all[0].OffDayType);
-        Assert.Equal("Summer vacation", all[0].Description);
+        Assert.True(all[0].IsPublicHoliday);
+        Assert.Equal(AbsenceType.SickLeave, all[0].AbsenceType);
+        Assert.Equal("Nyårsdagen", all[0].PublicHolidayDescription);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private static OffDay MakeOffDay(
         int year, DateOnly date,
-        OffDayType type = OffDayType.PublicHoliday,
-        string description = "") =>
+        bool isPublicHoliday = true,
+        AbsenceType absenceType = AbsenceType.None,
+        string description = "Holiday") =>
         new()
         {
             Id = Guid.NewGuid(),
             Year = year,
             Date = date,
-            OffDayType = type,
-            Description = description,
+            IsPublicHoliday = isPublicHoliday,
+            PublicHolidayDescription = isPublicHoliday ? description : string.Empty,
+            AbsenceType = absenceType,
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
