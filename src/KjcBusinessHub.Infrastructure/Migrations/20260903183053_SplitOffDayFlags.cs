@@ -101,6 +101,9 @@ END;
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            if (!IsSqlite())
+                throw new NotSupportedException("SplitOffDayFlags rollback requires SQLite-specific validation before converting data to the legacy schema.");
+
             if (IsSqlite())
             {
                 migrationBuilder.Sql("""

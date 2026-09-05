@@ -54,6 +54,9 @@ END;
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            if (!IsSqlite())
+                throw new NotSupportedException("ReplaceVacationWithAbsenceType rollback requires SQLite-specific validation before converting data to the legacy schema.");
+
             migrationBuilder.AlterColumn<string>(
                 name: "PublicHolidayDescription",
                 table: "OffDays",
